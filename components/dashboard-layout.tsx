@@ -29,6 +29,7 @@ import {
   Bell,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -66,8 +67,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-bold">GymFlow</span>
           </div>
 
+          {/* New Transaction Button */}
+          <div className="px-3 py-4">
+            <NewTransactionDialog />
+          </div>
+
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-4">
+          <nav className="flex-1 space-y-1 px-3">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (

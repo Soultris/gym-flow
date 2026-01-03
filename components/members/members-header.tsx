@@ -21,6 +21,7 @@ export function MembersHeader() {
     { name: "Active", href: "/members/active", count: 128 },
     { name: "Expired", href: "/members/expired", count: 48 },
     { name: "Pending", href: "/members/pending", count: 38 },
+    { name: "Pending Trainers", href: "/members/pending-trainers", count: 8 },
     { name: "Trainers", href: "/members/trainers", count: 15 },
   ]
 
@@ -30,6 +31,8 @@ export function MembersHeader() {
         return "Active members (128)"
       case "pending":
         return "Pending members (38)"
+      case "pending-trainers":
+        return "Pending Trainers (8)"
       case "expired":
         return "Expired members (48)"
       case "trainers":

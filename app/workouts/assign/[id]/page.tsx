@@ -4,58 +4,58 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Check } from "lucide-react"
 import Link from "next/link"
 import { useState, use } from "react"
 
 const workoutPlans = [
   {
-    id: "W001",
-    name: "Strength Training",
-    description: "Build muscle and increase strength",
-    duration: "12 weeks",
-    difficulty: "Intermediate",
-    sessions: 4,
+    id: 1,
+    name: "Chest Builder",
+    description: "Focuses on developing chest muscles using exercises like bench press, push-ups, and chest flys. Helps increase upper body strength and muscle size.",
+    exercises: [
+      { name: "Upper Chest", reps: "12 x 4" },
+      { name: "Middle Chest", reps: "10 x 4" },
+      { name: "Lower Chest", reps: "12 x 4" },
+      { name: "Front Shoulders", reps: "10 x 3" },
+      { name: "Triceps", reps: "12 x 3" },
+    ],
   },
   {
-    id: "W002",
-    name: "Cardio Blast",
-    description: "Improve cardiovascular endurance",
-    duration: "8 weeks",
-    difficulty: "Beginner",
-    sessions: 3,
+    id: 2,
+    name: "Back & Biceps",
+    description: "Complete back strengthening routine with biceps exercises for upper body development and strength.",
+    exercises: [
+      { name: "Lat Pulldowns", reps: "12 x 4" },
+      { name: "Barbell Rows", reps: "10 x 4" },
+      { name: "Face Pulls", reps: "12 x 3" },
+      { name: "Barbell Curls", reps: "10 x 4" },
+      { name: "Hammer Curls", reps: "12 x 3" },
+    ],
   },
   {
-    id: "W003",
-    name: "Weight Loss Program",
-    description: "Effective fat loss with exercises",
-    duration: "16 weeks",
-    difficulty: "Intermediate",
-    sessions: 5,
+    id: 3,
+    name: "Leg Day Pro",
+    description: "Comprehensive leg workout focusing on quad, hamstring, and glute development with compound movements.",
+    exercises: [
+      { name: "Squats", reps: "10 x 4" },
+      { name: "Leg Press", reps: "12 x 4" },
+      { name: "Leg Curls", reps: "12 x 3" },
+      { name: "Calf Raises", reps: "15 x 3" },
+      { name: "Lunges", reps: "12 x 3" },
+    ],
   },
   {
-    id: "W004",
-    name: "Flexibility & Mobility",
-    description: "Improve flexibility and range of motion",
-    duration: "6 weeks",
-    difficulty: "Beginner",
-    sessions: 3,
-  },
-  {
-    id: "W005",
-    name: "Advanced Bodybuilding",
-    description: "Advanced muscle building techniques",
-    duration: "20 weeks",
-    difficulty: "Advanced",
-    sessions: 6,
-  },
-  {
-    id: "W006",
-    name: "HIIT Training",
-    description: "High intensity interval training",
-    duration: "10 weeks",
-    difficulty: "Advanced",
-    sessions: 4,
+    id: 4,
+    name: "Full Body Blast",
+    description: "Total body conditioning program combining strength training with cardio elements for overall fitness.",
+    exercises: [
+      { name: "Bench Press", reps: "10 x 4" },
+      { name: "Squats", reps: "10 x 4" },
+      { name: "Deadlifts", reps: "8 x 3" },
+      { name: "Push-ups", reps: "15 x 3" },
+      { name: "Cardio", reps: "20 min" },
+    ],
   },
 ]
 
@@ -71,23 +71,10 @@ const mockMembers = [
 
 export default function AssignWorkoutPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null)
+  const [selectedWorkout, setSelectedWorkout] = useState<number | null>(null)
   const [assigned, setAssigned] = useState(false)
 
   const member = mockMembers.find(m => m.id === resolvedParams.id)
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Beginner":
-        return "bg-green-100 text-green-800"
-      case "Intermediate":
-        return "bg-yellow-100 text-yellow-800"
-      case "Advanced":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
 
   const handleAssign = () => {
     if (selectedWorkout) {
@@ -117,7 +104,7 @@ export default function AssignWorkoutPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Member Info Card */}
-        <Card className="p-6 from-primary/10 to-primary/5 border-primary/20">
+        <Card className="p-6 border-primary/20">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Assigning to</p>
@@ -136,36 +123,39 @@ export default function AssignWorkoutPage({ params }: { params: Promise<{ id: st
         {/* Workout Plans Grid */}
         <div>
           <h3 className="text-xl font-semibold mb-4">Available Workout Plans</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workoutPlans.map((plan) => (
-              <div
-                key={plan.id}
-                onClick={() => setSelectedWorkout(plan.id)}
-                className={`p-6 rounded-lg border-2 transition-all cursor-pointer ${
-                  selectedWorkout === plan.id
-                    ? "border-primary bg-primary/10"
-                    : "border-[#2a2a2a] bg-card hover:border-primary/50"
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+            {workoutPlans.map((workout) => (
+              <Card
+                key={workout.id}
+                onClick={() => setSelectedWorkout(workout.id)}
+                className={`p-5 transition-all cursor-pointer ${
+                  selectedWorkout === workout.id
+                    ? "border-[#E8FF00] border-2 bg-[#E8FF00]/5"
+                    : "hover:border-[#E8FF00]/50"
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold text-lg">{plan.name}</h4>
-                  {selectedWorkout === plan.id && (
-                    <div className="h-5 w-5 rounded-full border-2 border-primary bg-primary" />
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold">{workout.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{workout.description}</p>
+                  </div>
+                  {selectedWorkout === workout.id && (
+                    <div className="h-5 w-5 rounded-full border-2 border-[#E8FF00] bg-[#E8FF00] ml-2 flex-shrink-0" />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge variant="secondary" className="text-xs">
-                    {plan.duration}
-                  </Badge>
-                  <Badge className={`text-xs ${getDifficultyColor(plan.difficulty)}`}>
-                    {plan.difficulty}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {plan.sessions}x/week
-                  </Badge>
+
+                <div className="mb-4 space-y-2">
+                  {workout.exercises.map((exercise, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-[#E8FF00] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{exercise.name}</p>
+                        <p className="text-xs text-muted-foreground">{exercise.reps}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -177,16 +167,16 @@ export default function AssignWorkoutPage({ params }: { params: Promise<{ id: st
               Cancel
             </Button>
           </Link>
-            <Link href="/members">
-          <Button
-            onClick={handleAssign}
-            disabled={!selectedWorkout}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            {assigned ? "✓ Workout Assigned" : "Assign Workout"}
-          </Button>
-        </Link>
-      </div>
+          <Link href="/members">
+            <Button
+              onClick={handleAssign}
+              disabled={!selectedWorkout}
+              className="bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {assigned ? "✓ Workout Assigned" : "Assign Workout"}
+            </Button>
+          </Link>
+        </div>
       </div>
     </DashboardLayout>
   )

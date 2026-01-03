@@ -28,6 +28,7 @@ import {
   User,
   Bell,
   UserPlus,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -38,6 +39,7 @@ const navigation = [
   { name: "Finance", href: "/finance", icon: DollarSign },
   { name: "Workouts", href: "/workouts", icon: Dumbbell },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Bulk SMS", href: "/bulk-sms", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -136,7 +138,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/50 backdrop-blur px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>

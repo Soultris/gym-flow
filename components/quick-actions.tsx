@@ -8,12 +8,11 @@ const actions = [
     description: "Register new gym member",
     icon: UserPlus,
     href: "/members/new",
-  },
-  {
-    title: "Record Payment",
-    description: "Log member payment",
-    icon: CreditCard,
-    href: "/finance/payment",
+  },{
+    title: "Pending Memberships",
+    description: "Manage pending memberships",
+    icon: MessageSquare,
+    href: "/members/pending",
   },
   {
     title: "Mark Attendance",
@@ -21,12 +20,13 @@ const actions = [
     icon: ClipboardList,
     href: "/attendance",
   },
-  {
-    title: "Send SMS",
-    description: "Bulk message members",
-    icon: MessageSquare,
-    href: "/members/sms",
+   {
+    title: "Record Payment",
+    description: "Log member payment",
+    icon: CreditCard,
+    href: "/finance/payment",
   },
+  
 ]
 
 export function QuickActions() {

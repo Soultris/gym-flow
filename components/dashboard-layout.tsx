@@ -27,6 +27,7 @@ import {
   LogOut,
   User,
   Bell,
+  UserPlus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -141,6 +142,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Button>
 
           <div className="flex flex-1 items-center justify-end gap-2">
+            <Link href="/membership-request" target="_blank">
+              <Button variant="outline" size="sm" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Membership Registration Form</span>
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent" />

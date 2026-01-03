@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical, RotateCw, Trash2 } from "lucide-react"
+import { MoreVertical } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -120,9 +121,31 @@ const members = [
 ]
 
 export function MembersList() {
-  const [selectedMemberForRenewal, setSelectedMemberForRenewal] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  // Quick renewal params from URL
+  const renewMemberId = searchParams.get("renewMemberId")
+  const renewMemberName = searchParams.get("renewMemberName")
+  
+  // Derive dialog open state from URL params
+  const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null)
+
+  // Clear URL params when dialog is closed
+  const handleRenewDialogClose = (open: boolean) => {
+    if (!open && renewMemberId) {
+      // Remove query params from URL
+      router.replace("/members")
+    }
+  }
+
+  // Filter members if renewMemberId is present
+  const displayedMembers = renewMemberId 
+    ? members.filter(m => m.id === renewMemberId) 
+    : members
 
   const handleDeleteClick = (id: string, name: string) => {
     setMemberToDelete({ id, name })
@@ -154,7 +177,7 @@ export function MembersList() {
           </tr>
         </thead>
         <tbody>
-          {members.map((member, index) => (
+          {displayedMembers.map((member, index) => (
             <tr
               key={member.id}
               className={`border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors ${
@@ -271,6 +294,18 @@ export function MembersList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Renewal Transaction Dialog */}
+      {renewMemberId && renewMemberName && (
+        <NewTransactionDialog
+          memberId={renewMemberId}
+          memberName={renewMemberName}
+          triggerStyle="hidden"
+          defaultTransactionType="membership"
+          openByDefault={isRenewDialogOpen}
+          onOpenChange={handleRenewDialogClose}
+        />
+      )}
     </div>
   )
 }

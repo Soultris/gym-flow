@@ -44,44 +44,64 @@ const transactionTypes = [
 interface NewTransactionDialogProps {
   memberId?: string
   memberName?: string
-  triggerStyle?: "button" | "renew"
+  triggerStyle?: "button" | "renew" | "hidden"
+  defaultTransactionType?: string
+  openByDefault?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function NewTransactionDialog({ memberId, memberName, triggerStyle = "button" }: NewTransactionDialogProps) {
-  const [open, setOpen] = useState(false)
+export function NewTransactionDialog({ 
+  memberId, 
+  memberName, 
+  triggerStyle = "button",
+  defaultTransactionType = "",
+  openByDefault = false,
+  onOpenChange
+}: NewTransactionDialogProps) {
+  const [open, setOpen] = useState(openByDefault)
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash")
   const [member, setMember] = useState(memberId || "")
-  const [transactionType, setTransactionType] = useState("")
+  const [transactionType, setTransactionType] = useState(defaultTransactionType)
   const [amount, setAmount] = useState("")
   const [notes, setNotes] = useState("")
+
+  // Handle external open state changes
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+    onOpenChange?.(newOpen)
+    if (!newOpen) {
+      // Reset form when closing
+      setMember(memberId || "")
+      setTransactionType(defaultTransactionType)
+      setAmount("")
+      setPaymentMethod("cash")
+      setNotes("")
+    }
+  }
 
   const handleSubmit = () => {
     // Process transaction logic here
     console.log({ member, transactionType, amount, paymentMethod, notes })
-    setOpen(false)
-    // Reset form
-    setMember(memberId || "")
-    setTransactionType("")
-    setAmount("")
-    setPaymentMethod("cash")
-    setNotes("")
+    handleOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {triggerStyle === "renew" ? (
-          <Button size="sm" className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
-            <RotateCw className="h-4 w-4" />
-            Renew
-          </Button>
-        ) : (
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-            <Plus className="h-4 w-4" />
-            New Transaction
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {triggerStyle !== "hidden" && (
+        <DialogTrigger asChild>
+          {triggerStyle === "renew" ? (
+            <Button size="sm" className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
+              <RotateCw className="h-4 w-4" />
+              Renew
+            </Button>
+          ) : (
+            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+              <Plus className="h-4 w-4" />
+              New Transaction
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md bg-card border-border" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>New Transaction</DialogTitle>

@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Banknote, CreditCard } from "lucide-react"
+import { Plus, Banknote, CreditCard, RotateCw } from "lucide-react"
 
 const members = [
   { id: "M001", name: "John Smith" },
@@ -41,10 +41,16 @@ const transactionTypes = [
   { id: "other", name: "Other" },
 ]
 
-export function NewTransactionDialog() {
+interface NewTransactionDialogProps {
+  memberId?: string
+  memberName?: string
+  triggerStyle?: "button" | "renew"
+}
+
+export function NewTransactionDialog({ memberId, memberName, triggerStyle = "button" }: NewTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash")
-  const [member, setMember] = useState("")
+  const [member, setMember] = useState(memberId || "")
   const [transactionType, setTransactionType] = useState("")
   const [amount, setAmount] = useState("")
   const [notes, setNotes] = useState("")
@@ -54,7 +60,7 @@ export function NewTransactionDialog() {
     console.log({ member, transactionType, amount, paymentMethod, notes })
     setOpen(false)
     // Reset form
-    setMember("")
+    setMember(memberId || "")
     setTransactionType("")
     setAmount("")
     setPaymentMethod("cash")
@@ -64,10 +70,17 @@ export function NewTransactionDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-          <Plus className="h-4 w-4" />
-          New Transaction
-        </Button>
+        {triggerStyle === "renew" ? (
+          <Button size="sm" className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
+            <RotateCw className="h-4 w-4" />
+            Renew
+          </Button>
+        ) : (
+          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+            <Plus className="h-4 w-4" />
+            New Transaction
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-card border-border" showCloseButton={false}>
         <DialogHeader>
@@ -191,7 +204,7 @@ export function NewTransactionDialog() {
               placeholder="Add any additional notes about this transaction"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="bg-secondary border-[#3a3a3a] min-h-[80px]"
+              className="bg-secondary border-[#3a3a3a]"
             />
           </div>
         </div>

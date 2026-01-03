@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, X } from "lucide-react"
+
+interface Member {
+  id: string
+  name: string
+}
 
 interface MessageStatus {
   id: string
@@ -24,10 +29,26 @@ interface MessageStatus {
   status: "sent" | "pending" | "failed"
 }
 
-export function BulkSmsForm() {
+const members: Member[] = [
+  { id: "M001", name: "John Smith" },
+  { id: "M002", name: "Sarah Johnson" },
+  { id: "M003", name: "Mike Wilson" },
+  { id: "M004", name: "Emily Davis" },
+  { id: "M005", name: "Chris Brown" },
+  { id: "M006", name: "Jessica Martinez" },
+  { id: "M007", name: "David Lee" },
+]
+
+interface BulkSmsFormProps {
+  initialMemberId?: string
+  initialMemberName?: string
+}
+
+export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: BulkSmsFormProps) {
   const [selectedMember, setSelectedMember] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [message, setMessage] = useState("")
+  const [showSearchResults, setShowSearchResults] = useState(false)
   const [messageStatuses, setMessageStatuses] = useState<MessageStatus[]>([
     {
       id: "1",
@@ -59,8 +80,27 @@ export function BulkSmsForm() {
     },
   ])
 
+  // Initialize selected member from URL params
+  useEffect(() => {
+    if (initialMemberId && initialMemberName) {
+      setSelectedMember(`${initialMemberName} (${initialMemberId})`)
+    }
+  }, [initialMemberId, initialMemberName])
+
   const characterCount = message.length
   const maxCharacters = 160
+
+  // Filter members based on search query
+  const filteredMembers = members.filter((member) =>
+    member.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleSelectMember = (memberId: string, memberName: string) => {
+    setSelectedMember(`${memberName} (${memberId})`)
+    setSearchQuery("")
+    setShowSearchResults(false)
+  }
 
   const handleSendSms = () => {
     if (!selectedMember || !message.trim()) {
@@ -121,7 +161,7 @@ export function BulkSmsForm() {
           </div>
 
           {/* Advance Search */}
-          <div className="space-y-3">
+          <div className="space-y-3 relative">
             <Label htmlFor="search" className="text-base font-semibold">
               Advance Search
             </Label>
@@ -129,9 +169,53 @@ export function BulkSmsForm() {
               id="search"
               placeholder="Search by member ID or Name"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setShowSearchResults(true)
+              }}
+              onFocus={() => setShowSearchResults(true)}
               className="h-10"
             />
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchQuery && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                {filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => handleSelectMember(member.id, member.name)}
+                      className="w-full text-left px-4 py-3 hover:bg-sidebar-accent transition-colors border-b border-border last:border-b-0"
+                    >
+                      <p className="font-medium text-sm">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.id}</p>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-center text-muted-foreground text-sm">
+                    No members found
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Selected Member Display */}
+            {selectedMember && (
+              <div className="mt-2">
+                <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                  <span className="text-sm font-medium">{selectedMember}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedMember("")
+                      setSearchQuery("")
+                    }}
+                    className="hover:opacity-70"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Message */}

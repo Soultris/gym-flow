@@ -2,8 +2,13 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { BulkSmsForm } from "@/components/sms/bulk-sms-form"
+import { useSearchParams } from "next/navigation"
 
 export default function BulkSmsPage() {
+  const searchParams = useSearchParams()
+  const memberId = searchParams.get("memberId")
+  const memberName = searchParams.get("memberName")
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -12,7 +17,7 @@ export default function BulkSmsPage() {
           <p className="text-muted-foreground mt-2">Send SMS messages to multiple members</p>
         </div>
 
-        <BulkSmsForm />
+        <BulkSmsForm initialMemberId={memberId || ""} initialMemberName={memberName || ""} />
       </div>
     </DashboardLayout>
   )

@@ -3,8 +3,6 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { FinanceOverview } from "@/components/finance/finance-overview"
 import { RevenueChart } from "@/components/finance/revenue-chart"
-import { RecentTransactions } from "@/components/finance/recent-transactions"
-import { PendingPayments } from "@/components/finance/pending-payments"
 import { TransactionHistoryTable } from "@/components/finance/transaction-history-table"
 import { PendingPaymentsTable } from "@/components/finance/pending-payments-table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -18,8 +16,8 @@ export default function FinancePage() {
           <p className="text-muted-foreground mt-1">Monitor payments and revenue</p>
         </div>
 
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 w-full justify-start">
+        <Tabs defaultValue="dashboard">
+          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 inline-flex">
             <TabsTrigger
               value="dashboard"
               className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
@@ -43,17 +41,7 @@ export default function FinancePage() {
           <TabsContent value="dashboard" className="mt-6">
             <div className="flex flex-col gap-6">
               <FinanceOverview />
-
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                  <RevenueChart />
-                </div>
-                <div>
-                  <PendingPayments />
-                </div>
-              </div>
-
-              <RecentTransactions />
+              <RevenueChart />
             </div>
           </TabsContent>
 

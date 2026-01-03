@@ -27,6 +27,7 @@ import {
   LogOut,
   User,
   Bell,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -37,6 +38,7 @@ const navigation = [
   { name: "Finance", href: "/finance", icon: DollarSign },
   { name: "Workouts", href: "/workouts", icon: Dumbbell },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Bulk SMS", href: "/bulk-sms", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 

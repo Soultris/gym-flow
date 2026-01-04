@@ -17,7 +17,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Member Profile</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Member Profile</h1>
             <p className="text-muted-foreground mt-1">View and manage member details</p>
           </div>
         </div>

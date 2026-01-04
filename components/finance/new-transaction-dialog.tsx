@@ -90,7 +90,7 @@ export function NewTransactionDialog({
       {triggerStyle !== "hidden" && (
         <DialogTrigger asChild>
           {triggerStyle === "renew" ? (
-            <Button size="sm" className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
+            <Button size="sm" className="gap-2 bg-primary text-secondary font-semibold hover:bg-primary/80">
               <RotateCw className="h-4 w-4" />
               Renew
             </Button>

@@ -63,7 +63,7 @@ export default function AdminProfilePage() {
               Back to Dashboard
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Admin Profile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Admin Profile</h1>
           <p className="text-muted-foreground mt-1">View and manage your administrator profile</p>
         </div>
 

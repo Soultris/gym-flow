@@ -8,7 +8,7 @@ export default function WorkoutsPage() {
     <DashboardLayout>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-balance">Workouts & Packages</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-balance">Workouts & Packages</h1>
           <p className="text-muted-foreground mt-1">Manage workout plans and membership packages</p>
         </div>
 

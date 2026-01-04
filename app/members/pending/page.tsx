@@ -266,7 +266,8 @@ export default function PendingMembersPage() {
 
         {/* Table */}
         <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
                 <th className="w-12 px-4 py-3">
@@ -320,7 +321,8 @@ export default function PendingMembersPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* Review Dialog */}

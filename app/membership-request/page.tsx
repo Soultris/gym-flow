@@ -18,7 +18,7 @@ export default function MembershipRequestPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary">Membership Request</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary">Membership Request</h1>
           <p className="text-muted-foreground mt-1">
             Fill in your information to request a gym membership
           </p>

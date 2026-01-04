@@ -97,7 +97,7 @@ export default function AssignWorkoutPage({ params }: { params: Promise<{ id: st
               Back to Members
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight">Assign Workout Plan</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Assign Workout Plan</h1>
           <p className="text-muted-foreground mt-2">
             Select and assign a workout plan to <span className="font-semibold text-foreground">{member?.name}</span>
           </p>

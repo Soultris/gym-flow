@@ -41,7 +41,8 @@ export function DailyInvoice() {
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]">
           <thead className="bg-secondary">
             <tr>
               <th className="text-left p-4 text-sm font-medium">Invoice ID</th>
@@ -71,7 +72,8 @@ export function DailyInvoice() {
               <td></td>
             </tr>
           </tfoot>
-        </table>
+          </table>
+        </div>
       </div>
     </Card>
   )

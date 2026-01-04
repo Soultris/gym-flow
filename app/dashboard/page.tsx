@@ -9,7 +9,7 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-balance">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-balance">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your gym overview.</p>
         </div>
 

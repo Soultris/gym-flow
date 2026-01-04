@@ -15,7 +15,7 @@ export default function RecordPaymentPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Record Payment</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Record Payment</h1>
             <p className="text-muted-foreground mt-1">Log a member payment transaction</p>
           </div>
         </div>

@@ -6,7 +6,7 @@ const reports = [
   {
     title: "Daily Income",
     description: "Today's revenue summary",
-    value: "$1,450",
+    value: "LKR 1,450",
     icon: TrendingUp,
   },
   {

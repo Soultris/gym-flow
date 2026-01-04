@@ -18,7 +18,7 @@ const stats = [
   },
   {
     title: "Revenue (Monthly)",
-    value: "$45,231",
+    value: "LKR 45,231",
     change: "+15%",
     icon: DollarSign,
     color: "text-primary",

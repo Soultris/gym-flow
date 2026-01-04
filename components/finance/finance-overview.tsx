@@ -4,21 +4,21 @@ import { DollarSign, TrendingUp, TrendingDown, CreditCard } from "lucide-react"
 const stats = [
   {
     title: "Total Revenue",
-    value: "$45,231",
+    value: "LKR 45,231",
     change: "+12.5%",
     trend: "up",
     icon: DollarSign,
   },
   {
     title: "This Month",
-    value: "$8,452",
+    value: "LKR 8,452",
     change: "+8.2%",
     trend: "up",
     icon: CreditCard,
   },
   {
     title: "Pending Payments",
-    value: "$2,340",
+    value: "LKR 2,340",
     change: "15 members",
     trend: "neutral",
     icon: TrendingDown,

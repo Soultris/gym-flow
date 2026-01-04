@@ -47,6 +47,15 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Demo credentials: admin@gym.com / admin123</p>
         </div>
+
+        <div className="mt-4 pt-4 border-t border-border text-center">
+          <p className="text-sm text-muted-foreground mb-3">Want to join as a trainer?</p>
+          <a href="/trainer-signup">
+            <Button variant="outline" className="w-full bg-transparent border-primary text-primary hover:bg-primary/10">
+              Signup as Trainer
+            </Button>
+          </a>
+        </div>
       </Card>
     </div>
   )

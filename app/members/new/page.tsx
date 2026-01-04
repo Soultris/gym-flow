@@ -7,7 +7,7 @@ import Link from "next/link"
 export default function NewMemberPage() {
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6 max-w-3xl">
+      <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/members">

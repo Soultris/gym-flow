@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,67 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Check } from "lucide-react"
-
-interface MembershipPlan {
-  id: string
-  name: string
-  price: number
-  popular?: boolean
-  features: string[]
-}
-
-const membershipPlans: MembershipPlan[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: 29,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "2 guest passes/month",
-    ],
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    price: 49,
-    popular: true,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "5 guest passes/month",
-      "Group classes",
-      "Free parking",
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 79,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "Unlimited guest passes",
-      "All classes",
-      "Personal training (2x/month)",
-      "Spa access",
-      "Priority booking",
-    ],
-  },
-]
-
-const MEMBERSHIP_FEE = 10
-const TAX_RATE = 0.04 // 4% tax
 
 export default function MembershipRequestPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string>("standard")
-
-  const selectedPlanData = membershipPlans.find((p) => p.id === selectedPlan)
-  const planPrice = selectedPlanData?.price || 0
-  const taxes = planPrice * TAX_RATE
-  const total = planPrice + MEMBERSHIP_FEE + taxes
-
   return (
     <div className="min-h-screen bg-background p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
@@ -96,33 +36,33 @@ export default function MembershipRequestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <div className="space-y-2">
               <Label htmlFor="memberNo">Member No.</Label>
-              <Input id="memberNo" placeholder="0001" />
+              <Input id="memberNo" placeholder="Auto-generated" disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" placeholder="John Smith" />
+              <Label htmlFor="fullName">Full Name *</Label>
+              <Input id="fullName" placeholder="John Smith" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth</Label>
-              <Input id="dob" type="date" placeholder="2003/05/27" />
+              <Label htmlFor="dob">Date of Birth *</Label>
+              <Input id="dob" type="date" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="age">Age</Label>
-              <Input id="age" type="number" placeholder="23" />
+              <Input id="age" type="number" placeholder="Auto-calculated" disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile No.</Label>
-              <Input id="mobile" placeholder="078 236 2736" />
+              <Label htmlFor="mobile">Mobile No. *</Label>
+              <Input id="mobile" placeholder="078 236 2736" required />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="johnsmith@gmail.com" />
+              <Label htmlFor="email">Email *</Label>
+              <Input id="email" type="email" placeholder="johnsmith@gmail.com" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
+              <Label htmlFor="gender">Gender *</Label>
               <Select defaultValue="male">
                 <SelectTrigger id="gender">
                   <SelectValue placeholder="Select gender" />
@@ -135,8 +75,8 @@ export default function MembershipRequestPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nic">NIC</Label>
-              <Input id="nic" placeholder="34376623742634" />
+              <Label htmlFor="nic">NIC *</Label>
+              <Input id="nic" placeholder="National ID" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="height">Height (cm)</Label>
@@ -150,12 +90,12 @@ export default function MembershipRequestPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" placeholder="123 Main St, City, State 12345" />
+              <Label htmlFor="address">Address *</Label>
+              <Input id="address" placeholder="123 Main St, City, State 12345" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="joiningDate">Joining Date</Label>
-              <Input id="joiningDate" type="date" placeholder="2025/05/27" />
+              <Label htmlFor="joiningDate">Joining Date *</Label>
+              <Input id="joiningDate" type="date" required />
             </div>
           </div>
         </Card>

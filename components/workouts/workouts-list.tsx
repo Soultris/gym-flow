@@ -359,7 +359,7 @@ export function WorkoutsList() {
         {workouts.map((workout) => (
           <Card 
             key={workout.id} 
-            className="p-5 transition-all hover:border-[#E8FF00]/50"
+            className="p-5 transition-all"
           >
             <div className="mb-3">
               <h3 className="text-base font-semibold">{workout.name}</h3>

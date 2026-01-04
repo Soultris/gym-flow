@@ -122,7 +122,7 @@ export default function TrainersPage() {
               {trainers.map((trainer, index) => (
                 <tr
                   key={trainer.id}
-                  className={`border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors ${
+                  className={`border-b border-[#2a2a2a] transition-colors ${
                     index % 2 === 0 ? "bg-[#151515]" : "bg-background"
                   }`}
                 >
@@ -132,7 +132,7 @@ export default function TrainersPage() {
                   <td className="px-4 py-4">
                     <Link
                       href={`/trainers/${trainer.id}`}
-                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                      className="flex items-center gap-3 transition-opacity"
                     >
                       <Avatar className="h-9 w-9">
                         <AvatarImage src="/placeholder.svg?height=36&width=36" />

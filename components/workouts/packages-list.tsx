@@ -257,7 +257,7 @@ export function PackagesList() {
         {packages.map((pkg) => (
           <Card
             key={pkg.id}
-            className={`p-6 hover:border-[#E8FF00]/50 transition-colors flex flex-col ${pkg.popular ? "border-[#E8FF00] border-2" : ""}`}
+            className={`p-6 transition-colors flex flex-col ${pkg.popular ? "border-[#E8FF00] border-2" : ""}`}
           >
             {pkg.popular && <Badge className="mb-4 bg-[#E8FF00] text-black font-semibold">Most Popular</Badge>}
             <div className="text-center mb-6">

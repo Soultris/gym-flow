@@ -185,7 +185,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     <button
                       key={member.id}
                       onClick={() => handleSelectMember(member.id, member.name)}
-                      className="w-full text-left px-4 py-3 hover:bg-sidebar-accent transition-colors border-b border-border last:border-b-0"
+                      className="w-full text-left px-4 py-3 transition-colors border-b border-border last:border-b-0"
                     >
                       <p className="font-medium text-sm">{member.name}</p>
                       <p className="text-xs text-muted-foreground">{member.id}</p>
@@ -209,7 +209,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                       setSelectedMember("")
                       setSearchQuery("")
                     }}
-                    className="hover:opacity-70"
+                    className=""
                   >
                     <X className="h-4 w-4" />
                   </button>

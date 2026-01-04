@@ -144,7 +144,7 @@ export function RevenueChart() {
               borderRadius: "8px",
             }}
             labelStyle={{ color: "#00FF9D" }}
-            formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
+            formatter={(value: number | undefined) => value ? [`$${value.toLocaleString()}`, "Revenue"] : ""}
           />
           <Line
             type="monotone"

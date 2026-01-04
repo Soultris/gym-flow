@@ -170,7 +170,7 @@ export function NewTransactionDialog({
                 className={`flex items-center gap-3 p-4 rounded-lg border transition-colors ${
                   paymentMethod === "cash"
                     ? "border-primary bg-primary/10"
-                    : "border-[#3a3a3a] bg-secondary hover:bg-secondary/80"
+                    : "border-[#3a3a3a] bg-secondary"
                 }`}
               >
                 <div className={`p-2 rounded-md ${paymentMethod === "cash" ? "bg-primary" : "bg-muted"}`}>
@@ -195,7 +195,7 @@ export function NewTransactionDialog({
                 className={`flex items-center gap-3 p-4 rounded-lg border transition-colors ${
                   paymentMethod === "card"
                     ? "border-primary bg-primary/10"
-                    : "border-[#3a3a3a] bg-secondary hover:bg-secondary/80"
+                    : "border-[#3a3a3a] bg-secondary"
                 }`}
               >
                 <div className={`p-2 rounded-md ${paymentMethod === "card" ? "bg-primary" : "bg-muted"}`}>

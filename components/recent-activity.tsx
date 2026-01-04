@@ -53,7 +53,7 @@ export function RecentActivity() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Recent Activity</h3>
-        <a href="/activity" className="text-sm text-primary hover:underline">
+        <a href="/activity" className="text-sm text-primary">
           View all
         </a>
       </div>

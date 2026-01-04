@@ -180,7 +180,7 @@ export default function MembershipRequestPage() {
                     className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
                       selectedPlan === plan.id
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground"
+                        : "border-border"
                     }`}
                   >
                     {/* Selection indicator */}

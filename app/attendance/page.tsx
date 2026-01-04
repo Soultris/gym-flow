@@ -220,7 +220,7 @@ export default function AttendanceLogPage() {
                     setStartDate("")
                     setEndDate("")
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="text-xs text-muted-foreground"
                 >
                   Clear filters
                 </Button>
@@ -251,7 +251,7 @@ export default function AttendanceLogPage() {
                 filteredRecords.map((record, index) => (
                   <tr
                     key={record.id}
-                    className={`border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors ${
+                    className={`border-b border-[#2a2a2a] transition-colors ${
                       index % 2 === 0 ? "bg-[#151515]" : "bg-background"
                     }`}
                   >

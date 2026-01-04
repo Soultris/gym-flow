@@ -120,7 +120,7 @@ export function PendingPaymentsTable() {
           {pendingPayments.map((payment, index) => (
             <tr
               key={payment.id}
-              className={`border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors ${
+              className={`border-b border-[#2a2a2a] transition-colors ${
                 index % 2 === 0 ? "bg-[#151515]" : "bg-background"
               }`}
             >

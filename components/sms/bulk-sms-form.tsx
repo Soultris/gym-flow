@@ -209,7 +209,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     <button
                       key={member.id}
                       onClick={() => handleSelectMember(member.id, member.name)}
-                      className="w-full text-left px-4 py-3 hover:bg-sidebar-accent transition-colors border-b border-border last:border-b-0"
+                      className="w-full text-left px-4 py-3 transition-colors border-b border-border last:border-b-0"
                     >
                       <p className="font-medium text-sm">{member.name}</p>
                       <p className="text-xs text-muted-foreground">{member.id}</p>
@@ -220,6 +220,24 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     No members found
                   </div>
                 )}
+              </div>
+            )}
+            
+            {/* Selected Member Display */}
+            {selectedMember && (
+              <div className="mt-2">
+                <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                  <span className="text-sm font-medium">{selectedMember}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedMember("")
+                      setSearchQuery("")
+                    }}
+                    className=""
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

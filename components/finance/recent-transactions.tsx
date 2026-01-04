@@ -72,7 +72,7 @@ export function RecentTransactions() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Recent Transactions</h3>
-        <a href="/finance/history" className="text-sm text-primary hover:underline">
+        <a href="/finance/history" className="text-sm text-primary">
           View all
         </a>
       </div>
@@ -82,7 +82,7 @@ export function RecentTransactions() {
           return (
             <div
               key={transaction.id}
-              className="flex items-center gap-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-lg bg-secondary/30 transition-colors"
             >
               <Avatar className="h-10 w-10">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" />

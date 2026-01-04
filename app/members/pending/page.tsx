@@ -281,7 +281,7 @@ export default function PendingMembersPage() {
               {pendingMembers.map((member, index) => (
                 <tr
                   key={member.id}
-                  className={`border-b border-[#2a2a2a] hover:bg-[#1a1a1a] transition-colors ${
+                  className={`border-b border-[#2a2a2a] transition-colors ${
                     index % 2 === 0 ? "bg-[#151515]" : "bg-background"
                   }`}
                 >
@@ -291,7 +291,7 @@ export default function PendingMembersPage() {
                   <td className="px-4 py-4">
                     <Link
                       href={`/members/${member.id}`}
-                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                      className="flex items-center gap-3 transition-opacity"
                     >
                       <Avatar className="h-9 w-9">
                         <AvatarImage src="/placeholder.svg?height=36&width=36" />
@@ -489,7 +489,7 @@ export default function PendingMembersPage() {
                             className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
                               selectedPlan === plan.id
                                 ? "border-primary bg-primary/10"
-                                : "border-border hover:border-muted-foreground"
+                                : "border-border"
                             }`}
                           >
                             {/* Selection indicator */}

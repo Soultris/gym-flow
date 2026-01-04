@@ -100,6 +100,116 @@ export default function MembershipRequestPage() {
           </div>
         </Card>
 
+        {/* Membership Plan & Cost Breakdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          {/* Membership Plan Selection */}
+          <div className="lg:col-span-3">
+            <Card className="p-6 h-full">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">Select Membership Plan</h2>
+                <p className="text-sm text-muted-foreground">
+                  Choose the plan that best fits your needs
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {membershipPlans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedPlan === plan.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border"
+                    }`}
+                  >
+                    {/* Selection indicator */}
+                    <div className="absolute top-4 right-4">
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPlan === plan.id
+                            ? "border-primary bg-primary"
+                            : "border-muted-foreground"
+                        }`}
+                      >
+                        {selectedPlan === plan.id && (
+                          <Check className="w-3 h-3 text-primary-foreground" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Plan header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{plan.name}</h3>
+                      {plan.popular && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded">
+                          Popular
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-2xl font-bold text-primary">
+                        ${plan.price}
+                      </span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+
+                    {/* Features */}
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Check className="w-4 h-4 text-primary" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Cost Breakdown */}
+          <div className="lg:col-span-1">
+            <Card className="p-6 h-full">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">Cost Breakdown</h2>
+                <p className="text-sm text-muted-foreground">
+                  Check the amount to be paid
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {selectedPlanData?.name} Plan
+                  </span>
+                  <span>${planPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Membership Fee</span>
+                  <span>${MEMBERSHIP_FEE.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Taxes</span>
+                  <span>${taxes.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-border pt-3 mt-3">
+                  <div className="flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+
         {/* Submit Button */}
         <Button
           size="lg"

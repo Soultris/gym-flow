@@ -7,11 +7,11 @@ import { Label } from "@/components/ui/label"
 import { Download, Printer } from "lucide-react"
 
 const invoiceData = [
-  { id: "INV-001", member: "John Smith", package: "Premium", amount: "$80", time: "09:30 AM" },
-  { id: "INV-002", member: "Sarah Johnson", package: "Standard", amount: "$50", time: "10:15 AM" },
-  { id: "INV-003", member: "Mike Wilson", package: "Premium", amount: "$80", time: "11:00 AM" },
-  { id: "INV-004", member: "Emily Davis", package: "Basic", amount: "$30", time: "02:30 PM" },
-  { id: "INV-005", member: "Chris Brown", package: "Standard", amount: "$50", time: "04:45 PM" },
+  { id: "INV-001", member: "John Smith", package: "Premium", amount: "LKR 80", time: "09:30 AM" },
+  { id: "INV-002", member: "Sarah Johnson", package: "Standard", amount: "LKR 50", time: "10:15 AM" },
+  { id: "INV-003", member: "Mike Wilson", package: "Premium", amount: "LKR 80", time: "11:00 AM" },
+  { id: "INV-004", member: "Emily Davis", package: "Basic", amount: "LKR 30", time: "02:30 PM" },
+  { id: "INV-005", member: "Chris Brown", package: "Standard", amount: "LKR 50", time: "04:45 PM" },
 ]
 
 export function DailyInvoice() {
@@ -67,7 +67,7 @@ export function DailyInvoice() {
               <td colSpan={3} className="p-4 text-sm font-semibold">
                 Total Revenue
               </td>
-              <td className="p-4 text-lg font-bold text-accent">$290.00</td>
+              <td className="p-4 text-lg font-bold text-accent">LKR 290.00</td>
               <td></td>
             </tr>
           </tfoot>

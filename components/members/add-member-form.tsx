@@ -64,9 +64,9 @@ export function AddMemberForm() {
                 required
               >
                 <option>Select package</option>
-                <option>Basic - $30/month</option>
-                <option>Standard - $50/month</option>
-                <option>Premium - $80/month</option>
+                <option>Basic - LKR 30/month</option>
+                <option>Standard - LKR 50/month</option>
+                <option>Premium - LKR 80/month</option>
               </select>
             </div>
             <div className="space-y-2">

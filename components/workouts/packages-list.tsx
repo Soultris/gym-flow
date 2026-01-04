@@ -263,7 +263,7 @@ export function PackagesList() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold">{pkg.name}</h3>
               <div className="mt-2">
-                <span className="text-4xl font-bold text-[#E8FF00]">${pkg.price}</span>
+                <span className="text-4xl font-bold text-[#E8FF00]">LKR {pkg.price}</span>
                 <span className="text-muted-foreground">/{pkg.duration}</span>
               </div>
             </div>

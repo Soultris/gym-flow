@@ -16,7 +16,7 @@ const activities = [
     user: "Sarah Johnson",
     avatar: "SJ",
     action: "made payment",
-    amount: "$120",
+    amount: "LKR 120",
     time: "15 minutes ago",
     type: "payment",
   },

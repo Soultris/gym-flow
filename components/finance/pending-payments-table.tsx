@@ -13,7 +13,7 @@ const pendingPayments = [
     package: "Premium",
     lastPayment: "May 12, 2024",
     membershipExpiry: "May 12, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "5 Days",
   },
   {
@@ -24,7 +24,7 @@ const pendingPayments = [
     package: "Staff",
     lastPayment: "January 7, 2024",
     membershipExpiry: "January 7, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "6 Days",
   },
   {
@@ -35,7 +35,7 @@ const pendingPayments = [
     package: "Standard",
     lastPayment: "March 9, 2024",
     membershipExpiry: "March 9, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "5 Days",
   },
   {
@@ -46,7 +46,7 @@ const pendingPayments = [
     package: "Basic",
     lastPayment: "November 15, 2023",
     membershipExpiry: "November 15, 2023",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "5 Days",
   },
   {
@@ -57,7 +57,7 @@ const pendingPayments = [
     package: "Staff",
     lastPayment: "February 20, 2024",
     membershipExpiry: "February 20, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "6 Days",
   },
   {
@@ -68,7 +68,7 @@ const pendingPayments = [
     package: "Premium",
     lastPayment: "April 3, 2024",
     membershipExpiry: "April 3, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "5 Days",
   },
   {
@@ -79,7 +79,7 @@ const pendingPayments = [
     package: "Standard",
     lastPayment: "June 18, 2024",
     membershipExpiry: "June 18, 2024",
-    amountPayable: "$150",
+    amountPayable: "LKR 150",
     overdue: "5 Days",
   },
 ]

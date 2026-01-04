@@ -16,10 +16,10 @@ const attendanceHistory = [
 ]
 
 const paymentHistory = [
-  { date: "Jun 1, 2024", amount: "$80", method: "Card", status: "Paid" },
-  { date: "May 1, 2024", amount: "$80", method: "Card", status: "Paid" },
-  { date: "Apr 1, 2024", amount: "$80", method: "Cash", status: "Paid" },
-  { date: "Mar 1, 2024", amount: "$80", method: "Card", status: "Paid" },
+  { date: "Jun 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
+  { date: "May 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
+  { date: "Apr 1, 2024", amount: "LKR 80", method: "Cash", status: "Paid" },
+  { date: "Mar 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
 ]
 
 export function MemberProfile({ memberId }: { memberId: string }) {
@@ -91,7 +91,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Monthly Fee</p>
-                  <p className="text-lg font-semibold">$80.00</p>
+                  <p className="text-lg font-semibold">LKR 80.00</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Start Date</p>

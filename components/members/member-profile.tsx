@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
@@ -15,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save } from "lucide-react"
+import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Weight } from "lucide-react"
 import { useState } from "react"
 
 const attendanceHistory = [
@@ -34,60 +33,73 @@ const paymentHistory = [
 ]
 
 interface MemberData {
-  firstName: string
-  lastName: string
+  fullName: string
   email: string
   phone: string
   dob: string
+  age: string
   gender: string
+  nic: string
+  height: string
+  weight: string
   address: string
+  joiningDate: string
   package: string
   duration: string
-  startDate: string
   expiryDate: string
   amountPaid: string
-  emergencyName: string
-  emergencyPhone: string
   status: string
 }
 
 export function MemberProfile({ memberId }: { memberId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [memberData, setMemberData] = useState<MemberData>({
-    firstName: "John",
-    lastName: "Smith",
+    fullName: "John Smith",
     email: "john.smith@email.com",
     phone: "+1 234 567 8900",
     dob: "1990-01-15",
+    age: "34",
     gender: "Male",
+    nic: "123456789V",
+    height: "175",
+    weight: "70",
     address: "123 Main St, City, ST 12345",
+    joiningDate: "2024-01-15",
     package: "Premium",
     duration: "6 Months",
-    startDate: "2024-01-15",
     expiryDate: "2024-07-15",
     amountPaid: "480",
-    emergencyName: "Jane Smith",
-    emergencyPhone: "+1 234 567 8901",
     status: "Active",
   })
 
   const updateField = (field: keyof MemberData, value: string) => {
     setMemberData(prev => ({ ...prev, [field]: value }))
+    
+    // Auto-calculate age when DOB changes
+    if (field === "dob" && value) {
+      const birthDate = new Date(value)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      setMemberData(prev => ({ ...prev, age: age.toString() }))
+    }
   }
 
   const handleSave = () => {
     console.log("Saving member data:", memberData)
     setIsEditing(false)
-    // TODO: Save to backend
   }
 
   const handleCancel = () => {
     setIsEditing(false)
-    // TODO: Reset to original data
   }
 
   const getInitials = () => {
-    return `${memberData.firstName[0]}${memberData.lastName[0]}`
+    const names = memberData.fullName.split(" ")
+    return names.length > 1 ? `${names[0][0]}${names[1][0]}` : names[0][0]
   }
 
   const formatDate = (dateString: string) => {
@@ -101,7 +113,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       {/* Header with Edit/Save buttons */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{memberData.firstName} {memberData.lastName}</h1>
+          <h1 className="text-2xl font-semibold">{memberData.fullName}</h1>
           <p className="text-sm text-muted-foreground">Member ID: {memberId}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -136,7 +148,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="text-xl font-bold mt-4">{memberData.firstName} {memberData.lastName}</h2>
+              <h2 className="text-xl font-bold mt-4">{memberData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
               <Badge variant="outline" className={`mt-2 ${memberData.status === "Active" ? "border-accent text-accent" : "border-destructive text-destructive"}`}>
                 {memberData.status}
@@ -154,11 +166,15 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Born: {formatDate(memberData.dob)}</span>
+                <span>Born: {formatDate(memberData.dob)} (Age: {memberData.age})</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span>{memberData.gender}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Ruler className="h-4 w-4 text-muted-foreground" />
+                <span>{memberData.height} cm / {memberData.weight} kg</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -192,55 +208,17 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               <TabsContent value="personal" className="space-y-6 mt-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-2">
-                      <Label>First Name</Label>
+                      <Label>Full Name</Label>
                       {isEditing ? (
                         <Input
-                          value={memberData.firstName}
-                          onChange={(e) => updateField("firstName", e.target.value)}
+                          value={memberData.fullName}
+                          onChange={(e) => updateField("fullName", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.firstName}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Last Name</Label>
-                      {isEditing ? (
-                        <Input
-                          value={memberData.lastName}
-                          onChange={(e) => updateField("lastName", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-sm py-2">{memberData.lastName}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      {isEditing ? (
-                        <Input
-                          type="email"
-                          value={memberData.email}
-                          onChange={(e) => updateField("email", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-sm py-2">{memberData.email}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Phone Number</Label>
-                      {isEditing ? (
-                        <Input
-                          type="tel"
-                          value={memberData.phone}
-                          onChange={(e) => updateField("phone", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-sm py-2">{memberData.phone}</p>
+                        <p className="text-sm py-2">{memberData.fullName}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -254,6 +232,36 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                         />
                       ) : (
                         <p className="text-sm py-2">{formatDate(memberData.dob)}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Age</Label>
+                      <p className="text-sm py-2">{memberData.age}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mobile No.</Label>
+                      {isEditing ? (
+                        <Input
+                          type="tel"
+                          value={memberData.phone}
+                          onChange={(e) => updateField("phone", e.target.value)}
+                          className="bg-secondary border-[#3a3a3a]"
+                        />
+                      ) : (
+                        <p className="text-sm py-2">{memberData.phone}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      {isEditing ? (
+                        <Input
+                          type="email"
+                          value={memberData.email}
+                          onChange={(e) => updateField("email", e.target.value)}
+                          className="bg-secondary border-[#3a3a3a]"
+                        />
+                      ) : (
+                        <p className="text-sm py-2">{memberData.email}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -273,48 +281,69 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                         <p className="text-sm py-2">{memberData.gender}</p>
                       )}
                     </div>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    <Label>Address</Label>
-                    {isEditing ? (
-                      <Textarea
-                        value={memberData.address}
-                        onChange={(e) => updateField("address", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                        rows={2}
-                      />
-                    ) : (
-                      <p className="text-sm py-2">{memberData.address}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Contact Name</Label>
+                      <Label>NIC</Label>
                       {isEditing ? (
                         <Input
-                          value={memberData.emergencyName}
-                          onChange={(e) => updateField("emergencyName", e.target.value)}
+                          value={memberData.nic}
+                          onChange={(e) => updateField("nic", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.emergencyName || "Not provided"}</p>
+                        <p className="text-sm py-2">{memberData.nic}</p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label>Contact Phone</Label>
+                      <Label>Height (cm)</Label>
                       {isEditing ? (
                         <Input
-                          type="tel"
-                          value={memberData.emergencyPhone}
-                          onChange={(e) => updateField("emergencyPhone", e.target.value)}
+                          type="number"
+                          value={memberData.height}
+                          onChange={(e) => updateField("height", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.emergencyPhone || "Not provided"}</p>
+                        <p className="text-sm py-2">{memberData.height} cm</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Weight (kg)</Label>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          value={memberData.weight}
+                          onChange={(e) => updateField("weight", e.target.value)}
+                          className="bg-secondary border-[#3a3a3a]"
+                        />
+                      ) : (
+                        <p className="text-sm py-2">{memberData.weight} kg</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 mt-4">
+                    <div className="space-y-2">
+                      <Label>Address</Label>
+                      {isEditing ? (
+                        <Input
+                          value={memberData.address}
+                          onChange={(e) => updateField("address", e.target.value)}
+                          className="bg-secondary border-[#3a3a3a]"
+                        />
+                      ) : (
+                        <p className="text-sm py-2">{memberData.address}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Joining Date</Label>
+                      {isEditing ? (
+                        <Input
+                          type="date"
+                          value={memberData.joiningDate}
+                          onChange={(e) => updateField("joiningDate", e.target.value)}
+                          className="bg-secondary border-[#3a3a3a]"
+                        />
+                      ) : (
+                        <p className="text-sm py-2">{formatDate(memberData.joiningDate)}</p>
                       )}
                     </div>
                   </div>
@@ -359,19 +388,6 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                         </Select>
                       ) : (
                         <p className="text-lg font-semibold">{memberData.duration}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      {isEditing ? (
-                        <Input
-                          type="date"
-                          value={memberData.startDate}
-                          onChange={(e) => updateField("startDate", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-lg font-semibold">{formatDate(memberData.startDate)}</p>
                       )}
                     </div>
                     <div className="space-y-2">

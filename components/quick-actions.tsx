@@ -20,12 +20,6 @@ const actions = [
     icon: MessageSquare,
     href: "/members/pending",
   },
-  {
-    title: "Mark Attendance",
-    description: "Track daily check-ins",
-    icon: ClipboardList,
-    href: "/attendance",
-  },
 ]
 
 // Mock members data - in a real app, this would come from an API

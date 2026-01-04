@@ -11,47 +11,11 @@ export function SettingsTabs() {
   return (
     <Tabs defaultValue="gym" className="w-full">
       <TabsList>
-        <TabsTrigger value="gym">Gym Details</TabsTrigger>
         <TabsTrigger value="notifications">Notifications</TabsTrigger>
         <TabsTrigger value="security">Security</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="gym" className="mt-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Gym Information</h3>
-          <form className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="gymName">Gym Name</Label>
-                <Input id="gymName" defaultValue="GymFlow Fitness Center" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gymEmail">Email</Label>
-                <Input id="gymEmail" type="email" defaultValue="info@gymflow.com" />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="gymPhone">Phone Number</Label>
-                <Input id="gymPhone" type="tel" defaultValue="+1 234 567 8900" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gymWebsite">Website</Label>
-                <Input id="gymWebsite" defaultValue="www.gymflow.com" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gymAddress">Address</Label>
-              <Textarea id="gymAddress" defaultValue="123 Main Street, City, State 12345" rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gymHours">Operating Hours</Label>
-              <Input id="gymHours" defaultValue="Mon-Sat: 5:00 AM - 11:00 PM, Sun: 7:00 AM - 9:00 PM" />
-            </div>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Save Changes</Button>
-          </form>
-        </Card>
-      </TabsContent>
+      
 
       <TabsContent value="notifications" className="mt-6">
         <Card className="p-6">

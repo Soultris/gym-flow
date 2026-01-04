@@ -5,8 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dumbbell } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
+  const router = useRouter()
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Redirect to dashboard without authentication
+    router.push("/dashboard")
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
@@ -18,7 +27,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground text-sm mt-1">Sign in to manage your gym</p>
         </div>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email or Username</Label>
             <Input id="email" type="text" placeholder="admin@gym.com" required />

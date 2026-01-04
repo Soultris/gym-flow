@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Members", href: "/members", icon: Users },
   { name: "Attendance", href: "/attendance", icon: ClipboardList },
   { name: "Finance", href: "/finance", icon: DollarSign },

@@ -4,20 +4,42 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 export function SettingsTabs() {
+  const searchParams = useSearchParams()
+  const currentTab = searchParams.get("tab") || "notifications"
+
+  const tabs = [
+    { name: "Notifications", value: "notifications" },
+    { name: "Security", value: "security" },
+  ]
+
   return (
-    <Tabs defaultValue="gym" className="w-full">
-      <TabsList>
-        <TabsTrigger value="notifications">Notifications</TabsTrigger>
-        <TabsTrigger value="security">Security</TabsTrigger>
-      </TabsList>
+    <div className="w-full">
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 border-b border-[#2a2a2a] mb-6">
+        {tabs.map((tab) => {
+          const isActive = currentTab === tab.value
+          return (
+            <Link key={tab.value} href={`/settings?tab=${tab.value}`}>
+              <button 
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "border-b-2 border-primary text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.name}
+              </button>
+            </Link>
+          )
+        })}
+      </div>
 
-      
-
-      <TabsContent value="notifications" className="mt-6">
+      {/* Notifications Tab Content */}
+      {currentTab === "notifications" && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
           <div className="space-y-4">
@@ -52,9 +74,10 @@ export function SettingsTabs() {
           </div>
           <Button className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">Save Preferences</Button>
         </Card>
-      </TabsContent>
+      )}
 
-      <TabsContent value="security" className="mt-6">
+      {/* Security Tab Content */}
+      {currentTab === "security" && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Security Settings</h3>
           <form className="space-y-6">
@@ -73,24 +96,10 @@ export function SettingsTabs() {
                 <Input id="confirmPassword" type="password" />
               </div>
             </div>
-            <div className="border-t border-border pt-6">
-              <h4 className="font-medium mb-4">Two-Factor Authentication</h4>
-              <div className="p-4 rounded-lg bg-secondary/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Enable 2FA</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Enable
-                  </Button>
-                </div>
-              </div>
-            </div>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Update Security</Button>
           </form>
         </Card>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   )
 }

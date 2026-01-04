@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { SettingsTabs } from "@/components/settings/settings-tabs"
+import { Suspense } from "react"
 
 export default function SettingsPage() {
   return (
@@ -10,7 +11,9 @@ export default function SettingsPage() {
           <p className="text-muted-foreground mt-1">Manage your gym settings and preferences</p>
         </div>
 
-        <SettingsTabs />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SettingsTabs />
+        </Suspense>
       </div>
     </DashboardLayout>
   )

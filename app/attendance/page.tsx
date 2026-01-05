@@ -7,6 +7,13 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, Download, Calendar, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { useState, useMemo } from "react"
 
@@ -44,8 +51,9 @@ export default function AttendanceLogPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [typeFilter, setTypeFilter] = useState<"all" | "in" | "out">("all")
 
-  // Filter records based on search and date range
+  // Filter records based on search, date range, and type
   const filteredRecords = useMemo(() => {
     return attendanceRecords.filter((record) => {
       // Search filter
@@ -61,10 +69,13 @@ export default function AttendanceLogPage() {
       if (endDate) {
         matchesDateRange = matchesDateRange && record.date <= endDate
       }
+
+      // Type filter
+      const matchesType = typeFilter === "all" || record.type === typeFilter
       
-      return matchesSearch && matchesDateRange
+      return matchesSearch && matchesDateRange && matchesType
     })
-  }, [searchTerm, startDate, endDate])
+  }, [searchTerm, startDate, endDate, typeFilter])
 
   // Export PDF function
   const handleExportPDF = () => {
@@ -197,6 +208,20 @@ export default function AttendanceLogPage() {
               </div>
             </div>
 
+            {/* Type Filter */}
+            <div>
+              <Label htmlFor="typeFilter" className="mb-2 block text-sm">Type</Label>
+              <Select value={typeFilter} onValueChange={(value: "all" | "in" | "out") => setTypeFilter(value)}>
+                <SelectTrigger id="typeFilter" className="bg-secondary border-[#3a3a3a] w-[120px]">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="in">In</SelectItem>
+                  <SelectItem value="out">Out</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {/* Export Button */}
             <Button
               onClick={handleExportPDF}
@@ -208,26 +233,32 @@ export default function AttendanceLogPage() {
           </div>
 
           {/* Active Filters Summary */}
-          {(searchTerm || startDate || endDate) && (
+          {(searchTerm || startDate || endDate || typeFilter !== "all") && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#2a2a2a]">
-              <span className="text-sm text-muted-foreground">Showing {filteredRecords.length} records</span>
-              {(searchTerm || startDate || endDate) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm("")
-                    setStartDate("")
-                    setEndDate("")
-                  }}
-                  className="text-xs text-muted-foreground"
-                >
-                  Clear filters
-                </Button>
-              )}
+              <span className="text-sm text-muted-foreground">
+                Showing {filteredRecords.length} of {attendanceRecords.length} records
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("")
+                  setStartDate("")
+                  setEndDate("")
+                  setTypeFilter("all")
+                }}
+                className="text-xs text-muted-foreground"
+              >
+                Clear filters
+              </Button>
             </div>
           )}
         </Card>
+
+        {/* Records Count */}
+        <p className="text-sm text-muted-foreground">
+          {filteredRecords.length} {filteredRecords.length === 1 ? "record" : "records"}
+        </p>
 
         {/* Attendance Table */}
         <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">

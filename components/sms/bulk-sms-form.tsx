@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -61,7 +61,11 @@ interface BulkSmsFormProps {
 }
 
 export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: BulkSmsFormProps) {
-  const [selectedMember, setSelectedMember] = useState("")
+  const [selectedMember, setSelectedMember] = useState(
+    initialMemberId && initialMemberName 
+      ? `${initialMemberName} (${initialMemberId})` 
+      : ""
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const [message, setMessage] = useState("")
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -157,12 +161,6 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     },
   ])
 
-  // Initialize selected member from URL params
-  useEffect(() => {
-    if (initialMemberId && initialMemberName) {
-      setSelectedMember(`${initialMemberName} (${initialMemberId})`)
-    }
-  }, [initialMemberId, initialMemberName])
 
   const characterCount = message.length
   const maxCharacters = 160
@@ -450,7 +448,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                       <Label htmlFor="frequency" className="text-sm font-semibold">
                         Repeat Frequency
                       </Label>
-                      <Select value={recurringFrequency} onValueChange={(value: any) => setRecurringFrequency(value)}>
+                      <Select value={recurringFrequency} onValueChange={(value: "daily" | "weekly" | "monthly") => setRecurringFrequency(value)}>
                         <SelectTrigger id="frequency" className="h-10">
                           <SelectValue />
                         </SelectTrigger>

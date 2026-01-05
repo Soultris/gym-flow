@@ -53,6 +53,8 @@ interface MemberData {
 
 export function MemberProfile({ memberId }: { memberId: string }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [attendanceFromDate, setAttendanceFromDate] = useState("")
+  const [attendanceToDate, setAttendanceToDate] = useState("")
   const [memberData, setMemberData] = useState<MemberData>({
     fullName: "John Smith",
     email: "john.smith@email.com",
@@ -106,6 +108,44 @@ export function MemberProfile({ memberId }: { memberId: string }) {
     if (!dateString) return ""
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  // Parse attendance date string to Date object for comparison
+  const parseAttendanceDate = (dateStr: string) => {
+    // Format: "Jun 23, 2024"
+    return new Date(dateStr)
+  }
+
+  // Filter attendance based on date range
+  const filteredAttendance = attendanceHistory.filter((record) => {
+    if (!attendanceFromDate && !attendanceToDate) return true
+    
+    const recordDate = parseAttendanceDate(record.date)
+    
+    if (attendanceFromDate && attendanceToDate) {
+      const from = new Date(attendanceFromDate)
+      const to = new Date(attendanceToDate)
+      to.setHours(23, 59, 59, 999) // Include the entire end date
+      return recordDate >= from && recordDate <= to
+    }
+    
+    if (attendanceFromDate) {
+      const from = new Date(attendanceFromDate)
+      return recordDate >= from
+    }
+    
+    if (attendanceToDate) {
+      const to = new Date(attendanceToDate)
+      to.setHours(23, 59, 59, 999)
+      return recordDate <= to
+    }
+    
+    return true
+  })
+
+  const clearAttendanceFilters = () => {
+    setAttendanceFromDate("")
+    setAttendanceToDate("")
   }
 
   return (
@@ -456,25 +496,72 @@ export function MemberProfile({ memberId }: { memberId: string }) {
 
               {/* Attendance Tab */}
               <TabsContent value="attendance" className="space-y-4 mt-6">
+                {/* Date Filters and Visit Count */}
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4 pb-4 border-b border-border">
+                  <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                    <div className="space-y-2">
+                      <Label htmlFor="attendance-from" className="text-sm">From Date</Label>
+                      <Input
+                        id="attendance-from"
+                        type="date"
+                        value={attendanceFromDate}
+                        onChange={(e) => setAttendanceFromDate(e.target.value)}
+                        className="bg-secondary border-[#3a3a3a] h-9 w-full sm:w-40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="attendance-to" className="text-sm">To Date</Label>
+                      <Input
+                        id="attendance-to"
+                        type="date"
+                        value={attendanceToDate}
+                        onChange={(e) => setAttendanceToDate(e.target.value)}
+                        min={attendanceFromDate}
+                        className="bg-secondary border-[#3a3a3a] h-9 w-full sm:w-40"
+                      />
+                    </div>
+                    {(attendanceFromDate || attendanceToDate) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearAttendanceFilters}
+                        className="self-end text-muted-foreground hover:text-foreground h-9"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {filteredAttendance.length} {filteredAttendance.length === 1 ? "visit" : "visits"}
+                  </p>
+                </div>
+
                 <div className="space-y-3">
-                  {attendanceHistory.map((record, i) => (
-                    <Card key={i} className="p-4 bg-secondary/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-lg bg-accent/10 p-2">
-                            <Clock className="h-4 w-4 text-accent" />
+                  {filteredAttendance.length > 0 ? (
+                    filteredAttendance.map((record, i) => (
+                      <Card key={i} className="p-4 bg-secondary/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-accent/10 p-2">
+                              <Clock className="h-4 w-4 text-accent" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{record.date}</p>
+                              <p className="text-sm text-muted-foreground">Check-in: {record.time}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{record.date}</p>
-                            <p className="text-sm text-muted-foreground">Check-in: {record.time}</p>
-                          </div>
+                          <Badge variant="outline" className="border-primary text-primary">
+                            {record.duration}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="border-primary text-primary">
-                          {record.duration}
-                        </Badge>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No attendance records found for the selected date range.
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

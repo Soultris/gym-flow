@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, X, Calendar, Clock } from "lucide-react"
 
 interface Member {
   id: string
@@ -26,7 +26,19 @@ interface MessageStatus {
   recipient: string
   message: string
   sentDate: string
-  status: "sent" | "pending" | "failed"
+  scheduledDate?: string
+  scheduledTime?: string
+  status: "sent" | "pending" | "failed" | "scheduled"
+}
+
+interface SchedulingConfig {
+  type: "immediate" | "scheduled" | "recurring"
+  date?: string
+  time?: string
+  recurring?: {
+    frequency: "daily" | "weekly" | "monthly"
+    endDate?: string
+  }
 }
 
 const members: Member[] = [
@@ -51,6 +63,14 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+  
+  // Scheduling states
+  const [schedulingType, setSchedulingType] = useState<"immediate" | "scheduled" | "recurring">("immediate")
+  const [scheduleDate, setScheduleDate] = useState("")
+  const [scheduleTime, setScheduleTime] = useState("09:00")
+  const [recurringFrequency, setRecurringFrequency] = useState<"daily" | "weekly" | "monthly">("daily")
+  const [recurringEndDate, setRecurringEndDate] = useState("")
+  
   const [messageStatuses, setMessageStatuses] = useState<MessageStatus[]>([
     {
       id: "1",
@@ -131,18 +151,36 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       return
     }
 
+    // Validate scheduling
+    if (schedulingType === "scheduled" && !scheduleDate) {
+      alert("Please select a date for scheduled SMS")
+      return
+    }
+
+    if (schedulingType === "recurring" && !scheduleDate) {
+      alert("Please select a start date for recurring SMS")
+      return
+    }
+
     // Add new message to status
     const newMessage: MessageStatus = {
       id: (messageStatuses.length + 1).toString(),
       recipient: selectedMember,
       message: message,
       sentDate: new Date().toLocaleDateString("en-CA"),
-      status: "sent",
+      scheduledDate: (schedulingType !== "immediate") ? scheduleDate : undefined,
+      scheduledTime: (schedulingType !== "immediate") ? scheduleTime : undefined,
+      status: schedulingType === "immediate" ? "sent" : "scheduled",
     }
 
     setMessageStatuses([newMessage, ...messageStatuses])
     setMessage("")
     setSelectedMember("")
+    setSchedulingType("immediate")
+    setScheduleDate("")
+    setScheduleTime("09:00")
+    setRecurringFrequency("daily")
+    setRecurringEndDate("")
   }
 
   const getStatusColor = (status: string) => {
@@ -153,9 +191,17 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
         return "bg-[#E8FF00]/10 text-[#E8FF00]"
       case "failed":
         return "bg-[#EF4444]/10 text-[#EF4444]"
+      case "scheduled":
+        return "bg-[#00B4FF]/10 text-[#00B4FF]"
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  // Get minimum date (today)
+  const getMinDate = () => {
+    const today = new Date()
+    return today.toISOString().split("T")[0]
   }
 
   return (
@@ -279,12 +325,146 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
           </p>
         </div>
 
+        {/* Scheduling Section */}
+        <div className="space-y-4 pt-4 border-t border-border">
+          <div>
+            <h3 className="text-base font-semibold mb-4">Schedule Message</h3>
+            
+            {/* Scheduling Type Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+              <button
+                onClick={() => setSchedulingType("immediate")}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  schedulingType === "immediate"
+                    ? "border-[#E8FF00] bg-[#E8FF00]/10"
+                    : "border-border bg-background hover:bg-card"
+                }`}
+              >
+                <p className="font-semibold text-sm">Send Now</p>
+                <p className="text-xs text-muted-foreground mt-1">Immediate delivery</p>
+              </button>
+
+              <button
+                onClick={() => setSchedulingType("scheduled")}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  schedulingType === "scheduled"
+                    ? "border-[#E8FF00] bg-[#E8FF00]/10"
+                    : "border-border bg-background hover:bg-card"
+                }`}
+              >
+                <p className="font-semibold text-sm flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Schedule Once
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Send at specific time</p>
+              </button>
+
+              <button
+                onClick={() => setSchedulingType("recurring")}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  schedulingType === "recurring"
+                    ? "border-[#E8FF00] bg-[#E8FF00]/10"
+                    : "border-border bg-background hover:bg-card"
+                }`}
+              >
+                <p className="font-semibold text-sm">Recurring</p>
+                <p className="text-xs text-muted-foreground mt-1">Repeat on schedule</p>
+              </button>
+            </div>
+
+            {/* Scheduled/Recurring Options */}
+            {schedulingType !== "immediate" && (
+              <div className="bg-card p-5 rounded-lg border border-border space-y-4">
+                {/* Date Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-date" className="text-sm font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {schedulingType === "scheduled" ? "Send Date" : "Start Date"}
+                  </Label>
+                  <Input
+                    id="schedule-date"
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={getMinDate()}
+                    className="h-10"
+                  />
+                </div>
+
+                {/* Time Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-time" className="text-sm font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Send Time
+                  </Label>
+                  <Input
+                    id="schedule-time"
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+
+                {/* Recurring Options */}
+                {schedulingType === "recurring" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency" className="text-sm font-semibold">
+                        Repeat Frequency
+                      </Label>
+                      <Select value={recurringFrequency} onValueChange={(value: any) => setRecurringFrequency(value)}>
+                        <SelectTrigger id="frequency" className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="recurrence-end-date" className="text-sm font-semibold">
+                        End Date (Optional)
+                      </Label>
+                      <Input
+                        id="recurrence-end-date"
+                        type="date"
+                        value={recurringEndDate}
+                        onChange={(e) => setRecurringEndDate(e.target.value)}
+                        min={scheduleDate}
+                        className="h-10"
+                      />
+                      <p className="text-xs text-muted-foreground">Leave empty for continuous recurring</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Schedule Preview */}
+                {scheduleDate && (
+                  <div className="bg-background rounded p-3 border border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                    <p className="text-sm font-medium">
+                      {schedulingType === "scheduled" 
+                        ? `Send on ${new Date(scheduleDate).toLocaleDateString()} at ${scheduleTime}`
+                        : `Starting ${new Date(scheduleDate).toLocaleDateString()} at ${scheduleTime}, repeating ${recurringFrequency}${recurringEndDate ? ` until ${new Date(recurringEndDate).toLocaleDateString()}` : ""}`
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Send SMS Button */}
         <Button
           onClick={handleSendSms}
-          className="w-full h-11 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/50 text-base"
+          className="w-full h-11 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80 text-base transition-colors"
         >
-          Send SMS
+          {schedulingType === "immediate" ? "Send SMS Now" : "Schedule SMS"}
         </Button>
       </Card>
 
@@ -301,7 +481,14 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                 .map((item) => (
                 <div key={item.id} className="p-4 bg-background rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-muted-foreground">{item.sentDate}</p>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs text-muted-foreground">{item.sentDate}</p>
+                      {item.scheduledDate && (
+                        <p className="text-xs text-[#00B4FF] font-medium">
+                          📅 Scheduled: {item.scheduledDate} at {item.scheduledTime}
+                        </p>
+                      )}
+                    </div>
                     <Badge className={`${getStatusColor(item.status)}`}>
                       {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                     </Badge>

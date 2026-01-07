@@ -1,49 +1,53 @@
+"use client"
+
 import { Card } from "@/components/ui/card"
-import { Users, UserCheck, TrendingUp, DollarSign } from "lucide-react"
+import { Users, Clock, UserCheck } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 const stats = [
   {
-    title: "Total Members",
+    title: "Active Members",
     value: "342",
     change: "+12%",
     icon: Users,
-    color: "text-primary",
+    color: "text-[#E8FF00]",
+    href: "/members/active",
   },
   {
-    title: "Active Today",
+    title: "Expiring Soon (3 Days)",
+    value: "28",
+    change: "+5%",
+    icon: Clock,
+    color: "text-[#E8FF00]",
+    href: "/members/expired",
+  },
+  {
+    title: "Check-ins Today",
     value: "127",
     change: "+8%",
     icon: UserCheck,
-    color: "text-accent",
-  },
-  {
-    title: "Revenue (Monthly)",
-    value: "LKR 45,231",
-    change: "+15%",
-    icon: DollarSign,
-    color: "text-primary",
-  },
-  {
-    title: "Growth Rate",
-    value: "23.5%",
-    change: "+4.2%",
-    icon: TrendingUp,
-    color: "text-accent",
+    color: "text-[#E8FF00]",
+    href: "/attendance",
   },
 ]
 
 export function StatsCards() {
+  const router = useRouter()
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat) => (
-        <Card key={stat.title} className="p-6">
+        <Card 
+          key={stat.title} 
+          className="p-6 cursor-pointer transition-all hover:shadow-lg hover:border-[#E8FF00]/50"
+          onClick={() => router.push(stat.href)}
+        >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={cn("rounded-lg bg-secondary p-2", stat.color)}>
-                <stat.icon className="h-4 w-4" />
-              </div>
+            <div className={cn("rounded-lg bg-secondary p-2", stat.color)}>
+              <stat.icon className="h-4 w-4" />
             </div>
-            <span className="text-xs font-medium text-accent">{stat.change}</span>
+            <span className="text-xs font-medium text-[#E8FF00]">{stat.change}</span>
           </div>
           <div className="mt-4">
             <h3 className="text-sm font-medium text-muted-foreground">{stat.title}</h3>
@@ -53,8 +57,4 @@ export function StatsCards() {
       ))}
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(" ")
 }

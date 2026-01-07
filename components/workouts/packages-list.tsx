@@ -271,7 +271,7 @@ export function PackagesList() {
             <div className="space-y-3 mb-6 flex-1">
               {pkg.features.map((feature, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-[#E8FF00] flex-shrink-0" />
+                  <Check className="h-4 w-4 text-[#E8FF00] " />
                   <span>{feature}</span>
                 </div>
               ))}

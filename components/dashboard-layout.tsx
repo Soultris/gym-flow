@@ -30,6 +30,8 @@ import {
   UserPlus,
   MessageSquare,
   ClipboardList,
+  Package,
+  ActivitySquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -82,7 +84,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             {navigation.map((item) => {
               const isActive = item.href === "/" 
                 ? pathname === "/" 
-                : pathname.startsWith(item.href)
+                : pathname === item.href || pathname.startsWith(item.href + "/")
               return (
                 <Link
                   key={item.name}
@@ -152,6 +154,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Button>
 
           <div className="flex flex-1 items-center justify-end gap-2">
+            <Link href="/activity-logger" title="Activity Logger">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
+                <ActivitySquare className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/membership-plans" title="Pricing">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
+                <Package className="h-5 w-5" />
+              </Button>
+            </Link>
             <Link href="/membership-request" target="_blank">
               <Button variant="outline" size="sm" className="gap-2">
                 <UserPlus className="h-4 w-4" />

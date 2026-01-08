@@ -15,11 +15,19 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronLeft, ChevronRight, X, Calendar, Clock } from "lucide-react"
+import { ChevronLeft, ChevronRight, X, Calendar, Clock, Copy, Trash2, Plus } from "lucide-react"
 
 interface Member {
   id: string
   name: string
+}
+
+interface SmsTemplate {
+  id: string
+  name: string
+  category: "offers" | "membership" | "announcements" | "reminders" | "events"
+  message: string
+  createdDate: string
 }
 
 interface MessageStatus {
@@ -55,6 +63,65 @@ const members: Member[] = [
   { id: "M007", name: "David Lee" },
 ]
 
+const smsTemplates: SmsTemplate[] = [
+  {
+    id: "T001",
+    name: "Special Offer - 20% Discount",
+    category: "offers",
+    message: "🎉 Special Offer! Get 20% off on all membership renewals this month. Don't miss out on this amazing offer! Visit our gym today.",
+    createdDate: "2025-01-05",
+  },
+  {
+    id: "T002",
+    name: "Membership Expiring Soon",
+    category: "membership",
+    message: "Your membership is expiring in 3 days. Renew now to continue enjoying unlimited gym access and exclusive member benefits. Click here to renew.",
+    createdDate: "2025-01-06",
+  },
+  {
+    id: "T003",
+    name: "Training Session Reminder",
+    category: "reminders",
+    message: "Hi! Just a reminder that your personal training session is scheduled for tomorrow at 9 AM. Please arrive 10 minutes early.",
+    createdDate: "2025-01-01",
+  },
+  {
+    id: "T004",
+    name: "Gym Maintenance Notice",
+    category: "announcements",
+    message: "Maintenance Notice: The gym will be closed on Sunday from 6 AM to 12 PM for equipment maintenance. We apologize for any inconvenience.",
+    createdDate: "2025-01-02",
+  },
+  {
+    id: "T005",
+    name: "Fitness Challenge Completion",
+    category: "events",
+    message: "Congratulations on completing your fitness challenge! Come pick up your certificate and prize at the front desk. Thank you for participating!",
+    createdDate: "2025-01-03",
+  },
+  {
+    id: "T006",
+    name: "New Year Special",
+    category: "offers",
+    message: "🎊 New Year Special! Get 50% off on your first month. Join our gym and start your fitness journey today!",
+    createdDate: "2025-01-01",
+  },
+  {
+    id: "T007",
+    name: "Weekly Fitness Tip",
+    category: "announcements",
+    message: "Weekly fitness tip: Remember to stay hydrated during your workouts! Drink at least 2-3 liters of water daily.",
+    createdDate: "2025-01-04",
+  },
+  {
+    id: "T008",
+    name: "Re-engagement Offer",
+    category: "offers",
+    message: "We miss you! Come back and enjoy our new fitness classes. Rejoin today and get your first month at 50% off.",
+    createdDate: "2025-01-05",
+  },
+]
+
 interface BulkSmsFormProps {
   initialMemberId?: string
   initialMemberName?: string
@@ -71,7 +138,13 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [scheduledCurrentPage, setScheduledCurrentPage] = useState(1)
-  const [activeTab, setActiveTab] = useState("history")
+  const [activeTab, setActiveTab] = useState("compose")
+  const [templateCategory, setTemplateCategory] = useState<"all" | "offers" | "membership" | "announcements" | "reminders" | "events">("all")
+  const [templates, setTemplates] = useState<SmsTemplate[]>(smsTemplates)
+  const [showNewTemplateForm, setShowNewTemplateForm] = useState(false)
+  const [newTemplateName, setNewTemplateName] = useState("")
+  const [newTemplateCategory, setNewTemplateCategory] = useState<"offers" | "membership" | "announcements" | "reminders" | "events">("offers")
+  const [newTemplateMessage, setNewTemplateMessage] = useState("")
   const itemsPerPage = 5
   
   // Scheduling states
@@ -171,10 +244,46 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     member.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  // Filter templates based on category
+  const filteredTemplates = templateCategory === "all" 
+    ? templates 
+    : templates.filter(t => t.category === templateCategory)
+
   const handleSelectMember = (memberId: string, memberName: string) => {
     setSelectedMember(`${memberName} (${memberId})`)
     setSearchQuery("")
     setShowSearchResults(false)
+  }
+
+  const handleUseTemplate = (templateMessage: string) => {
+    setMessage(templateMessage)
+    setActiveTab("compose")
+  }
+
+  const handleSaveNewTemplate = () => {
+    if (!newTemplateName.trim() || !newTemplateMessage.trim()) {
+      alert("Please fill in all template fields")
+      return
+    }
+
+    const newTemplate: SmsTemplate = {
+      id: `T${Date.now()}`,
+      name: newTemplateName,
+      category: newTemplateCategory,
+      message: newTemplateMessage,
+      createdDate: new Date().toISOString().split("T")[0],
+    }
+
+    setTemplates([...templates, newTemplate])
+    setNewTemplateName("")
+    setNewTemplateMessage("")
+    setShowNewTemplateForm(false)
+  }
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      setTemplates(templates.filter(t => t.id !== templateId))
+    }
   }
 
   const handleSendSms = () => {
@@ -241,9 +350,37 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
 
   return (
     <div className="space-y-6">
-      {/* Recipients Section - Full Width */}
-      <Card className="p-6 space-y-6">
-        {/* Recipients and Advanced Search - Side by Side */}
+      <Card className="p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 inline-flex mb-6">
+            <TabsTrigger 
+              value="compose"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              Compose Message
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              SMS Templates
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              Message History
+            </TabsTrigger>
+            <TabsTrigger 
+              value="scheduled"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              Scheduled Messages
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Compose Message Tab */}
+          <TabsContent value="compose" className="mt-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Select Recipients */}
           <div className="space-y-3">
@@ -501,27 +638,159 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
         >
           {schedulingType === "immediate" ? "Send SMS Now" : "Schedule SMS"}
         </Button>
-      </Card>
+          </TabsContent>
 
-      {/* Message History / Scheduled Messages Tabs */}
-      <Card className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 inline-flex mb-6">
-            <TabsTrigger 
-              value="history"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Message History
-            </TabsTrigger>
-            <TabsTrigger 
-              value="scheduled"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Scheduled Messages
-            </TabsTrigger>
-          </TabsList>
+          {/* SMS Templates Tab */}
+          <TabsContent value="templates" className="mt-6 space-y-6">
+            <div className="space-y-4">
+              {/* Create New Template Button */}
+              {!showNewTemplateForm && (
+                <Button 
+                  onClick={() => setShowNewTemplateForm(true)}
+                  className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create New Template
+                </Button>
+              )}
 
-          {/* Message History Tab */}
+              {/* New Template Form */}
+              {showNewTemplateForm && (
+                <Card className="p-4 bg-card border-[#E8FF00]/50">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold">Create SMS Template</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="template-name" className="text-sm mb-2 block">Template Name</Label>
+                        <Input 
+                          id="template-name"
+                          placeholder="e.g., New Year Offer"
+                          value={newTemplateName}
+                          onChange={(e) => setNewTemplateName(e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="template-category" className="text-sm mb-2 block">Category</Label>
+                        <Select value={newTemplateCategory} onValueChange={(value: "offers" | "membership" | "announcements" | "reminders" | "events") => setNewTemplateCategory(value)}>
+                          <SelectTrigger id="template-category" className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="offers">Offers</SelectItem>
+                            <SelectItem value="membership">Membership</SelectItem>
+                            <SelectItem value="announcements">Announcements</SelectItem>
+                            <SelectItem value="reminders">Reminders</SelectItem>
+                            <SelectItem value="events">Events</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="template-message" className="text-sm mb-2 block">Message</Label>
+                      <Textarea 
+                        id="template-message"
+                        placeholder="Enter your template message..."
+                        value={newTemplateMessage}
+                        onChange={(e) => setNewTemplateMessage(e.target.value.slice(0, maxCharacters))}
+                        className="min-h-24 resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground text-right mt-1">
+                        {newTemplateMessage.length}/{maxCharacters} characters
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleSaveNewTemplate}
+                        size="sm"
+                        className="bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
+                      >
+                        Save Template
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          setShowNewTemplateForm(false)
+                          setNewTemplateName("")
+                          setNewTemplateMessage("")
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Category Filter */}
+              <div>
+                <Label className="text-sm mb-2 block">Filter by Category</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["all", "offers", "membership", "announcements", "reminders", "events"].map((cat) => (
+                    <Button
+                      key={cat}
+                      size="sm"
+                      variant={templateCategory === cat ? "default" : "outline"}
+                      onClick={() => setTemplateCategory(cat as any)}
+                      className={templateCategory === cat ? "bg-[#E8FF00] text-black hover:bg-[#E8FF00]/80" : ""}
+                    >
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Templates List */}
+              <div className="grid gap-3 mt-4">
+                {filteredTemplates.length > 0 ? (
+                  filteredTemplates.map((template) => (
+                    <Card key={template.id} className="p-4 bg-background border-[#2a2a2a] hover:border-[#E8FF00]/50 transition-colors">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-semibold">{template.name}</h4>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Category: <Badge variant="outline" className="text-xs ml-1">
+                                {template.category.charAt(0).toUpperCase() + template.category.slice(1)}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Created: {template.createdDate}</p>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground">{template.message}</p>
+
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm"
+                            onClick={() => handleUseTemplate(template.message)}
+                            className="gap-2 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Use Template
+                          </Button>
+                          <Button 
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteTemplate(template.id)}
+                            className="text-destructive hover:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No templates found in this category</p>
+                )}
+              </div>
+            </div>
+          </TabsContent>
           <TabsContent value="history" className="mt-0">
             <div className="space-y-3">
               {messageStatuses.filter(item => item.status !== "scheduled").length > 0 ? (

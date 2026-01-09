@@ -246,7 +246,7 @@ export function MembersList() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/workouts/assign/${member.id}`} className="cursor-pointer">
+                      <Link href={`/workouts?assignMemberId=${member.id}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
                         Assign Workout
                       </Link>
                     </DropdownMenuItem>

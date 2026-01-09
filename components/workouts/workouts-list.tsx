@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 
 interface Exercise {
   name: string
@@ -110,6 +111,8 @@ const initialWorkoutTemplates: WorkoutTemplate[] = [
 ]
 
 export function WorkoutsList() {
+  const searchParams = useSearchParams()
+  
   // Template Management State
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>(initialWorkoutTemplates)
   const [assignedWorkouts, setAssignedWorkouts] = useState<AssignedWorkout[]>([])
@@ -144,6 +147,42 @@ export function WorkoutsList() {
   const [customExercises, setCustomExercises] = useState<Array<{ name: string; reps: string }>>([
     { name: "", reps: "" }
   ])
+
+  // Navigation State
+  const [activeTab, setActiveTab] = useState<"templates" | "assign">("templates")
+  
+  // Day Selection State - per-day assignment workflow
+  const [currentDay, setCurrentDay] = useState<number | null>(null) // 1, 2, 3, etc.
+  const [dayWorkoutAssignments, setDayWorkoutAssignments] = useState<Array<{ 
+    day: number
+    workoutName: string
+    exercises: Exercise[]
+    startDate: string
+    endDate: string
+  }>>([])
+  
+  // Current day workout mode
+  const [currentWorkoutMode, setCurrentWorkoutMode] = useState<WorkoutCreationMode | null>(null)
+  const [currentSelectedTemplate, setCurrentSelectedTemplate] = useState<number | null>(null)
+  
+  // Date range for current day
+  const [currentDayStartDate, setCurrentDayStartDate] = useState("")
+  const [currentDayEndDate, setCurrentDayEndDate] = useState("")
+
+  // Auto-select member from URL parameters on component mount
+  useEffect(() => {
+    const assignMemberId = searchParams.get("assignMemberId")
+    const assignMemberName = searchParams.get("assignMemberName")
+    const tab = searchParams.get("tab")
+    
+    if (assignMemberId && assignMemberName) {
+      setSelectedMemberId(assignMemberId)
+      setMemberSearch(decodeURIComponent(assignMemberName))
+      if (tab === "assign") {
+        setActiveTab("assign")
+      }
+    }
+  }, [searchParams])
 
   // Filtered members based on search
   const filteredMembers = useMemo(() => {
@@ -253,77 +292,81 @@ export function WorkoutsList() {
   }
 
   // Assignment Handlers
-  const handleAssignWorkouts = () => {
-    if (!selectedMemberId) return
+  const handleAssignWorkoutForDay = () => {
+    if (!currentDay || !selectedMemberId || !currentDayStartDate || !currentDayEndDate) return
+
+    let exercises: Exercise[] = []
+    let workoutName = ""
+
+    if (currentWorkoutMode === "select" && currentSelectedTemplate) {
+      const template = workoutTemplates.find(t => t.id === currentSelectedTemplate)
+      if (!template) return
+      exercises = template.exercises
+      workoutName = template.name
+    } else if (currentWorkoutMode === "customize-template" && currentSelectedTemplate) {
+      if (!customWorkoutForm.name.trim()) return
+      exercises = customExercises.filter(e => e.name.trim())
+      workoutName = customWorkoutForm.name
+    } else if (currentWorkoutMode === "create-custom") {
+      if (!customWorkoutForm.name.trim()) return
+      exercises = customExercises.filter(e => e.name.trim())
+      workoutName = customWorkoutForm.name
+    } else {
+      return
+    }
+
+    // Add assignment for this day
+    setDayWorkoutAssignments([...dayWorkoutAssignments, { 
+      day: currentDay, 
+      workoutName, 
+      exercises,
+      startDate: currentDayStartDate,
+      endDate: currentDayEndDate
+    }])
+    
+    // Reset for next day
+    setCurrentDay(null)
+    setCurrentWorkoutMode(null)
+    setCurrentSelectedTemplate(null)
+    setCurrentDayStartDate("")
+    setCurrentDayEndDate("")
+    setCustomWorkoutForm({ name: "", description: "" })
+    setCustomExercises([{ name: "", reps: "" }])
+  }
+
+  const handleFinishAndAssignAll = () => {
+    if (!selectedMemberId || dayWorkoutAssignments.length === 0) return
 
     const selectedMember = mockMembers.find(m => m.id === selectedMemberId)
     if (!selectedMember) return
 
-    let newAssignments: AssignedWorkout[] = []
-
-    if (workoutCreationMode === "select") {
-      // Use existing templates directly
-      if (selectedWorkoutIds.size === 0) return
-      newAssignments = Array.from(selectedWorkoutIds.entries()).map(([workoutId, dates]) => {
-        const template = workoutTemplates.find(t => t.id === workoutId)
-        return {
-          id: `assigned-${Date.now()}-${workoutId}`,
-          memberId: selectedMemberId,
-          memberName: selectedMember.name,
-          workoutId,
-          workoutName: template?.name || "",
-          startDate: dates.startDate,
-          endDate: dates.endDate,
-          assignedDate: new Date().toISOString().split('T')[0],
-          notificationSent: false,
-          notificationType,
-        }
-      })
-    } else if (workoutCreationMode === "customize-template") {
-      // Customize template before assigning
-      if (!customWorkoutForm.name.trim()) return
-      
-      const customizedWorkout: AssignedWorkout = {
-        id: `assigned-${Date.now()}-custom`,
-        memberId: selectedMemberId,
-        memberName: selectedMember.name,
-        workoutId: selectedTemplateForCustomization || 0,
-        workoutName: customWorkoutForm.name,
-        startDate: selectedWorkoutIds.get(selectedTemplateForCustomization || 0)?.startDate || new Date().toISOString().split('T')[0],
-        endDate: selectedWorkoutIds.get(selectedTemplateForCustomization || 0)?.endDate || new Date().toISOString().split('T')[0],
-        assignedDate: new Date().toISOString().split('T')[0],
-        notificationSent: false,
-        notificationType,
-      }
-      newAssignments = [customizedWorkout]
-    } else if (workoutCreationMode === "create-custom") {
-      // Create fully custom workout
-      if (!customWorkoutForm.name.trim()) return
-      
-      const customWorkout: AssignedWorkout = {
-        id: `assigned-${Date.now()}-fully-custom`,
-        memberId: selectedMemberId,
-        memberName: selectedMember.name,
-        workoutId: -1, // Use -1 to indicate fully custom
-        workoutName: customWorkoutForm.name,
-        startDate: selectedWorkoutIds.get(0)?.startDate || new Date().toISOString().split('T')[0],
-        endDate: selectedWorkoutIds.get(0)?.endDate || new Date().toISOString().split('T')[0],
-        assignedDate: new Date().toISOString().split('T')[0],
-        notificationSent: false,
-        notificationType,
-      }
-      newAssignments = [customWorkout]
-    }
+    const newAssignments: AssignedWorkout[] = dayWorkoutAssignments.map((assignment, idx) => ({
+      id: `assigned-${Date.now()}-${idx}`,
+      memberId: selectedMemberId,
+      memberName: selectedMember.name,
+      workoutId: -1,
+      workoutName: assignment.workoutName,
+      startDate: assignment.startDate,
+      endDate: assignment.endDate,
+      assignedDate: new Date().toISOString().split('T')[0],
+      notificationSent: false,
+      notificationType,
+    }))
 
     setAssignedWorkouts([...assignedWorkouts, ...newAssignments])
     
     // Reset all forms
     setMemberSearch("")
     setSelectedMemberId(null)
-    setSelectedWorkoutIds(new Map())
-    handleResetCustomWorkout()
-    setWorkoutCreationMode("select")
-    closeDialog()
+    setCurrentDay(null)
+    setDayWorkoutAssignments([])
+    setCurrentWorkoutMode(null)
+    setCurrentSelectedTemplate(null)
+    setCurrentDayStartDate("")
+    setCurrentDayEndDate("")
+    setCustomWorkoutForm({ name: "", description: "" })
+    setCustomExercises([{ name: "", reps: "" }])
+    setNotificationType("both")
   }
 
   const handleSendNotification = (assignedWorkoutId: string, type: "sms" | "email") => {
@@ -406,14 +449,45 @@ export function WorkoutsList() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-muted">
-          <TabsTrigger value="templates">Workout Templates</TabsTrigger>
-          <TabsTrigger value="assign">Assign to Members</TabsTrigger>
-        </TabsList>
+      {/* Header with Title and Navigation */}
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Workout Master</h1>
+        </div>
 
-        {/* Workout Templates Tab */}
-        <TabsContent value="templates" className="space-y-6 mt-6">
+        {/* Navigation Buttons */}
+        <div className="flex gap-4 border-b border-border">
+          <button
+            onClick={() => {
+              setActiveTab("templates")
+              setMemberSearch("")
+              setSelectedMemberId(null)
+              setSelectedWorkoutIds(new Map())
+            }}
+            className={`pb-3 font-medium transition-colors ${
+              activeTab === "templates"
+                ? "text-foreground border-b-2 border-[#E8FF00] -mb-0.5"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Workout Templates
+          </button>
+          <button
+            onClick={() => setActiveTab("assign")}
+            className={`pb-3 font-medium transition-colors ${
+              activeTab === "assign"
+                ? "text-foreground border-b-2 border-[#E8FF00] -mb-0.5"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Assign to Members
+          </button>
+        </div>
+      </div>
+
+      {/* Workout Templates Tab */}
+      {activeTab === "templates" && (
+        <div className="space-y-6">
           <div className="flex justify-end">
             <Dialog open={dialogType === "add-template"} onOpenChange={(open) => {
               if (!open) closeDialog()
@@ -693,22 +767,24 @@ export function WorkoutsList() {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Assign to Members Tab */}
-        <TabsContent value="assign" className="space-y-6 mt-6">
+      {/* Assign to Members Tab */}
+      {activeTab === "assign" && (
+        <div className="space-y-6">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-6">Assign Workouts to Members</h3>
+            <h3 className="text-lg font-semibold mb-6">Assigned workout to members</h3>
             
-            {/* Member Search */}
+            {/* Member Search Section */}
             <div className="space-y-4 mb-6">
               <div className="space-y-2">
-                <Label htmlFor="memberSearch">Search Member</Label>
+                <Label htmlFor="memberSearch">Search member</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="memberSearch"
-                    placeholder="Search by name or ID..." 
+                    placeholder="Search member by name or ID" 
                     className="pl-10"
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
@@ -724,6 +800,8 @@ export function WorkoutsList() {
                       onClick={() => {
                         setSelectedMemberId(member.id)
                         setMemberSearch("")
+                        setCurrentDay(null)
+                        setDayWorkoutAssignments([])
                       }}
                       className="w-full p-3 text-left hover:bg-muted border-b last:border-b-0 transition-colors"
                     >
@@ -733,459 +811,414 @@ export function WorkoutsList() {
                   ))}
                 </div>
               )}
-
-              {selectedMemberId && (
-                <div className="p-3 bg-accent/10 rounded-lg flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">
-                      {mockMembers.find(m => m.id === selectedMemberId)?.name}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedMemberId}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedMemberId(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
             </div>
 
-            {/* Workout Selection */}
+            {/* Selected Member & Day-by-Day Assignment */}
             {selectedMemberId && (
               <div className="space-y-6 mb-6">
-                {/* Workout Creation Mode Selection */}
-                <div className="space-y-3">
-                  <Label>How would you like to create the workout?</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-4 bg-accent/10 rounded-lg border border-[#E8FF00]/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Selected Member</p>
+                      <p className="text-lg font-semibold">{mockMembers.find(m => m.id === selectedMemberId)?.name}</p>
+                    </div>
                     <button
                       onClick={() => {
-                        setWorkoutCreationMode("select")
-                        setSelectedWorkoutIds(new Map())
-                        handleResetCustomWorkout()
+                        setSelectedMemberId(null)
+                        setCurrentDay(null)
+                        setDayWorkoutAssignments([])
                       }}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        workoutCreationMode === "select"
-                          ? "border-[#E8FF00] bg-[#E8FF00]/10"
-                          : "border-border hover:border-muted-foreground"
-                      }`}
+                      className="text-sm text-muted-foreground hover:text-foreground"
                     >
-                      <div className="font-semibold mb-1">Use Template</div>
-                      <div className="text-sm text-muted-foreground">Select an existing template and assign directly</div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setWorkoutCreationMode("customize-template")
-                        setSelectedWorkoutIds(new Map())
-                        handleResetCustomWorkout()
-                      }}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        workoutCreationMode === "customize-template"
-                          ? "border-[#E8FF00] bg-[#E8FF00]/10"
-                          : "border-border hover:border-muted-foreground"
-                      }`}
-                    >
-                      <div className="font-semibold mb-1">Customize Template</div>
-                      <div className="text-sm text-muted-foreground">Start with a template and edit it before assigning</div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setWorkoutCreationMode("create-custom")
-                        setSelectedWorkoutIds(new Map())
-                        handleResetCustomWorkout()
-                      }}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        workoutCreationMode === "create-custom"
-                          ? "border-[#E8FF00] bg-[#E8FF00]/10"
-                          : "border-border hover:border-muted-foreground"
-                      }`}
-                    >
-                      <div className="font-semibold mb-1">Create Custom</div>
-                      <div className="text-sm text-muted-foreground">Build a completely custom workout from scratch</div>
+                      Change
                     </button>
                   </div>
                 </div>
 
-                {/* Mode-Specific Content */}
-                {workoutCreationMode === "select" && (
-                  <div className="space-y-4">
-                    <Label>Select Workouts & Date Ranges</Label>
-                    <div className="space-y-3">
-                      {workoutTemplates.map((template) => (
-                        <div key={template.id} className="border rounded-lg p-4 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`workout-${template.id}`}
-                              checked={selectedWorkoutIds.has(template.id)}
-                              onChange={(e) => {
-                                const newMap = new Map(selectedWorkoutIds)
-                                if (e.target.checked) {
-                                  newMap.set(template.id, { startDate: "", endDate: "" })
-                                } else {
-                                  newMap.delete(template.id)
-                                }
-                                setSelectedWorkoutIds(newMap)
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <label htmlFor={`workout-${template.id}`} className="flex-1 cursor-pointer">
-                              <div className="font-medium">{template.name}</div>
-                              <div className="text-sm text-muted-foreground">{template.description}</div>
-                            </label>
-                          </div>
-
-                          {selectedWorkoutIds.has(template.id) && (
-                            <div className="grid grid-cols-2 gap-3 ml-6">
-                              <div className="space-y-2">
-                                <Label htmlFor={`start-${template.id}`} className="text-sm">Start Date</Label>
-                                <Input
-                                  id={`start-${template.id}`}
-                                  type="date"
-                                  value={selectedWorkoutIds.get(template.id)?.startDate || ""}
-                                  onChange={(e) => {
-                                    const newMap = new Map(selectedWorkoutIds)
-                                    const current = newMap.get(template.id) || { startDate: "", endDate: "" }
-                                    newMap.set(template.id, { ...current, startDate: e.target.value })
-                                    setSelectedWorkoutIds(newMap)
-                                  }}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`end-${template.id}`} className="text-sm">End Date</Label>
-                                <Input
-                                  id={`end-${template.id}`}
-                                  type="date"
-                                  value={selectedWorkoutIds.get(template.id)?.endDate || ""}
-                                  onChange={(e) => {
-                                    const newMap = new Map(selectedWorkoutIds)
-                                    const current = newMap.get(template.id) || { startDate: "", endDate: "" }
-                                    newMap.set(template.id, { ...current, endDate: e.target.value })
-                                    setSelectedWorkoutIds(newMap)
-                                  }}
-                                />
-                              </div>
+                {/* Assigned Days Summary */}
+                {dayWorkoutAssignments.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="font-semibold">Assigned Workout Days:</p>
+                    <div className="space-y-2">
+                      {dayWorkoutAssignments.map((assignment, idx) => (
+                        <div key={idx} className="p-3 bg-muted rounded-lg border border-border flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block w-8 h-8 rounded-full bg-[#E8FF00] text-black text-sm font-bold flex items-center justify-center">
+                                {assignment.day}
+                              </span>
+                              <span className="font-medium">{assignment.workoutName}</span>
                             </div>
-                          )}
+                            <p className="text-xs text-muted-foreground mt-1 ml-10">
+                              📅 {assignment.startDate} to {assignment.endDate}
+                            </p>
+                            <p className="text-xs text-muted-foreground ml-10">
+                              💪 {assignment.exercises.length} exercises
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setDayWorkoutAssignments(dayWorkoutAssignments.filter((_, i) => i !== idx))
+                            }}
+                            className="text-xs text-destructive hover:text-destructive/80 font-medium"
+                          >
+                            Remove
+                          </button>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {workoutCreationMode === "customize-template" && (
-                  <div className="space-y-4">
-                    {!selectedTemplateForCustomization ? (
-                      <div className="space-y-3">
-                        <Label>Select a Template to Customize</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {workoutTemplates.map((template) => (
-                            <div
-                              key={template.id}
-                              onClick={() => handleLoadTemplateForCustomization(template.id)}
-                              className="border rounded-lg p-4 cursor-pointer hover:bg-muted transition-colors"
-                            >
-                              <div className="font-medium mb-2">{template.name}</div>
-                              <div className="text-sm text-muted-foreground mb-3">{template.description}</div>
-                              <div className="text-xs space-y-1">
-                                {template.exercises.slice(0, 3).map((ex, idx) => (
-                                  <div key={idx} className="text-muted-foreground">• {ex.name} ({ex.reps})</div>
-                                ))}
-                                {template.exercises.length > 3 && <div className="text-muted-foreground">• +{template.exercises.length - 3} more</div>}
-                              </div>
+                {/* Day Selection Buttons */}
+                {!currentDay && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Add Workout Plan for:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {/* Show Day 1 always */}
+                      <button
+                        onClick={() => setCurrentDay(1)}
+                        disabled={dayWorkoutAssignments.some(a => a.day === 1)}
+                        className={`
+                          px-4 py-2 rounded-lg border-2 font-semibold transition-all
+                          ${dayWorkoutAssignments.some(a => a.day === 1)
+                            ? "border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                            : "border-[#E8FF00] bg-[#E8FF00]/10 text-foreground hover:bg-[#E8FF00]/20"
+                          }
+                        `}
+                      >
+                        Day 01
+                      </button>
+
+                      {/* Show Days 2-7 if they're not assigned or are available */}
+                      {dayWorkoutAssignments.map(assignment => (
+                        <button
+                          key={`day-${assignment.day}`}
+                          disabled
+                          className="px-4 py-2 rounded-lg border-2 border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50 font-semibold"
+                        >
+                          Day {String(assignment.day).padStart(2, "0")}
+                        </button>
+                      ))}
+
+                      {/* Show + button to add next available day */}
+                      {dayWorkoutAssignments.length > 0 && dayWorkoutAssignments.length < 30 && (
+                        <button
+                          onClick={() => setCurrentDay(dayWorkoutAssignments.length + 1)}
+                          className="px-4 py-2 rounded-lg border-2 border-dashed border-[#E8FF00] bg-transparent text-[#E8FF00] font-bold hover:bg-[#E8FF00]/10 transition-all flex items-center gap-1"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Day {String(dayWorkoutAssignments.length + 1).padStart(2, "0")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Date Range Selection for Current Day */}
+                {currentDay && !currentWorkoutMode && (
+                  <div className="space-y-4 p-4 border-2 border-[#E8FF00]/50 rounded-lg bg-[#E8FF00]/5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className=" w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg flex items-center justify-center">
+                        {String(currentDay).padStart(2, "0")}
+                      </span>
+                      <h4 className="text-lg font-semibold">Configure Day {String(currentDay).padStart(2, "0")} Workout</h4>
+                    </div>
+
+                    {/* Date Range Inputs */}
+                    <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded">
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate" className="text-sm font-medium">Start Date *</Label>
+                        <Input 
+                          id="startDate"
+                          type="date"
+                          value={currentDayStartDate}
+                          onChange={(e) => setCurrentDayStartDate(e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate" className="text-sm font-medium">End Date *</Label>
+                        <Input 
+                          id="endDate"
+                          type="date"
+                          value={currentDayEndDate}
+                          onChange={(e) => setCurrentDayEndDate(e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Workout Type Selection */}
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Choose workout option:</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => setCurrentWorkoutMode("select")}
+                          className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                            currentWorkoutMode === "select"
+                              ? "border-[#E8FF00] bg-[#E8FF00]/10 text-foreground"
+                              : "border-border bg-muted text-muted-foreground hover:border-[#E8FF00]"
+                          }`}
+                        >
+                          Use Template
+                        </button>
+                        <button
+                          onClick={() => setCurrentWorkoutMode("customize-template")}
+                          className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                            currentWorkoutMode === "customize-template"
+                              ? "border-[#E8FF00] bg-[#E8FF00]/10 text-foreground"
+                              : "border-border bg-muted text-muted-foreground hover:border-[#E8FF00]"
+                          }`}
+                        >
+                          Customize Template
+                        </button>
+                        <button
+                          onClick={() => setCurrentWorkoutMode("create-custom")}
+                          className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                            currentWorkoutMode === "create-custom"
+                              ? "border-[#E8FF00] bg-[#E8FF00]/10 text-foreground"
+                              : "border-border bg-muted text-muted-foreground hover:border-[#E8FF00]"
+                          }`}
+                        >
+                          Create Custom
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Template Selection */}
+                {currentDay && currentWorkoutMode === "select" && !currentSelectedTemplate && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <p className="font-medium">Select a workout template:</p>
+                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                      {workoutTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          onClick={() => setCurrentSelectedTemplate(template.id)}
+                          className="p-3 rounded-lg border-2 border-border bg-background hover:border-[#E8FF00] transition-all text-left"
+                        >
+                          <p className="font-medium text-sm">{template.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{template.exercises.length} exercises</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Template Confirmation */}
+                {currentDay && currentWorkoutMode === "select" && currentSelectedTemplate && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    {workoutTemplates.find(t => t.id === currentSelectedTemplate) && (
+                      <>
+                        <div>
+                          <p className="font-semibold">{workoutTemplates.find(t => t.id === currentSelectedTemplate)?.name}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{workoutTemplates.find(t => t.id === currentSelectedTemplate)?.description}</p>
+                        </div>
+                        <div className="space-y-2 bg-background p-3 rounded">
+                          <p className="text-sm font-medium">Exercises:</p>
+                          {workoutTemplates.find(t => t.id === currentSelectedTemplate)?.exercises.map((ex, idx) => (
+                            <div key={idx} className="text-sm">
+                              • {ex.name} - {ex.reps}
                             </div>
                           ))}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-semibold">Customize Template</h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleResetCustomWorkout}
-                          >
-                            Choose Different Template
-                          </Button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="custom-name">Workout Name</Label>
-                          <Input
-                            id="custom-name"
-                            value={customWorkoutForm.name}
-                            onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, name: e.target.value})}
-                            placeholder="Enter workout name"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="custom-desc">Description</Label>
-                          <Textarea
-                            id="custom-desc"
-                            value={customWorkoutForm.description}
-                            onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, description: e.target.value})}
-                            placeholder="Enter workout description"
-                            className="min-h-20"
-                          />
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Label>Exercises & Reps</Label>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={handleAddCustomExercise}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Exercise
-                            </Button>
-                          </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {customExercises.map((exercise, index) => (
-                              <div key={index} className="flex gap-2">
-                                <Input
-                                  placeholder="Exercise name"
-                                  className="flex-1"
-                                  value={exercise.name}
-                                  onChange={(e) => handleUpdateCustomExercise(index, "name", e.target.value)}
-                                />
-                                <Input
-                                  placeholder="e.g., 12 x 4"
-                                  className="w-24"
-                                  value={exercise.reps}
-                                  onChange={(e) => handleUpdateCustomExercise(index, "reps", e.target.value)}
-                                />
-                                {customExercises.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-destructive"
-                                    onClick={() => handleRemoveCustomExercise(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Date Range</Label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="custom-start" className="text-sm">Start Date</Label>
-                              <Input
-                                id="custom-start"
-                                type="date"
-                                value={selectedWorkoutIds.get(0)?.startDate || ""}
-                                onChange={(e) => {
-                                  const newMap = new Map(selectedWorkoutIds)
-                                  const current = newMap.get(0) || { startDate: "", endDate: "" }
-                                  newMap.set(0, { ...current, startDate: e.target.value })
-                                  setSelectedWorkoutIds(newMap)
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="custom-end" className="text-sm">End Date</Label>
-                              <Input
-                                id="custom-end"
-                                type="date"
-                                value={selectedWorkoutIds.get(0)?.endDate || ""}
-                                onChange={(e) => {
-                                  const newMap = new Map(selectedWorkoutIds)
-                                  const current = newMap.get(0) || { startDate: "", endDate: "" }
-                                  newMap.set(0, { ...current, endDate: e.target.value })
-                                  setSelectedWorkoutIds(newMap)
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
 
-                {workoutCreationMode === "create-custom" && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold">Create Custom Workout</h4>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="new-custom-name">Workout Name</Label>
-                      <Input
-                        id="new-custom-name"
-                        value={customWorkoutForm.name}
-                        onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, name: e.target.value})}
-                        placeholder="Enter workout name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="new-custom-desc">Description</Label>
-                      <Textarea
-                        id="new-custom-desc"
-                        value={customWorkoutForm.description}
-                        onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, description: e.target.value})}
-                        placeholder="Enter workout description"
-                        className="min-h-20"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Exercises & Reps</Label>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleAddCustomExercise}
+                {/* Customize Template */}
+                {currentDay && currentWorkoutMode === "customize-template" && !currentSelectedTemplate && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <p className="font-medium">Select template to customize:</p>
+                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                      {workoutTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          onClick={() => {
+                            setCurrentSelectedTemplate(template.id)
+                            handleLoadTemplateForCustomization(template.id)
+                          }}
+                          className="p-3 rounded-lg border-2 border-border bg-background hover:border-[#E8FF00] transition-all text-left"
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Exercise
-                        </Button>
-                      </div>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {customExercises.map((exercise, index) => (
-                          <div key={index} className="flex gap-2">
-                            <Input
-                              placeholder="Exercise name"
-                              className="flex-1"
-                              value={exercise.name}
-                              onChange={(e) => handleUpdateCustomExercise(index, "name", e.target.value)}
-                            />
-                            <Input
-                              placeholder="e.g., 12 x 4"
-                              className="w-24"
-                              value={exercise.reps}
-                              onChange={(e) => handleUpdateCustomExercise(index, "reps", e.target.value)}
-                            />
-                            {customExercises.length > 1 && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive"
-                                onClick={() => handleRemoveCustomExercise(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                          <p className="font-medium text-sm">{template.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{template.exercises.length} exercises</p>
+                        </button>
+                      ))}
                     </div>
+                  </div>
+                )}
 
-                    <div className="space-y-2">
-                      <Label>Date Range</Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="new-custom-start" className="text-sm">Start Date</Label>
-                          <Input
-                            id="new-custom-start"
-                            type="date"
-                            value={selectedWorkoutIds.get(0)?.startDate || ""}
-                            onChange={(e) => {
-                              const newMap = new Map(selectedWorkoutIds)
-                              const current = newMap.get(0) || { startDate: "", endDate: "" }
-                              newMap.set(0, { ...current, startDate: e.target.value })
-                              setSelectedWorkoutIds(newMap)
-                            }}
-                          />
+                {/* Customize Template Form */}
+                {currentDay && currentWorkoutMode === "customize-template" && currentSelectedTemplate && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="customName">Workout Name *</Label>
+                        <Input 
+                          id="customName"
+                          placeholder="e.g., Modified Chest Builder"
+                          value={customWorkoutForm.name}
+                          onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, name: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="customDesc">Description</Label>
+                        <Textarea 
+                          id="customDesc"
+                          placeholder="Describe the customized workout"
+                          rows={2}
+                          value={customWorkoutForm.description}
+                          onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, description: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">Exercises</p>
+                          <button
+                            onClick={handleAddCustomExercise}
+                            className="text-xs bg-[#E8FF00] text-black px-2 py-1 rounded hover:bg-[#E8FF00]/80"
+                          >
+                            + Add Exercise
+                          </button>
                         </div>
-                        <div>
-                          <Label htmlFor="new-custom-end" className="text-sm">End Date</Label>
-                          <Input
-                            id="new-custom-end"
-                            type="date"
-                            value={selectedWorkoutIds.get(0)?.endDate || ""}
-                            onChange={(e) => {
-                              const newMap = new Map(selectedWorkoutIds)
-                              const current = newMap.get(0) || { startDate: "", endDate: "" }
-                              newMap.set(0, { ...current, endDate: e.target.value })
-                              setSelectedWorkoutIds(newMap)
-                            }}
-                          />
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {customExercises.map((ex, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <Input 
+                                placeholder="Exercise name"
+                                value={ex.name}
+                                onChange={(e) => handleUpdateCustomExercise(idx, "name", e.target.value)}
+                                className="flex-1"
+                              />
+                              <Input 
+                                placeholder="Reps (e.g., 12 x 4)"
+                                value={ex.reps}
+                                onChange={(e) => handleUpdateCustomExercise(idx, "reps", e.target.value)}
+                                className="w-32"
+                              />
+                              <button
+                                onClick={() => handleRemoveCustomExercise(idx)}
+                                className="text-destructive hover:text-destructive/80 px-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
+
+                {/* Create Custom Workout */}
+                {currentDay && currentWorkoutMode === "create-custom" && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="newWorkoutName">Workout Name *</Label>
+                        <Input 
+                          id="newWorkoutName"
+                          placeholder="e.g., Full Body Strength"
+                          value={customWorkoutForm.name}
+                          onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, name: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="newWorkoutDesc">Description</Label>
+                        <Textarea 
+                          id="newWorkoutDesc"
+                          placeholder="Describe this custom workout"
+                          rows={2}
+                          value={customWorkoutForm.description}
+                          onChange={(e) => setCustomWorkoutForm({...customWorkoutForm, description: e.target.value})}
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">Add Exercises</p>
+                          <button
+                            onClick={handleAddCustomExercise}
+                            className="text-xs bg-[#E8FF00] text-black px-2 py-1 rounded hover:bg-[#E8FF00]/80"
+                          >
+                            + Add Exercise
+                          </button>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {customExercises.map((ex, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <Input 
+                                placeholder="Exercise name"
+                                value={ex.name}
+                                onChange={(e) => handleUpdateCustomExercise(idx, "name", e.target.value)}
+                                className="flex-1"
+                              />
+                              <Input 
+                                placeholder="Reps (e.g., 12 x 4)"
+                                value={ex.reps}
+                                onChange={(e) => handleUpdateCustomExercise(idx, "reps", e.target.value)}
+                                className="w-32"
+                              />
+                              <button
+                                onClick={() => handleRemoveCustomExercise(idx)}
+                                className="text-destructive hover:text-destructive/80 px-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Assign for This Day / Add Another Day */}
+                {currentDay && currentWorkoutMode && (
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleAssignWorkoutForDay}
+                      disabled={!currentDayStartDate || !currentDayEndDate}
+                      className="flex-1 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80 disabled:opacity-50"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Assign for Day {String(currentDay).padStart(2, "0")}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setCurrentDay(null)
+                        setCurrentWorkoutMode(null)
+                        setCurrentSelectedTemplate(null)
+                        setCurrentDayStartDate("")
+                        setCurrentDayEndDate("")
+                        setCustomWorkoutForm({ name: "", description: "" })
+                        setCustomExercises([{ name: "", reps: "" }])
+                      }}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Notification Type */}
-            {selectedMemberId && (
-              <div className={`space-y-4 mb-6 pb-6 border-b ${
-                (workoutCreationMode === "select" && selectedWorkoutIds.size === 0) ||
-                (workoutCreationMode !== "select" && !customWorkoutForm.name.trim())
-                  ? "opacity-50 pointer-events-none"
-                  : ""
-              }`}>
-                <Label>Notify Member Via</Label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification"
-                      value="sms"
-                      checked={notificationType === "sms"}
-                      onChange={(e) => setNotificationType(e.target.value as "sms")}
-                      className="w-4 h-4"
-                    />
-                    <Send className="h-4 w-4" />
-                    SMS
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification"
-                      value="email"
-                      checked={notificationType === "email"}
-                      onChange={(e) => setNotificationType(e.target.value as "email")}
-                      className="w-4 h-4"
-                    />
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification"
-                      value="both"
-                      checked={notificationType === "both"}
-                      onChange={(e) => setNotificationType(e.target.value as "both")}
-                      className="w-4 h-4"
-                    />
-                    <span>Both</span>
-                  </label>
-                </div>
-              </div>
+            {/* Final Assign All Button */}
+            {selectedMemberId && dayWorkoutAssignments.length > 0 && (
+              <Button
+                className="w-full bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
+                onClick={handleFinishAndAssignAll}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Confirm & Assign All Workouts
+              </Button>
             )}
-
-            {/* Assign Button */}
-            <Button 
-              className="w-full bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
-              disabled={
-                !selectedMemberId || 
-                (workoutCreationMode === "select" && selectedWorkoutIds.size === 0) ||
-                (workoutCreationMode !== "select" && !customWorkoutForm.name.trim())
-              }
-              onClick={handleAssignWorkouts}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Assign Workout
-            </Button>
           </Card>
 
           {/* Assigned Workouts List */}
@@ -1261,8 +1294,8 @@ export function WorkoutsList() {
               </div>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }

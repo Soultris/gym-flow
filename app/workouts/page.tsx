@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { WorkoutsList } from "@/components/workouts/workouts-list"
 
@@ -10,7 +11,9 @@ export default function WorkoutsPage() {
           <p className="text-muted-foreground mt-1">Manage workout plans and training programs</p>
         </div>
 
-        <WorkoutsList />
+        <Suspense fallback={<div className="text-muted-foreground">Loading workouts...</div>}>
+          <WorkoutsList />
+        </Suspense>
       </div>
     </DashboardLayout>
   )

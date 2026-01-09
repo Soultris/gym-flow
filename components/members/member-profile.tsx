@@ -237,9 +237,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div className="lg:col-span-2">
           <Card className="p-6">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="membership">Membership</TabsTrigger>
+                <TabsTrigger value="workout">Workouts</TabsTrigger>
                 <TabsTrigger value="attendance">Attendance</TabsTrigger>
                 <TabsTrigger value="payments">Payments</TabsTrigger>
               </TabsList>
@@ -477,20 +478,94 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                     </div>
                   </div>
                 </div>
+              </TabsContent>
 
-                <div className="border-t border-border pt-6">
-                  <h3 className="font-semibold mb-3">Assigned Workout Plan</h3>
-                  <Card className="p-4 bg-secondary">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Strength Training Program</p>
-                        <p className="text-sm text-muted-foreground">4 days/week • 60 min sessions</p>
+              {/* Workouts Tab */}
+              <TabsContent value="workout" className="space-y-6 mt-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Assigned Workout Plans</h3>
+                  <div className="space-y-4">
+                    {/* Day 01 Workout */}
+                    <Card className="p-5 bg-secondary/30 border border-border">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg">
+                            01
+                          </span>
+                          <div>
+                            <h4 className="font-semibold text-lg">Chest Builder</h4>
+                            <p className="text-sm text-muted-foreground">📅 Jan 01, 2025 - Mar 01, 2025</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="border-accent text-accent">Active</Badge>
                       </div>
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </div>
-                  </Card>
+                      <div className="space-y-3 bg-background/50 p-4 rounded-lg">
+                        <p className="font-medium text-sm mb-2">Exercises:</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Upper Chest</span>
+                            <span className="text-muted-foreground">12 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Middle Chest</span>
+                            <span className="text-muted-foreground">10 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Lower Chest</span>
+                            <span className="text-muted-foreground">12 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Front Shoulders</span>
+                            <span className="text-muted-foreground">10 x 3</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Triceps</span>
+                            <span className="text-muted-foreground">12 x 3</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Day 02 Workout */}
+                    <Card className="p-5 bg-secondary/30 border border-border">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg">
+                            02
+                          </span>
+                          <div>
+                            <h4 className="font-semibold text-lg">Leg Day</h4>
+                            <p className="text-sm text-muted-foreground">📅 Jan 01, 2025 - Mar 01, 2025</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="border-accent text-accent">Active</Badge>
+                      </div>
+                      <div className="space-y-3 bg-background/50 p-4 rounded-lg">
+                        <p className="font-medium text-sm mb-2">Exercises:</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Squats</span>
+                            <span className="text-muted-foreground">12 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Leg Press</span>
+                            <span className="text-muted-foreground">10 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Leg Curls</span>
+                            <span className="text-muted-foreground">12 x 4</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Calf Raises</span>
+                            <span className="text-muted-foreground">15 x 3</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Empty State Message */}
+                    <p className="text-center text-muted-foreground text-sm mt-6">No additional workouts assigned. Assign new workout plans from the Workouts menu.</p>
+                  </div>
                 </div>
               </TabsContent>
 

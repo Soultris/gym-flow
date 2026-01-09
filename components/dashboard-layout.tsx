@@ -41,6 +41,7 @@ const navigation = [
   { name: "Members", href: "/members", icon: Users },
   { name: "Attendance", href: "/attendance", icon: ClipboardList },
   { name: "Finance", href: "/finance", icon: DollarSign },
+  { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Workouts", href: "/workouts", icon: Dumbbell },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Bulk SMS", href: "/bulk-sms", icon: MessageSquare },

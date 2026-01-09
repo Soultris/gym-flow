@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Package,
   ActivitySquare,
+  Crown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -162,7 +163,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
             <Link href="/membership-plans" title="Pricing">
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
-                <Package className="h-5 w-5" />
+                <Crown className="h-5 w-5" />
               </Button>
             </Link>
             <Link href="/membership-request" target="_blank">

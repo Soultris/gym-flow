@@ -31,29 +31,21 @@ interface AttendanceRecord {
 // Mock attendance data
 const attendanceRecords: AttendanceRecord[] = [
   { id: "A001", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "06:30 AM", date: "2024-01-03", type: "in" },
-  { id: "A002", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "08:15 AM", date: "2024-01-03", type: "out" },
   { id: "A003", memberId: "M002", memberName: "Sarah Johnson", memberAvatar: "SJ", memberUsername: "@sarahj", time: "07:00 AM", date: "2024-01-03", type: "in" },
   { id: "A004", memberId: "M003", memberName: "Mike Wilson", memberAvatar: "MW", memberUsername: "@mikewilson", time: "05:45 AM", date: "2024-01-03", type: "in" },
-  { id: "A005", memberId: "M003", memberName: "Mike Wilson", memberAvatar: "MW", memberUsername: "@mikewilson", time: "07:30 AM", date: "2024-01-03", type: "out" },
   { id: "A006", memberId: "M004", memberName: "Emily Davis", memberAvatar: "ED", memberUsername: "@emilyd", time: "08:00 AM", date: "2024-01-03", type: "in" },
-  { id: "A007", memberId: "M002", memberName: "Sarah Johnson", memberAvatar: "SJ", memberUsername: "@sarahj", time: "09:00 AM", date: "2024-01-03", type: "out" },
   { id: "A008", memberId: "M005", memberName: "Chris Brown", memberAvatar: "CB", memberUsername: "@chrisbrown", time: "06:15 AM", date: "2024-01-02", type: "in" },
-  { id: "A009", memberId: "M005", memberName: "Chris Brown", memberAvatar: "CB", memberUsername: "@chrisbrown", time: "08:00 AM", date: "2024-01-02", type: "out" },
   { id: "A010", memberId: "M006", memberName: "Jessica Martinez", memberAvatar: "JM", memberUsername: "@jessicam", time: "07:30 AM", date: "2024-01-02", type: "in" },
-  { id: "A011", memberId: "M006", memberName: "Jessica Martinez", memberAvatar: "JM", memberUsername: "@jessicam", time: "09:45 AM", date: "2024-01-02", type: "out" },
   { id: "A012", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "06:00 AM", date: "2024-01-01", type: "in" },
-  { id: "A013", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "08:30 AM", date: "2024-01-01", type: "out" },
   { id: "A014", memberId: "M007", memberName: "David Lee", memberAvatar: "DL", memberUsername: "@davidlee", time: "05:30 AM", date: "2024-01-01", type: "in" },
-  { id: "A015", memberId: "M007", memberName: "David Lee", memberAvatar: "DL", memberUsername: "@davidlee", time: "07:15 AM", date: "2024-01-01", type: "out" },
 ]
 
 export default function AttendanceLogPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [typeFilter, setTypeFilter] = useState<"all" | "in" | "out">("all")
 
-  // Filter records based on search, date range, and type
+  // Filter records based on search and date range
   const filteredRecords = useMemo(() => {
     return attendanceRecords.filter((record) => {
       // Search filter
@@ -69,13 +61,10 @@ export default function AttendanceLogPage() {
       if (endDate) {
         matchesDateRange = matchesDateRange && record.date <= endDate
       }
-
-      // Type filter
-      const matchesType = typeFilter === "all" || record.type === typeFilter
       
-      return matchesSearch && matchesDateRange && matchesType
+      return matchesSearch && matchesDateRange
     })
-  }, [searchTerm, startDate, endDate, typeFilter])
+  }, [searchTerm, startDate, endDate])
 
   // Export PDF function
   const handleExportPDF = () => {
@@ -109,8 +98,7 @@ export default function AttendanceLogPage() {
               <tr>
                 <th>Member</th>
                 <th>Date</th>
-                <th>Time</th>
-                <th>In/Out</th>
+                <th>Check-in Time</th>
               </tr>
             </thead>
             <tbody>
@@ -119,7 +107,6 @@ export default function AttendanceLogPage() {
                   <td>${record.memberName}</td>
                   <td>${new Date(record.date).toLocaleDateString()}</td>
                   <td>${record.time}</td>
-                  <td class="${record.type}">${record.type.toUpperCase()}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -208,20 +195,6 @@ export default function AttendanceLogPage() {
               </div>
             </div>
 
-            {/* Type Filter */}
-            <div>
-              <Label htmlFor="typeFilter" className="mb-2 block text-sm">Type</Label>
-              <Select value={typeFilter} onValueChange={(value: "all" | "in" | "out") => setTypeFilter(value)}>
-                <SelectTrigger id="typeFilter" className="bg-secondary border-[#3a3a3a] w-[120px]">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="in">In</SelectItem>
-                  <SelectItem value="out">Out</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             {/* Export Button */}
             <Button
               onClick={handleExportPDF}
@@ -233,7 +206,7 @@ export default function AttendanceLogPage() {
           </div>
 
           {/* Active Filters Summary */}
-          {(searchTerm || startDate || endDate || typeFilter !== "all") && (
+          {(searchTerm || startDate || endDate) && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#2a2a2a]">
               <span className="text-sm text-muted-foreground">
                 Showing {filteredRecords.length} of {attendanceRecords.length} records
@@ -245,7 +218,6 @@ export default function AttendanceLogPage() {
                   setSearchTerm("")
                   setStartDate("")
                   setEndDate("")
-                  setTypeFilter("all")
                 }}
                 className="text-xs text-muted-foreground"
               >
@@ -268,8 +240,7 @@ export default function AttendanceLogPage() {
               <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Member</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Time</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">In/Out</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Check-in Time</th>
               </tr>
             </thead>
             <tbody>
@@ -306,23 +277,6 @@ export default function AttendanceLogPage() {
                     </td>
                     <td className="px-4 py-4 text-sm font-medium">
                       {record.time}
-                    </td>
-                    <td className="px-4 py-4">
-                      <Badge
-                        variant="outline"
-                        className={
-                          record.type === "in"
-                            ? "border-green-500/50 bg-green-500/10 text-green-400 gap-1"
-                            : "border-red-500/50 bg-red-500/10 text-red-400 gap-1"
-                        }
-                      >
-                        {record.type === "in" ? (
-                          <ArrowDownLeft className="h-3 w-3" />
-                        ) : (
-                          <ArrowUpRight className="h-3 w-3" />
-                        )}
-                        {record.type.toUpperCase()}
-                      </Badge>
                     </td>
                   </tr>
                 ))

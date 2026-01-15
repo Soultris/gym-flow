@@ -3,86 +3,17 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Loader2 } from "lucide-react"
+import { useGetPendingPaymentsQuery } from "@/store/api/transactionsApi"
 
-const pendingPayments = [
-  {
-    id: "M001",
-    name: "John Smith",
-    username: "@johnsmith",
-    avatar: "JS",
-    package: "Premium",
-    lastPayment: "May 12, 2024",
-    membershipExpiry: "May 12, 2024",
-    amountPayable: "LKR 150",
-    overdue: "5 Days",
-  },
-  {
-    id: "M002",
-    name: "Sarah Johnson",
-    username: "@sarahj",
-    avatar: "SJ",
-    package: "Staff",
-    lastPayment: "January 7, 2024",
-    membershipExpiry: "January 7, 2024",
-    amountPayable: "LKR 150",
-    overdue: "6 Days",
-  },
-  {
-    id: "M003",
-    name: "Mike Wilson",
-    username: "@mikewilson",
-    avatar: "MW",
-    package: "Standard",
-    lastPayment: "March 9, 2024",
-    membershipExpiry: "March 9, 2024",
-    amountPayable: "LKR 150",
-    overdue: "5 Days",
-  },
-  {
-    id: "M004",
-    name: "Emily Davis",
-    username: "@emilyd",
-    avatar: "ED",
-    package: "Basic",
-    lastPayment: "November 15, 2023",
-    membershipExpiry: "November 15, 2023",
-    amountPayable: "LKR 150",
-    overdue: "5 Days",
-  },
-  {
-    id: "M005",
-    name: "Chris Brown",
-    username: "@chrisbrown",
-    avatar: "CB",
-    package: "Staff",
-    lastPayment: "February 20, 2024",
-    membershipExpiry: "February 20, 2024",
-    amountPayable: "LKR 150",
-    overdue: "6 Days",
-  },
-  {
-    id: "M006",
-    name: "Jessica Martinez",
-    username: "@jessicam",
-    avatar: "JM",
-    package: "Premium",
-    lastPayment: "April 3, 2024",
-    membershipExpiry: "April 3, 2024",
-    amountPayable: "LKR 150",
-    overdue: "5 Days",
-  },
-  {
-    id: "M007",
-    name: "David Lee",
-    username: "@davidlee",
-    avatar: "DL",
-    package: "Standard",
-    lastPayment: "June 18, 2024",
-    membershipExpiry: "June 18, 2024",
-    amountPayable: "LKR 150",
-    overdue: "5 Days",
-  },
-]
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 const getPackageBadgeClass = (pkg: string) => {
   switch (pkg) {
@@ -99,7 +30,42 @@ const getPackageBadgeClass = (pkg: string) => {
   }
 }
 
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
 export function PendingPaymentsTable() {
+  const { data: pendingPayments = [], isLoading, isError } = useGetPendingPaymentsQuery()
+
+  if (isLoading) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading pending payments...</span>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center text-destructive">
+        Failed to load pending payments
+      </div>
+    )
+  }
+
+  if (pendingPayments.length === 0) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center text-muted-foreground">
+        No pending payments found
+      </div>
+    )
+  }
+
   return (
     <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -111,16 +77,15 @@ export function PendingPaymentsTable() {
             </th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Package</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Last Payment</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Membership Expiry</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Amount Payable</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Overdue</th>
+            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Days Overdue</th>
           </tr>
         </thead>
         <tbody>
-          {pendingPayments.map((payment, index) => (
+          {pendingPayments.map((payment: any, index: number) => (
             <tr
-              key={payment.id}
+              key={payment.memberId || index}
               className={`border-b border-[#2a2a2a] transition-colors ${
                 index % 2 === 0 ? "bg-[#151515]" : "bg-background"
               }`}
@@ -133,24 +98,29 @@ export function PendingPaymentsTable() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="/placeholder.svg?height=36&width=36" />
                     <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                      {payment.avatar}
+                      {getInitials(payment.name || payment.memberName || "?")}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{payment.name}</div>
-                    <div className="text-sm text-muted-foreground">{payment.username}</div>
+                    <div className="font-medium">{payment.name || payment.memberName || "Unknown"}</div>
+                    <div className="text-sm text-muted-foreground">{payment.email || ""}</div>
                   </div>
                 </div>
               </td>
               <td className="px-4 py-4">
-                <Badge variant="secondary" className={getPackageBadgeClass(payment.package)}>
-                  {payment.package}
+                <Badge variant="secondary" className={getPackageBadgeClass(payment.package?.name || payment.packageName || "")}>
+                  {payment.package?.name || payment.packageName || "N/A"}
                 </Badge>
               </td>
-              <td className="px-4 py-4 text-sm text-muted-foreground">{payment.lastPayment}</td>
-              <td className="px-4 py-4 text-sm text-muted-foreground">{payment.membershipExpiry}</td>
-              <td className="px-4 py-4 text-sm font-semibold text-destructive">{payment.amountPayable}</td>
-              <td className="px-4 py-4 text-sm text-muted-foreground">{payment.overdue}</td>
+              <td className="px-4 py-4 text-sm text-muted-foreground">
+                {payment.expiryDate ? formatDate(payment.expiryDate) : "-"}
+              </td>
+              <td className="px-4 py-4 text-sm font-semibold text-destructive">
+                LKR {(payment.amountDue || payment.package?.price || 0).toLocaleString()}
+              </td>
+              <td className="px-4 py-4 text-sm text-muted-foreground">
+                {payment.daysOverdue || 0} Days
+              </td>
             </tr>
           ))}
         </tbody>

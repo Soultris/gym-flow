@@ -5,59 +5,45 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { Calendar } from "lucide-react"
-
-// Sample data for different views
-const dailyData = [
-  { label: "Mon", revenue: 4200 },
-  { label: "Tue", revenue: 3800 },
-  { label: "Wed", revenue: 5100 },
-  { label: "Thu", revenue: 4600 },
-  { label: "Fri", revenue: 6200 },
-  { label: "Sat", revenue: 7500 },
-  { label: "Sun", revenue: 5800 },
-]
-
-const monthlyData = [
-  { label: "Jan", revenue: 32000 },
-  { label: "Feb", revenue: 28000 },
-  { label: "Mar", revenue: 35000 },
-  { label: "Apr", revenue: 42000 },
-  { label: "May", revenue: 48000 },
-  { label: "Jun", revenue: 52000 },
-  { label: "Jul", revenue: 49000 },
-  { label: "Aug", revenue: 55000 },
-  { label: "Sep", revenue: 51000 },
-  { label: "Oct", revenue: 58000 },
-  { label: "Nov", revenue: 62000 },
-  { label: "Dec", revenue: 68000 },
-]
-
-const yearlyData = [
-  { label: "2020", revenue: 320000 },
-  { label: "2021", revenue: 385000 },
-  { label: "2022", revenue: 450000 },
-  { label: "2023", revenue: 520000 },
-  { label: "2024", revenue: 580000 },
-  { label: "2025", revenue: 640000 },
-]
+import { Calendar, Loader2 } from "lucide-react"
+import { useGetRevenueChartDataQuery } from "@/store/api/dashboardApi"
 
 type ViewType = "day" | "month" | "year"
+
+// Fallback data when API returns no data
+const fallbackMonthlyData = [
+  { label: "Jan", revenue: 0 },
+  { label: "Feb", revenue: 0 },
+  { label: "Mar", revenue: 0 },
+  { label: "Apr", revenue: 0 },
+  { label: "May", revenue: 0 },
+  { label: "Jun", revenue: 0 },
+  { label: "Jul", revenue: 0 },
+  { label: "Aug", revenue: 0 },
+  { label: "Sep", revenue: 0 },
+  { label: "Oct", revenue: 0 },
+  { label: "Nov", revenue: 0 },
+  { label: "Dec", revenue: 0 },
+]
 
 export function RevenueChart() {
   const [view, setView] = useState<ViewType>("month")
   const [startDate, setStartDate] = useState("2025-01-01")
   const [endDate, setEndDate] = useState("2025-12-31")
 
+  const { data: revenueData, isLoading } = useGetRevenueChartDataQuery({
+    period: view,
+    year: new Date().getFullYear(),
+  })
+
   const getData = () => {
-    switch (view) {
-      case "day":
-        return dailyData
-      case "year":
-        return yearlyData
-      default:
-        return monthlyData
+    if (!revenueData?.data || revenueData.data.length === 0) {
+      return fallbackMonthlyData
     }
+    return revenueData.data.map((item) => ({
+      label: item.monthName || item.date || String(item.month),
+      revenue: item.revenue,
+    }))
   }
 
   const getViewLabel = () => {
@@ -132,30 +118,36 @@ export function RevenueChart() {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart data={getData()}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="label" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#1F2937",
-              border: "1px solid #374151",
-              borderRadius: "8px",
-            }}
-            labelStyle={{ color: "#00FF9D" }}
-            formatter={(value: number | undefined) => value ? [`$${value.toLocaleString()}`, "Revenue"] : ""}
-          />
-          <Line
-            type="monotone"
-            dataKey="revenue"
-            stroke="#F4F933"
-            strokeWidth={2}
-            dot={{ fill: "#F4F933", r: 5 }}
-            activeDot={{ r: 7 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-[350px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={350}>
+          <LineChart data={getData()}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="label" stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#1F2937",
+                border: "1px solid #374151",
+                borderRadius: "8px",
+              }}
+              labelStyle={{ color: "#00FF9D" }}
+              formatter={(value: number | undefined) => value ? [`LKR ${value.toLocaleString()}`, "Revenue"] : ""}
+            />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#F4F933"
+              strokeWidth={2}
+              dot={{ fill: "#F4F933", r: 5 }}
+              activeDot={{ r: 7 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </Card>
   )
 }

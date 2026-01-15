@@ -6,69 +6,45 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Search, Download, Calendar, ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import { Search, Download, Calendar, Loader2 } from "lucide-react"
 import { useState, useMemo } from "react"
+import { useGetAttendanceQuery, Attendance } from "@/store/api/attendanceApi"
 
-interface AttendanceRecord {
-  id: string
-  memberId: string
-  memberName: string
-  memberAvatar: string
-  memberUsername: string
-  time: string
-  date: string
-  type: "in" | "out"
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
-
-// Mock attendance data
-const attendanceRecords: AttendanceRecord[] = [
-  { id: "A001", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "06:30 AM", date: "2024-01-03", type: "in" },
-  { id: "A003", memberId: "M002", memberName: "Sarah Johnson", memberAvatar: "SJ", memberUsername: "@sarahj", time: "07:00 AM", date: "2024-01-03", type: "in" },
-  { id: "A004", memberId: "M003", memberName: "Mike Wilson", memberAvatar: "MW", memberUsername: "@mikewilson", time: "05:45 AM", date: "2024-01-03", type: "in" },
-  { id: "A006", memberId: "M004", memberName: "Emily Davis", memberAvatar: "ED", memberUsername: "@emilyd", time: "08:00 AM", date: "2024-01-03", type: "in" },
-  { id: "A008", memberId: "M005", memberName: "Chris Brown", memberAvatar: "CB", memberUsername: "@chrisbrown", time: "06:15 AM", date: "2024-01-02", type: "in" },
-  { id: "A010", memberId: "M006", memberName: "Jessica Martinez", memberAvatar: "JM", memberUsername: "@jessicam", time: "07:30 AM", date: "2024-01-02", type: "in" },
-  { id: "A012", memberId: "M001", memberName: "John Smith", memberAvatar: "JS", memberUsername: "@johnsmith", time: "06:00 AM", date: "2024-01-01", type: "in" },
-  { id: "A014", memberId: "M007", memberName: "David Lee", memberAvatar: "DL", memberUsername: "@davidlee", time: "05:30 AM", date: "2024-01-01", type: "in" },
-]
 
 export default function AttendanceLogPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
 
-  // Filter records based on search and date range
+  const { data, isLoading, isError } = useGetAttendanceQuery(
+    startDate || endDate ? { from: startDate || undefined, to: endDate || undefined } : undefined
+  )
+
+  const attendanceRecords = data?.attendance || []
+
+  // Filter records based on search
   const filteredRecords = useMemo(() => {
+    if (!searchTerm) return attendanceRecords
     return attendanceRecords.filter((record) => {
-      // Search filter
-      const matchesSearch = searchTerm === "" || 
-        record.memberName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.memberUsername.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      // Date range filter
-      let matchesDateRange = true
-      if (startDate) {
-        matchesDateRange = matchesDateRange && record.date >= startDate
-      }
-      if (endDate) {
-        matchesDateRange = matchesDateRange && record.date <= endDate
-      }
-      
-      return matchesSearch && matchesDateRange
+      const name = record.member?.name || ""
+      const email = record.member?.email || ""
+      return (
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        email.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     })
-  }, [searchTerm, startDate, endDate])
+  }, [attendanceRecords, searchTerm])
 
   // Export PDF function
   const handleExportPDF = () => {
-    // Create a printable content
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -82,8 +58,6 @@ export default function AttendanceLogPage() {
             th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
             th { background-color: #f4f4f4; font-weight: bold; }
             tr:nth-child(even) { background-color: #f9f9f9; }
-            .in { color: #22c55e; font-weight: bold; }
-            .out { color: #ef4444; font-weight: bold; }
             .footer { margin-top: 30px; font-size: 12px; color: #666; }
           </style>
         </head>
@@ -104,9 +78,9 @@ export default function AttendanceLogPage() {
             <tbody>
               ${filteredRecords.map(record => `
                 <tr>
-                  <td>${record.memberName}</td>
-                  <td>${new Date(record.date).toLocaleDateString()}</td>
-                  <td>${record.time}</td>
+                  <td>${record.member?.name || 'Unknown'}</td>
+                  <td>${new Date(record.timestamp).toLocaleDateString()}</td>
+                  <td>${new Date(record.timestamp).toLocaleTimeString()}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -127,12 +101,20 @@ export default function AttendanceLogPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    })
+  }
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     })
   }
 
@@ -157,7 +139,7 @@ export default function AttendanceLogPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Search by name or username..."
+                  placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9 bg-secondary border-[#3a3a3a]"
@@ -209,7 +191,7 @@ export default function AttendanceLogPage() {
           {(searchTerm || startDate || endDate) && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#2a2a2a]">
               <span className="text-sm text-muted-foreground">
-                Showing {filteredRecords.length} of {attendanceRecords.length} records
+                Showing {filteredRecords.length} records
               </span>
               <Button
                 variant="ghost"
@@ -232,59 +214,76 @@ export default function AttendanceLogPage() {
           {filteredRecords.length} {filteredRecords.length === 1 ? "record" : "records"}
         </p>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading attendance...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <div className="text-center py-12 text-destructive">
+            Failed to load attendance records
+          </div>
+        )}
+
         {/* Attendance Table */}
-        <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Member</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Check-in Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                    No attendance records found
-                  </td>
+        {!isLoading && !isError && (
+          <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Member</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Check-in Time</th>
                 </tr>
-              ) : (
-                filteredRecords.map((record, index) => (
-                  <tr
-                    key={record.id}
-                    className={`border-b border-[#2a2a2a] transition-colors ${
-                      index % 2 === 0 ? "bg-[#151515]" : "bg-background"
-                    }`}
-                  >
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src="/placeholder.svg?height=36&width=36" />
-                          <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                            {record.memberAvatar}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{record.memberName}</div>
-                          <div className="text-sm text-muted-foreground">{record.memberUsername}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">
-                      {formatDate(record.date)}
-                    </td>
-                    <td className="px-4 py-4 text-sm font-medium">
-                      {record.time}
+              </thead>
+              <tbody>
+                {filteredRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                      No attendance records found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-            </table>
+                ) : (
+                  filteredRecords.map((record: Attendance, index: number) => (
+                    <tr
+                      key={record.attendanceId}
+                      className={`border-b border-[#2a2a2a] transition-colors ${
+                        index % 2 === 0 ? "bg-[#151515]" : "bg-background"
+                      }`}
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={record.member?.imageUrl || "/placeholder.svg"} />
+                            <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
+                              {getInitials(record.member?.name || "?")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{record.member?.name || "Unknown"}</div>
+                            <div className="text-sm text-muted-foreground">{record.member?.email || ""}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
+                        {formatDate(record.timestamp)}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium">
+                        {formatTime(record.timestamp)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   )

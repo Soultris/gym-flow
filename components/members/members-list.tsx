@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical } from "lucide-react"
+import { MoreVertical, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -18,107 +18,25 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
+import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import toast from "react-hot-toast"
 
-const members = [
-  {
-    id: "M001",
-    name: "John Smith",
-    username: "@johnsmith",
-    email: "john.smith@email.com",
-    phone: "+1 234 567 8900",
-    role: "Member",
-    package: "Premium",
-    visits: "12/25",
-    status: "Active",
-    enrolled: "May 12, 2024",
-    expiryDate: "May 12, 2024",
-    avatar: "JS",
-  },
-  {
-    id: "M002",
-    name: "Sarah Johnson",
-    username: "@sarahj",
-    email: "sarah.j@email.com",
-    phone: "+1 234 567 8901",
-    role: "Trainer",
-    package: "Staff",
-    visits: "18/50",
-    status: "Active",
-    enrolled: "January 7, 2024",
-    expiryDate: "January 7, 2024",
-    avatar: "SJ",
-  },
-  {
-    id: "M003",
-    name: "Mike Wilson",
-    username: "@mikewilson",
-    email: "mike.w@email.com",
-    phone: "+1 234 567 8902",
-    role: "Member",
-    package: "Standard",
-    visits: "7/25",
-    status: "Active",
-    enrolled: "March 9, 2024",
-    expiryDate: "March 9, 2024",
-    avatar: "MW",
-  },
-  {
-    id: "M004",
-    name: "Emily Davis",
-    username: "@emilyd",
-    email: "emily.d@email.com",
-    phone: "+1 234 567 8903",
-    role: "Member",
-    package: "Basic",
-    visits: "0/10",
-    status: "Expired",
-    enrolled: "November 15, 2023",
-    expiryDate: "November 15, 2023",
-    avatar: "ED",
-  },
-  {
-    id: "M005",
-    name: "Chris Brown",
-    username: "@chrisbrown",
-    email: "chris.b@email.com",
-    phone: "+1 234 567 8904",
-    role: "Trainer",
-    package: "Staff",
-    visits: "21/50",
-    status: "Active",
-    enrolled: "February 20, 2024",
-    expiryDate: "February 20, 2024",
-    avatar: "CB",
-  },
-  {
-    id: "M006",
-    name: "Jessica Martinez",
-    username: "@jessicam",
-    email: "jessica.m@email.com",
-    phone: "+1 234 567 8905",
-    role: "Member",
-    package: "Premium",
-    visits: "15/25",
-    status: "Active",
-    enrolled: "April 3, 2024",
-    expiryDate: "April 3, 2024",
-    avatar: "JM",
-  },
-  {
-    id: "M007",
-    name: "David Lee",
-    username: "@davidlee",
-    email: "david.l@email.com",
-    phone: "+1 234 567 8906",
-    role: "Member",
-    package: "Standard",
-    visits: "9/25",
-    status: "Active",
-    enrolled: "June 18, 2024",
-    expiryDate: "June 18, 2024",
-    avatar: "DL",
-  },
-]
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export function MembersList() {
   const searchParams = useSearchParams()
@@ -132,31 +50,68 @@ export function MembersList() {
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+
+  // API hooks
+  const { data, isLoading, isError } = useGetMembersQuery()
+  const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
     if (!open && renewMemberId) {
-      // Remove query params from URL
       router.replace("/members")
     }
   }
 
-  // Filter members if renewMemberId is present
-  const displayedMembers = renewMemberId 
-    ? members.filter(m => m.id === renewMemberId) 
-    : members
+  const members = data?.members || []
 
-  const handleDeleteClick = (id: string, name: string) => {
+  const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
-    // Handle delete logic here
-    console.log("Deleting member:", memberToDelete?.id)
-    setDeleteDialogOpen(false)
-    setMemberToDelete(null)
+  const handleConfirmDelete = async () => {
+    if (!memberToDelete) return
+    
+    try {
+      await deleteMember(memberToDelete.id).unwrap()
+      toast.success(`${memberToDelete.name} has been deleted`)
+      setDeleteDialogOpen(false)
+      setMemberToDelete(null)
+    } catch (error) {
+      toast.error("Failed to delete member")
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading members...</span>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+        <p className="text-destructive">Failed to load members</p>
+        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    )
+  }
+
+  if (members.length === 0) {
+    return (
+      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+        <p className="text-muted-foreground">No members found</p>
+        <Link href="/members/add">
+          <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -178,94 +133,106 @@ export function MembersList() {
           </tr>
         </thead>
         <tbody>
-          {displayedMembers.map((member, index) => (
-            <tr
-              key={member.id}
-              className={`border-b border-[#2a2a2a] transition-colors ${
-                index % 2 === 0 ? "bg-[#151515]" : "bg-background"
-              }`}
-            >
-              <td className="px-4 py-4">
-                <Checkbox className="border-[#3a3a3a]" />
-              </td>
-              <td className="px-4 py-4">
-                <Link
-                  href={`/members/${member.id}`}
-                  className="flex items-center gap-3 transition-opacity"
-                >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src="/placeholder.svg?height=36&width=36" />
-                    <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                      {member.avatar}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{member.name}</div>
-                    <div className="text-sm text-muted-foreground">{member.username}</div>
-                  </div>
-                </Link>
-              </td>
-              <td className="px-4 py-4 text-sm">{member.package}</td>
-              <td className="px-4 py-4">
-                <Badge
-                  variant="outline"
-                  className={
-                    member.status === "Active"
-                      ? "border-accent text-accent bg-accent/10"
-                      : "border-destructive text-destructive bg-destructive/10"
-                  }
-                >
-                  {member.status}
-                </Badge>
-              </td>
-              <td className="px-4 py-4 text-sm text-muted-foreground">{member.enrolled}</td>
-              <td className="px-4 py-4 text-sm text-muted-foreground">{member.expiryDate}</td>
-              <td className="px-4 py-4">
-                <NewTransactionDialog 
-                  memberId={member.id}
-                  memberName={member.name}
-                  triggerStyle="renew"
-                />
-              </td>
-              <td className="px-4 py-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/members/${member.id}`} className="cursor-pointer">
-                        View Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/members/${member.id}`} className="cursor-pointer">
-                        Edit Member
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/workouts?assignMemberId=${member.id}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
-                        Assign Workout
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/bulk-sms?memberId=${member.id}&memberName=${member.name}`} className="cursor-pointer">
-                        Send Message
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive cursor-pointer"
-                      onClick={() => handleDeleteClick(member.id, member.name)}
-                    >
-                      Delete Member
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </td>
-            </tr>
-          ))}
+          {members.map((member: Member, index: number) => {
+            const latestPackage = member.memberPackages?.[0]
+            const expiryDate = latestPackage?.expiresAt
+            const status = member.status || (member.isPending ? "pending" : "active")
+            
+            return (
+              <tr
+                key={member.memberId}
+                className={`border-b border-[#2a2a2a] transition-colors ${
+                  index % 2 === 0 ? "bg-[#151515]" : "bg-background"
+                }`}
+              >
+                <td className="px-4 py-4">
+                  <Checkbox className="border-[#3a3a3a]" />
+                </td>
+                <td className="px-4 py-4">
+                  <Link
+                    href={`/members/${member.memberId}`}
+                    className="flex items-center gap-3 transition-opacity"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={member.imageUrl || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
+                        {getInitials(member.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-sm text-muted-foreground">{member.email}</div>
+                    </div>
+                  </Link>
+                </td>
+                <td className="px-4 py-4 text-sm">{member.package?.name || "No Package"}</td>
+                <td className="px-4 py-4">
+                  <Badge
+                    variant="outline"
+                    className={
+                      status === "active"
+                        ? "border-accent text-accent bg-accent/10"
+                        : status === "expired"
+                        ? "border-destructive text-destructive bg-destructive/10"
+                        : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
+                    }
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </Badge>
+                </td>
+                <td className="px-4 py-4 text-sm text-muted-foreground">
+                  {formatDate(member.joiningDate)}
+                </td>
+                <td className="px-4 py-4 text-sm text-muted-foreground">
+                  {expiryDate ? formatDate(expiryDate) : "-"}
+                </td>
+                <td className="px-4 py-4">
+                  <NewTransactionDialog 
+                    memberId={String(member.memberId)}
+                    memberName={member.name}
+                    triggerStyle="renew"
+                  />
+                </td>
+                <td className="px-4 py-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/members/${member.memberId}`} className="cursor-pointer">
+                          View Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/members/${member.memberId}`} className="cursor-pointer">
+                          Edit Member
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
+                          Assign Workout
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
+                          Send Message
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-destructive cursor-pointer"
+                        onClick={() => handleDeleteClick(member.memberId, member.name)}
+                      >
+                        Delete Member
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
         </table>
       </div>
@@ -284,14 +251,16 @@ export function MembersList() {
               variant="outline" 
               onClick={() => setDeleteDialogOpen(false)} 
               className="flex-1 bg-transparent border-[#3a3a3a]"
+              disabled={isDeleting}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleConfirmDelete} 
               className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

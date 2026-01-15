@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,77 +13,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Check } from "lucide-react"
-
-interface MembershipPlan {
-  id: string
-  name: string
-  price: number
-  popular?: boolean
-  features: string[]
-}
-
-const membershipPlans: MembershipPlan[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: 29,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "2 guest passes/month",
-    ],
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    price: 49,
-    popular: true,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "5 guest passes/month",
-      "Group classes",
-      "Free parking",
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 79,
-    features: [
-      "Access to gym floor",
-      "Locker room access",
-      "Unlimited guest passes",
-      "All classes",
-      "Personal training (2x/month)",
-      "Spa access",
-      "Priority booking",
-    ],
-  },
-]
+import { Check, Loader2 } from "lucide-react"
+import { useCreateMemberMutation } from "@/store/api/membersApi"
+import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
+import toast from "react-hot-toast"
 
 const MEMBERSHIP_FEE = 10
 const TAX_RATE = 0.04 // 4% tax
 
 export function AddMemberForm() {
-  const [selectedPlan, setSelectedPlan] = useState<string>("standard")
+  const router = useRouter()
+  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [formData, setFormData] = useState({
-    memberNo: "",
     fullName: "",
     dob: "",
     age: "",
     mobile: "",
     email: "",
-    gender: "male",
+    gender: "male" as "male" | "female" | "other",
     nic: "",
     height: "",
     weight: "",
     address: "",
-    joiningDate: "",
+    joiningDate: new Date().toISOString().split("T")[0],
   })
 
-  const selectedPlanData = membershipPlans.find((p) => p.id === selectedPlan)
+  const { data: packages, isLoading: packagesLoading } = useGetPackagesQuery()
+  const [createMember, { isLoading: isCreating }] = useCreateMemberMutation()
+
+  const selectedPlanData = packages?.find((p: Package) => p.packageId === selectedPlan)
   const planPrice = selectedPlanData?.price || 0
   const taxes = planPrice * TAX_RATE
   const total = planPrice + MEMBERSHIP_FEE + taxes
@@ -103,10 +62,29 @@ export function AddMemberForm() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Member data:", formData, "Plan:", selectedPlan)
-    // TODO: Submit to backend
+    
+    try {
+      await createMember({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.mobile,
+        dob: formData.dob,
+        gender: formData.gender,
+        nic: formData.nic,
+        height: parseFloat(formData.height) || 0,
+        weight: parseFloat(formData.weight) || 0,
+        address: formData.address,
+        joiningDate: formData.joiningDate,
+        packageId: selectedPlan || undefined,
+      }).unwrap()
+      
+      toast.success("Member added successfully!")
+      router.push("/members")
+    } catch (error) {
+      toast.error("Failed to add member")
+    }
   }
 
   return (
@@ -120,17 +98,7 @@ export function AddMemberForm() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="memberNo">Member No.</Label>
-            <Input 
-              id="memberNo" 
-              placeholder="Auto-generated" 
-              value={formData.memberNo}
-              onChange={(e) => updateField("memberNo", e.target.value)}
-              disabled
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">Full Name *</Label>
             <Input 
@@ -266,65 +234,66 @@ export function AddMemberForm() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {membershipPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedPlan === plan.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-muted-foreground"
-                  }`}
-                >
-                  {/* Selection indicator */}
-                  <div className="absolute top-4 right-4">
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPlan === plan.id
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground"
-                      }`}
-                    >
-                      {selectedPlan === plan.id && (
-                        <Check className="w-3 h-3 text-primary-foreground" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Plan header */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{plan.name}</h3>
-                    {plan.popular && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-4">
-                    <span className="text-2xl font-bold text-primary">
-                      LKR {plan.price}
-                    </span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li
-                        key={index}
-                        className="flex items-center gap-2 text-sm text-muted-foreground"
+            {packagesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {packages?.map((plan: Package) => (
+                  <div
+                    key={plan.packageId}
+                    onClick={() => setSelectedPlan(plan.packageId)}
+                    className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedPlan === plan.packageId
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    {/* Selection indicator */}
+                    <div className="absolute top-4 right-4">
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPlan === plan.packageId
+                            ? "border-primary bg-primary"
+                            : "border-muted-foreground"
+                        }`}
                       >
-                        <Check className="w-4 h-4 text-primary" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+                        {selectedPlan === plan.packageId && (
+                          <Check className="w-3 h-3 text-primary-foreground" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Plan header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{plan.name}</h3>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-2xl font-bold text-primary">
+                        LKR {plan.price}
+                      </span>
+                      <span className="text-muted-foreground">/{plan.durationType}</span>
+                    </div>
+
+                    {/* Features */}
+                    <ul className="space-y-2">
+                      {plan.features.map((feature: string, index: number) => (
+                        <li
+                          key={index}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Check className="w-4 h-4 text-primary" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
 
@@ -341,7 +310,7 @@ export function AddMemberForm() {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {selectedPlanData?.name} Plan
+                  {selectedPlanData?.name || "No"} Plan
                 </span>
                 <span>LKR {planPrice.toFixed(2)}</span>
               </div>
@@ -369,10 +338,23 @@ export function AddMemberForm() {
         <Button
           type="submit"
           className="bg-primary text-primary-foreground hover:bg-primary/90"
+          disabled={isCreating}
         >
-          Add Member
+          {isCreating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            "Add Member"
+          )}
         </Button>
-        <Button type="button" variant="outline" className="bg-transparent">
+        <Button 
+          type="button" 
+          variant="outline" 
+          className="bg-transparent"
+          onClick={() => router.push("/members")}
+        >
           Cancel
         </Button>
       </div>

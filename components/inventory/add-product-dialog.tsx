@@ -20,17 +20,12 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Upload, X, Package } from "lucide-react"
-
-interface Product {
-  name: string
-  price: number
-  category: string
-  image: string
-}
+import { Plus, Upload, X, Package, Loader2 } from "lucide-react"
+import { useCreateProductMutation } from "@/store/api/productsApi"
+import toast from "react-hot-toast"
 
 interface AddProductDialogProps {
-  onAddProduct: (product: Product) => void
+  onAddProduct?: () => void
 }
 
 const categories = ["Supplements", "Equipment", "Accessories"]
@@ -42,6 +37,8 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
   const [category, setCategory] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [createProduct, { isLoading }] = useCreateProductMutation()
 
   const resetForm = () => {
     setName("")
@@ -56,7 +53,6 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Create a preview URL for the image
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
@@ -72,21 +68,28 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !price || !category) {
       return
     }
 
-    const product: Product = {
-      name,
-      price: parseFloat(price),
-      category,
-      image: imagePreview || "/placeholder.svg?height=200&width=200",
-    }
+    try {
+      await createProduct({
+        name,
+        price: parseFloat(price),
+        category,
+        imageUrl: imagePreview || undefined,
+      }).unwrap()
 
-    onAddProduct(product)
-    resetForm()
-    setOpen(false)
+      toast.success(`${name} added to inventory`)
+      resetForm()
+      setOpen(false)
+      
+      // Notify parent to refetch
+      onAddProduct?.()
+    } catch (error) {
+      toast.error("Failed to add product")
+    }
   }
 
   return (
@@ -207,15 +210,23 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
             variant="outline" 
             onClick={() => setOpen(false)} 
             className="flex-1 bg-transparent border-[#3a3a3a]"
+            disabled={isLoading}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit} 
             className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={!name || !price || !category}
+            disabled={!name || !price || !category || isLoading}
           >
-            Add Product
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              "Add Product"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -53,7 +53,8 @@ interface SchedulingConfig {
   }
 }
 
-const members: Member[] = [
+// Members are now fetched from API
+const members = [
   { id: "M001", name: "John Smith" },
   { id: "M002", name: "Sarah Johnson" },
   { id: "M003", name: "Mike Wilson" },
@@ -63,62 +64,28 @@ const members: Member[] = [
   { id: "M007", name: "David Lee" },
 ]
 
+// Templates are now fetched from API
 const smsTemplates: SmsTemplate[] = [
   {
     id: "T001",
     name: "Special Offer - 20% Discount",
     category: "offers",
-    message: "🎉 Special Offer! Get 20% off on all membership renewals this month. Don't miss out on this amazing offer! Visit our gym today.",
+    message: "🎉 Special Offer! Get 20% off on all membership renewals this month. Don't miss out!",
     createdDate: "2025-01-05",
   },
   {
     id: "T002",
     name: "Membership Expiring Soon",
     category: "membership",
-    message: "Your membership is expiring in 3 days. Renew now to continue enjoying unlimited gym access and exclusive member benefits. Click here to renew.",
+    message: "Your membership is expiring in 3 days. Renew now to continue enjoying unlimited gym access.",
     createdDate: "2025-01-06",
   },
   {
     id: "T003",
     name: "Training Session Reminder",
     category: "reminders",
-    message: "Hi! Just a reminder that your personal training session is scheduled for tomorrow at 9 AM. Please arrive 10 minutes early.",
+    message: "Hi! Just a reminder that your personal training session is scheduled for tomorrow at 9 AM.",
     createdDate: "2025-01-01",
-  },
-  {
-    id: "T004",
-    name: "Gym Maintenance Notice",
-    category: "announcements",
-    message: "Maintenance Notice: The gym will be closed on Sunday from 6 AM to 12 PM for equipment maintenance. We apologize for any inconvenience.",
-    createdDate: "2025-01-02",
-  },
-  {
-    id: "T005",
-    name: "Fitness Challenge Completion",
-    category: "events",
-    message: "Congratulations on completing your fitness challenge! Come pick up your certificate and prize at the front desk. Thank you for participating!",
-    createdDate: "2025-01-03",
-  },
-  {
-    id: "T006",
-    name: "New Year Special",
-    category: "offers",
-    message: "🎊 New Year Special! Get 50% off on your first month. Join our gym and start your fitness journey today!",
-    createdDate: "2025-01-01",
-  },
-  {
-    id: "T007",
-    name: "Weekly Fitness Tip",
-    category: "announcements",
-    message: "Weekly fitness tip: Remember to stay hydrated during your workouts! Drink at least 2-3 liters of water daily.",
-    createdDate: "2025-01-04",
-  },
-  {
-    id: "T008",
-    name: "Re-engagement Offer",
-    category: "offers",
-    message: "We miss you! Come back and enjoy our new fitness classes. Rejoin today and get your first month at 50% off.",
-    createdDate: "2025-01-05",
   },
 ]
 

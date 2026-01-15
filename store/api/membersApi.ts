@@ -102,12 +102,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    approveMember: builder.mutation<Member, number>({
-      query: (id) => ({
+    approveMember: builder.mutation<Member, { id: number; packageId?: number }>({
+      query: ({ id, packageId }) => ({
         url: `/members/${id}/approve`,
         method: 'PUT',
+        body: { packageId },
       }),
-      invalidatesTags: (_result, _error, id) => ['Members', { type: 'Member', id }],
+      invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),
     getMemberAttendance: builder.query<any[], { id: number; from?: string; to?: string }>({
       query: ({ id, ...params }) => ({

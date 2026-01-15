@@ -107,7 +107,8 @@ export default function PendingMembersPage() {
     if (!memberToReview) return
     
     try {
-      await approveMember(memberToReview.memberId).unwrap()
+      const packageId = selectedPlan ? parseInt(selectedPlan, 10) : undefined
+      await approveMember({ id: memberToReview.memberId, packageId }).unwrap()
       toast.success(`${memberToReview.name} has been approved`)
       setReviewDialogOpen(false)
       setMemberToReview(null)

@@ -3,99 +3,96 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { MembersHeader } from "@/components/members/members-header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical } from "lucide-react"
+import { MoreVertical, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useState } from "react"
+import { useGetTrainersQuery, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
+import toast from "react-hot-toast"
 
-const trainers = [
-  {
-    id: "T001",
-    name: "John Smith",
-    username: "@johnsmith",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "May 12, 2024",
-    avatar: "JS",
-  },
-  {
-    id: "T002",
-    name: "Sarah Johnson",
-    username: "@sarahj",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "January 7, 2024",
-    avatar: "SJ",
-  },
-  {
-    id: "T003",
-    name: "Mike Wilson",
-    username: "@mikewilson",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "March 9, 2024",
-    avatar: "MW",
-  },
-  {
-    id: "T004",
-    name: "Emily Davis",
-    username: "@emilyd",
-    phone: "+94 077 123 4567",
-    status: "Inactive",
-    enrolled: "November 15, 2023",
-    avatar: "ED",
-  },
-  {
-    id: "T005",
-    name: "Chris Brown",
-    username: "@chrisbrown",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "February 20, 2024",
-    avatar: "CB",
-  },
-  {
-    id: "T006",
-    name: "Jessica Martinez",
-    username: "@jessicam",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "April 3, 2024",
-    avatar: "JM",
-  },
-  {
-    id: "T007",
-    name: "David Lee",
-    username: "@davidlee",
-    phone: "+94 077 123 4567",
-    status: "Active",
-    enrolled: "June 18, 2024",
-    avatar: "DL",
-  },
-]
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export default function TrainersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [trainerToDelete, setTrainerToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [trainerToDelete, setTrainerToDelete] = useState<{ id: number; name: string } | null>(null)
 
-  const handleDeleteClick = (id: string, name: string) => {
+  // API hooks
+  const { data: trainersData, isLoading, isError } = useGetTrainersQuery()
+  const [deleteTrainer, { isLoading: isDeleting }] = useDeleteTrainerMutation()
+
+  // Filter for approved trainers only (isPending = false)
+  const trainers = (trainersData || []).filter((trainer: Trainer) => !trainer.isPending)
+
+  const handleDeleteClick = (id: number, name: string) => {
     setTrainerToDelete({ id, name })
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
-    setDeleteDialogOpen(false)
-    setTrainerToDelete(null)
+  const handleConfirmDelete = async () => {
+    if (!trainerToDelete) return
+    
+    try {
+      await deleteTrainer(trainerToDelete.id).unwrap()
+      toast.success(`${trainerToDelete.name} has been deleted`)
+      setDeleteDialogOpen(false)
+      setTrainerToDelete(null)
+    } catch {
+      toast.error("Failed to delete trainer")
+    }
   }
 
-  const getStatusColor = (status: string) => {
-    return status === "Active"
-      ? "border-accent text-accent bg-accent/10"
-      : "border-yellow-500/50 bg-yellow-500/10 text-yellow-400"
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <MembersHeader />
+          <div className="border border-[#2a2a2a] rounded-lg p-8 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading trainers...</span>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <MembersHeader />
+          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+            <p className="text-destructive">Failed to load trainers</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (trainers.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <MembersHeader />
+          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+            <p className="text-muted-foreground">No trainers found</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -114,15 +111,14 @@ export default function TrainersPage() {
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Phone Number</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Enrolled</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
                 <th className="w-12 px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {trainers.map((trainer, index) => (
+              {trainers.map((trainer: Trainer, index: number) => (
                 <tr
-                  key={trainer.id}
+                  key={trainer.trainerId}
                   className={`border-b border-[#2a2a2a] transition-colors ${
                     index % 2 === 0 ? "bg-[#151515]" : "bg-background"
                   }`}
@@ -132,31 +128,23 @@ export default function TrainersPage() {
                   </td>
                   <td className="px-4 py-4">
                     <Link
-                      href={`/trainers/${trainer.id}`}
+                      href={`/trainers/${trainer.trainerId}`}
                       className="flex items-center gap-3 transition-opacity"
                     >
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src="/placeholder.svg?height=36&width=36" />
+                        <AvatarImage src="/placeholder.svg" />
                         <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                          {trainer.avatar}
+                          {getInitials(trainer.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="font-medium">{trainer.name}</div>
-                        <div className="text-sm text-muted-foreground">{trainer.username}</div>
+                        <div className="text-sm text-muted-foreground">{trainer.specialization}</div>
                       </div>
                     </Link>
                   </td>
                   <td className="px-4 py-4 text-sm">{trainer.phone}</td>
-                  <td className="px-4 py-4">
-                    <Badge
-                      variant="outline"
-                      className={getStatusColor(trainer.status)}
-                    >
-                      {trainer.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-muted-foreground">{trainer.enrolled}</td>
+                  <td className="px-4 py-4 text-sm">{trainer.specialization}</td>
                   <td className="px-4 py-4">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -166,23 +154,23 @@ export default function TrainersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
                         <DropdownMenuItem asChild>
-                          <Link href={`/trainers/${trainer.id}`} className="cursor-pointer">
+                          <Link href={`/trainers/${trainer.trainerId}`} className="cursor-pointer">
                             View Profile
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/members/${trainer.id}/edit`} className="cursor-pointer">
+                          <Link href={`/trainers/${trainer.trainerId}/edit`} className="cursor-pointer">
                             Edit Trainer
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/bulk-sms?memberId=${trainer.id}&memberName=${trainer.name}`} className="cursor-pointer">
+                          <Link href={`/bulk-sms?trainerId=${trainer.trainerId}&trainerName=${trainer.name}`} className="cursor-pointer">
                             Send Message
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive cursor-pointer"
-                          onClick={() => handleDeleteClick(trainer.id, trainer.name)}
+                          onClick={() => handleDeleteClick(trainer.trainerId, trainer.name)}
                         >
                           Delete Trainer
                         </DropdownMenuItem>
@@ -210,14 +198,16 @@ export default function TrainersPage() {
                 variant="outline" 
                 onClick={() => setDeleteDialogOpen(false)} 
                 className="flex-1 bg-transparent border-[#3a3a3a]"
+                disabled={isDeleting}
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleConfirmDelete} 
                 className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isDeleting}
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </Button>
             </DialogFooter>
           </DialogContent>

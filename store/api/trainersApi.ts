@@ -5,6 +5,7 @@ export interface Trainer {
   name: string;
   phone: string;
   specialization: string;
+  isPending: boolean;
   _count?: {
     transactions: number;
     users: number;
@@ -50,6 +51,13 @@ export const trainersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Trainers'],
     }),
+    approveTrainer: builder.mutation<Trainer, number>({
+      query: (id) => ({
+        url: `/trainers/${id}/approve`,
+        method: 'PUT',
+      }),
+      invalidatesTags: (_result, _error, id) => ['Trainers', { type: 'Trainer', id }],
+    }),
   }),
 });
 
@@ -59,4 +67,5 @@ export const {
   useCreateTrainerMutation,
   useUpdateTrainerMutation,
   useDeleteTrainerMutation,
+  useApproveTrainerMutation,
 } = trainersApi;

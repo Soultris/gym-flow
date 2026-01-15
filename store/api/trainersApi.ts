@@ -58,6 +58,19 @@ export const trainersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, id) => ['Trainers', { type: 'Trainer', id }],
     }),
+    signupTrainer: builder.mutation<{ message: string; trainer: Trainer }, {
+      email: string;
+      password: string;
+      name: string;
+      phone: string;
+      specialization: string;
+    }>({
+      query: (data) => ({
+        url: '/trainers/signup',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -68,4 +81,5 @@ export const {
   useUpdateTrainerMutation,
   useDeleteTrainerMutation,
   useApproveTrainerMutation,
+  useSignupTrainerMutation,
 } = trainersApi;

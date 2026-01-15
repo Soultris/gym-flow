@@ -22,18 +22,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Banknote, CreditCard, RotateCw, Package, ShoppingBag } from "lucide-react"
+import { Plus, Banknote, CreditCard, RotateCw, Package, ShoppingBag, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-
-const members = [
-  { id: "M001", name: "John Smith" },
-  { id: "M002", name: "Sarah Johnson" },
-  { id: "M003", name: "Mike Wilson" },
-  { id: "M004", name: "Emily Davis" },
-  { id: "M005", name: "Chris Brown" },
-  { id: "M006", name: "Jessica Martinez" },
-  { id: "M007", name: "David Lee" },
-]
+import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetPackagesQuery } from "@/store/api/packagesApi"
+import { useGetTrainersQuery } from "@/store/api/trainersApi"
+import { useCreateTransactionMutation } from "@/store/api/transactionsApi"
+import toast from "react-hot-toast"
 
 const transactionTypes = [
   { id: "membership", name: "Membership" },
@@ -55,6 +50,7 @@ interface NewTransactionDialogProps {
   memberName?: string
   triggerStyle?: "button" | "renew" | "hidden"
   defaultTransactionType?: string
+  defaultPackageId?: string
   openByDefault?: boolean
   onOpenChange?: (open: boolean) => void
   cartItems?: CartItem[]
@@ -66,6 +62,7 @@ export function NewTransactionDialog({
   // memberName is kept for potential future use
   triggerStyle = "button",
   defaultTransactionType = "",
+  defaultPackageId = "",
   openByDefault = false,
   onOpenChange,
   cartItems = [],
@@ -78,6 +75,8 @@ export function NewTransactionDialog({
   const [transactionType, setTransactionType] = useState(defaultTransactionType)
   const [amount, setAmount] = useState("")
   const [notes, setNotes] = useState("")
+  const [selectedPackageId, setSelectedPackageId] = useState(defaultPackageId)
+  const [selectedTrainerId, setSelectedTrainerId] = useState("")
   
   // Guest fields
   const [guestName, setGuestName] = useState("")
@@ -87,6 +86,15 @@ export function NewTransactionDialog({
   // Receipt settings
   const [sendReceipt, setSendReceipt] = useState(false)
   const [receiptMethod, setReceiptMethod] = useState<"sms" | "email">("sms")
+
+  // API hooks
+  const { data: membersData } = useGetMembersQuery({ limit: 1000 })
+  const { data: packages = [] } = useGetPackagesQuery()
+  const { data: trainers = [] } = useGetTrainersQuery()
+  const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation()
+
+  const members = membersData?.members || []
+  const approvedTrainers = trainers.filter(t => !t.isPending)
 
   // Sync open state with openByDefault prop
   useEffect(() => {
@@ -99,6 +107,16 @@ export function NewTransactionDialog({
       setAmount(cartTotal.toString())
     }
   }, [transactionType, cartTotal])
+
+  // Auto-set amount when package is selected
+  useEffect(() => {
+    if (transactionType === "membership" && selectedPackageId) {
+      const pkg = packages.find(p => p.packageId.toString() === selectedPackageId)
+      if (pkg) {
+        setAmount(pkg.price.toString())
+      }
+    }
+  }, [selectedPackageId, transactionType, packages])
 
   // Handle external open state changes
   const handleOpenChange = (newOpen: boolean) => {
@@ -116,25 +134,59 @@ export function NewTransactionDialog({
       setGuestPhone("")
       setSendReceipt(false)
       setReceiptMethod("sms")
+      setSelectedPackageId("")
+      setSelectedTrainerId("")
     }
   }
 
-  const handleSubmit = () => {
-    // Process transaction logic here
-    console.log({ 
-      member, 
-      transactionType, 
-      amount, 
-      paymentMethod, 
-      notes, 
-      cartItems,
-      guestName: member === "guest" ? guestName : undefined,
-      guestEmail: member === "guest" ? guestEmail : undefined,
-      guestPhone: member === "guest" ? guestPhone : undefined,
-      sendReceipt,
-      receiptMethod: sendReceipt ? receiptMethod : undefined
-    })
-    handleOpenChange(false)
+  const handleSubmit = async () => {
+    try {
+      // Validate required fields
+      if (!transactionType) {
+        toast.error("Please select a transaction type")
+        return
+      }
+      if (!amount || parseFloat(amount) <= 0) {
+        toast.error("Please enter a valid amount")
+        return
+      }
+      if (member !== "guest" && !member) {
+        toast.error("Please select a member")
+        return
+      }
+      if (member === "guest" && !guestName) {
+        toast.error("Please enter guest name")
+        return
+      }
+
+      const isGuest = member === "guest"
+      const memberId = isGuest ? undefined : parseInt(member, 10)
+
+      await createTransaction({
+        isGuest,
+        memberId,
+        guestName: isGuest ? guestName : undefined,
+        guestEmail: isGuest ? guestEmail : undefined,
+        guestPhone: isGuest ? guestPhone : undefined,
+        transactionType: transactionType as 'membership' | 'personal_training' | 'merchandise',
+        packageId: transactionType === "membership" && selectedPackageId ? parseInt(selectedPackageId, 10) : undefined,
+        trainerId: transactionType === "personal_training" && selectedTrainerId ? parseInt(selectedTrainerId, 10) : undefined,
+        price: parseFloat(amount),
+        paymentMethod,
+        products: transactionType === "merchandise" && cartItems.length > 0 
+          ? cartItems.map(item => ({ 
+              productId: parseInt(item.product.id, 10), 
+              quantity: item.quantity 
+            }))
+          : undefined,
+      }).unwrap()
+
+      toast.success("Transaction created successfully")
+      handleOpenChange(false)
+    } catch (error) {
+      toast.error("Failed to create transaction")
+      console.error("Transaction error:", error)
+    }
   }
 
   const getItemPrice = (item: CartItem) => item.product.price
@@ -174,7 +226,7 @@ export function NewTransactionDialog({
               <SelectContent>
                 <SelectItem value="guest">Guest</SelectItem>
                 {members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
+                  <SelectItem key={m.memberId} value={m.memberId.toString()}>
                     {m.name}
                   </SelectItem>
                 ))}
@@ -223,7 +275,12 @@ export function NewTransactionDialog({
           {/* Transaction Type */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="type">Transaction Type</Label>
-            <Select value={transactionType} onValueChange={setTransactionType}>
+            <Select value={transactionType} onValueChange={(value) => {
+              setTransactionType(value)
+              setAmount("")
+              setSelectedPackageId("")
+              setSelectedTrainerId("")
+            }}>
               <SelectTrigger className="bg-secondary border-[#3a3a3a]">
                 <SelectValue placeholder="Select transaction type" />
               </SelectTrigger>
@@ -236,6 +293,44 @@ export function NewTransactionDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Package Selection - shown for membership transactions */}
+          {transactionType === "membership" && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="package">Select Package</Label>
+              <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
+                <SelectTrigger className="bg-secondary border-[#3a3a3a]">
+                  <SelectValue placeholder="Choose a package" />
+                </SelectTrigger>
+                <SelectContent>
+                  {packages.map((pkg) => (
+                    <SelectItem key={pkg.packageId} value={pkg.packageId.toString()}>
+                      {pkg.name} - LKR {pkg.price.toLocaleString()} ({pkg.duration} {pkg.durationType})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Trainer Selection - shown for personal training transactions */}
+          {transactionType === "personal_training" && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="trainer">Select Trainer</Label>
+              <Select value={selectedTrainerId} onValueChange={setSelectedTrainerId}>
+                <SelectTrigger className="bg-secondary border-[#3a3a3a]">
+                  <SelectValue placeholder="Choose a trainer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvedTrainers.map((trainer) => (
+                    <SelectItem key={trainer.trainerId} value={trainer.trainerId.toString()}>
+                      {trainer.name} - {trainer.specialization}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Merchandise Items Display */}
           {transactionType === "merchandise" && (
@@ -291,7 +386,7 @@ export function NewTransactionDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="pl-12 bg-secondary border-[#3a3a3a]"
-                readOnly={transactionType === "merchandise" && cartItems.length > 0}
+                readOnly={transactionType === "membership" && !!selectedPackageId}
               />
             </div>
           </div>
@@ -405,11 +500,27 @@ export function NewTransactionDialog({
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={() => handleOpenChange(false)} className="flex-1 bg-transparent border-[#3a3a3a]">
+          <Button 
+            variant="outline" 
+            onClick={() => handleOpenChange(false)} 
+            className="flex-1 bg-transparent border-[#3a3a3a]"
+            disabled={isCreating}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
-            Process Transaction
+          <Button 
+            onClick={handleSubmit} 
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isCreating}
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Process Transaction"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

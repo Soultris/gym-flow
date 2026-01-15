@@ -202,6 +202,8 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                     memberId={String(member.memberId)}
                     memberName={member.name}
                     triggerStyle="renew"
+                    defaultTransactionType="membership"
+                    defaultPackageId={latestPackage?.package?.packageId?.toString() || member.package?.packageId?.toString() || ""}
                   />
                 </td>
                 <td className="px-4 py-4">

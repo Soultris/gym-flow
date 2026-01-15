@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -36,6 +36,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { logout } from "@/store/slices/authSlice"
+import toast from "react-hot-toast"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -52,6 +55,15 @@ const navigation = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const dispatch = useAppDispatch()
+  const user = useAppSelector((state) => state.auth.user)
+
+  const handleLogout = () => {
+    dispatch(logout())
+    toast.success("Logged out successfully")
+    router.push("/login")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,7 +149,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>

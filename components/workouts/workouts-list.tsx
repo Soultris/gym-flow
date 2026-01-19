@@ -18,13 +18,22 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import toast from "react-hot-toast"
+import { useGetMembersQuery } from "@/store/api/membersApi"
+import {
+  useGetWorkoutTemplatesQuery,
+  useCreateWorkoutTemplateMutation,
+  useUpdateWorkoutTemplateMutation,
+  useDeleteWorkoutTemplateMutation,
+  useAssignWorkoutMutation,
+} from "@/store/api/workoutsApi"
 
 interface Exercise {
   name: string
   reps: string
 }
 
-interface WorkoutTemplate {
+interface WorkoutTemplateUI {
   id: number
   name: string
   description: string
@@ -44,8 +53,8 @@ interface AssignedWorkout {
   notificationType?: "sms" | "email" | "both"
 }
 
-interface Member {
-  id: string
+interface MemberUI {
+  id: number
   name: string
   email: string
   phone: string
@@ -54,67 +63,46 @@ interface Member {
 type DialogType = "add-template" | "edit-template" | "assign-workout" | null
 type WorkoutCreationMode = "select" | "customize-template" | "create-custom"
 
-const mockMembers: Member[] = [
-  { id: "M001", name: "John Smith", email: "john@example.com", phone: "+1234567890" },
-  { id: "M002", name: "Sarah Johnson", email: "sarah@example.com", phone: "+1234567891" },
-  { id: "M003", name: "Mike Wilson", email: "mike@example.com", phone: "+1234567892" },
-  { id: "M004", name: "Emily Davis", email: "emily@example.com", phone: "+1234567893" },
-  { id: "M005", name: "Chris Brown", email: "chris@example.com", phone: "+1234567894" },
-]
-
-const initialWorkoutTemplates: WorkoutTemplate[] = [
-  {
-    id: 1,
-    name: "Chest Builder",
-    description: "Focuses on developing chest muscles using exercises like bench press, push-ups, and chest flys. Helps increase upper body strength and muscle size.",
-    exercises: [
-      { name: "Upper Chest", reps: "12 x 4" },
-      { name: "Middle Chest", reps: "10 x 4" },
-      { name: "Lower Chest", reps: "12 x 4" },
-      { name: "Front Shoulders", reps: "10 x 3" },
-      { name: "Triceps", reps: "12 x 3" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Leg Day",
-    description: "Complete leg workout targeting quads, hamstrings, and calves for powerful lower body development.",
-    exercises: [
-      { name: "Squats", reps: "12 x 4" },
-      { name: "Leg Press", reps: "10 x 4" },
-      { name: "Leg Curls", reps: "12 x 4" },
-      { name: "Calf Raises", reps: "15 x 3" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Back & Biceps",
-    description: "Back strengthening routine with bicep curls to build a strong back and arm muscles.",
-    exercises: [
-      { name: "Pull-ups", reps: "10 x 4" },
-      { name: "Rows", reps: "12 x 4" },
-      { name: "Bicep Curls", reps: "12 x 3" },
-      { name: "Lat Pulldowns", reps: "10 x 3" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Shoulders & Arms",
-    description: "Comprehensive shoulder and arm workout for defined shoulders and strong arms.",
-    exercises: [
-      { name: "Shoulder Press", reps: "10 x 4" },
-      { name: "Lateral Raises", reps: "12 x 3" },
-      { name: "Barbell Curls", reps: "10 x 3" },
-      { name: "Tricep Dips", reps: "12 x 3" },
-    ],
-  },
-]
+// Helper to transform API templates to UI format
+import { WorkoutTemplate } from "@/store/api/workoutsApi"
+const transformTemplates = (templates: WorkoutTemplate[]): WorkoutTemplateUI[] => {
+  return templates.map(t => ({
+    id: t.templateId,
+    name: t.name,
+    description: t.description || "",
+    exercises: t.rows?.map((r) => ({ name: r.name, reps: r.reps })) || []
+  }))
+}
 
 export function WorkoutsList() {
   const searchParams = useSearchParams()
   
-  // Template Management State
-  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>(initialWorkoutTemplates)
+  // API Queries
+  const { data: templatesData, isLoading: templatesLoading } = useGetWorkoutTemplatesQuery()
+  const { data: membersData, isLoading: membersLoading } = useGetMembersQuery({ limit: 100 })
+  
+  // API Mutations
+  const [createTemplate, { isLoading: isCreating }] = useCreateWorkoutTemplateMutation()
+  const [updateTemplate, { isLoading: isUpdating }] = useUpdateWorkoutTemplateMutation()
+  const [deleteTemplate, { isLoading: isDeleting }] = useDeleteWorkoutTemplateMutation()
+  const [assignWorkout, { isLoading: isAssigning }] = useAssignWorkoutMutation()
+  
+  // Transform API data to UI format
+  const workoutTemplates = useMemo(() => 
+    templatesData ? transformTemplates(templatesData) : [], 
+    [templatesData]
+  )
+  
+  const members: MemberUI[] = useMemo(() => 
+    membersData?.members?.map(m => ({
+      id: m.memberId,
+      name: m.name,
+      email: m.email,
+      phone: m.phone
+    })) || [],
+    [membersData]
+  )
+  
   const [assignedWorkouts, setAssignedWorkouts] = useState<AssignedWorkout[]>([])
   
   // Dialog & UI State
@@ -133,7 +121,7 @@ export function WorkoutsList() {
 
   // Assignment Form State
   const [memberSearch, setMemberSearch] = useState("")
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null)
   const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<Map<number, { startDate: string; endDate: string }>>(new Map())
 
   const [notificationType, setNotificationType] = useState<"sms" | "email" | "both">("both")
@@ -178,22 +166,27 @@ export function WorkoutsList() {
     const assignMemberName = searchParams.get("assignMemberName")
     const tab = searchParams.get("tab")
     
-    if (assignMemberId && assignMemberName && selectedMemberId !== assignMemberId) {
-      setSelectedMemberId(assignMemberId)
-      setMemberSearch(decodeURIComponent(assignMemberName))
-      if (tab === "assign") {
-        setActiveTab("assign")
+    if (assignMemberId && assignMemberName) {
+      const memberId = parseInt(assignMemberId, 10)
+      if (!isNaN(memberId) && selectedMemberId !== memberId) {
+        setSelectedMemberId(memberId)
+        setMemberSearch(decodeURIComponent(assignMemberName))
+        if (tab === "assign") {
+          setActiveTab("assign")
+        }
       }
     }
-  }, [searchParams, selectedMemberId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // Filtered members based on search
   const filteredMembers = useMemo(() => {
-    return mockMembers.filter(member =>
+    if (!memberSearch) return []
+    return members.filter(member =>
       member.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      member.id.toLowerCase().includes(memberSearch.toLowerCase())
+      String(member.id).includes(memberSearch)
     )
-  }, [memberSearch])
+  }, [memberSearch, members])
 
 
 
@@ -225,9 +218,14 @@ export function WorkoutsList() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedTemplateId) {
-      setWorkoutTemplates(workoutTemplates.filter(w => w.id !== selectedTemplateId))
+      try {
+        await deleteTemplate(selectedTemplateId).unwrap()
+        toast.success("Template deleted successfully")
+      } catch {
+        toast.error("Failed to delete template")
+      }
     }
     setDeleteDialogOpen(false)
     setSelectedTemplateId(null)
@@ -252,30 +250,34 @@ export function WorkoutsList() {
 
 
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!templateForm.name.trim()) return
 
-    if (dialogType === "add-template") {
-      const newTemplate: WorkoutTemplate = {
-        id: Math.max(...workoutTemplates.map(w => w.id), 0) + 1,
-        name: templateForm.name,
-        description: templateForm.description,
-        exercises: exercises.filter(e => e.name.trim()),
+    try {
+      const rows = exercises.filter(e => e.name.trim()).map(e => ({ name: e.name, reps: e.reps }))
+      
+      if (dialogType === "add-template") {
+        await createTemplate({
+          name: templateForm.name,
+          description: templateForm.description,
+          rows
+        }).unwrap()
+        toast.success("Template created successfully")
+      } else if (dialogType === "edit-template" && selectedTemplateId) {
+        await updateTemplate({
+          id: selectedTemplateId,
+          data: {
+            name: templateForm.name,
+            description: templateForm.description,
+            rows
+          }
+        }).unwrap()
+        toast.success("Template updated successfully")
       }
-      setWorkoutTemplates([...workoutTemplates, newTemplate])
-    } else if (dialogType === "edit-template" && selectedTemplateId) {
-      setWorkoutTemplates(workoutTemplates.map(w => 
-        w.id === selectedTemplateId 
-          ? {
-              ...w,
-              name: templateForm.name,
-              description: templateForm.description,
-              exercises: exercises.filter(e => e.name.trim()),
-            }
-          : w
-      ))
+      closeDialog()
+    } catch {
+      toast.error("Failed to save template")
     }
-    closeDialog()
   }
 
   const handleSelectTemplateForCustomization = (templateId: number) => {
@@ -333,39 +335,42 @@ export function WorkoutsList() {
     setCustomExercises([{ name: "", reps: "" }])
   }
 
-  const handleFinishAndAssignAll = () => {
+  const handleFinishAndAssignAll = async () => {
     if (!selectedMemberId || dayWorkoutAssignments.length === 0) return
 
-    const selectedMember = mockMembers.find(m => m.id === selectedMemberId)
+    const selectedMember = members.find(m => m.id === selectedMemberId)
     if (!selectedMember) return
 
-    const newAssignments: AssignedWorkout[] = dayWorkoutAssignments.map((assignment, idx) => ({
-      id: `assigned-${Date.now()}-${idx}`,
-      memberId: selectedMemberId,
-      memberName: selectedMember.name,
-      workoutId: -1,
-      workoutName: assignment.workoutName,
-      startDate: assignment.startDate,
-      endDate: assignment.endDate,
-      assignedDate: new Date().toISOString().split('T')[0],
-      notificationSent: false,
-      notificationType,
-    }))
-
-    setAssignedWorkouts([...assignedWorkouts, ...newAssignments])
-    
-    // Reset all forms
-    setMemberSearch("")
-    setSelectedMemberId(null)
-    setCurrentDay(null)
-    setDayWorkoutAssignments([])
-    setCurrentWorkoutMode(null)
-    setCurrentSelectedTemplate(null)
-    setCurrentDayStartDate("")
-    setCurrentDayEndDate("")
-    setCustomWorkoutForm({ name: "", description: "" })
-    setCustomExercises([{ name: "", reps: "" }])
-    setNotificationType("both")
+    try {
+      // Assign each day's workout to the backend
+      for (const assignment of dayWorkoutAssignments) {
+        await assignWorkout({
+          memberId: selectedMemberId,
+          name: assignment.workoutName,
+          dayNumber: assignment.day,
+          startDate: assignment.startDate,
+          endDate: assignment.endDate,
+          rows: assignment.exercises.map(e => ({ name: e.name, reps: e.reps }))
+        }).unwrap()
+      }
+      
+      toast.success(`${dayWorkoutAssignments.length} workout(s) assigned to ${selectedMember.name}`)
+      
+      // Reset all forms
+      setMemberSearch("")
+      setSelectedMemberId(null)
+      setCurrentDay(null)
+      setDayWorkoutAssignments([])
+      setCurrentWorkoutMode(null)
+      setCurrentSelectedTemplate(null)
+      setCurrentDayStartDate("")
+      setCurrentDayEndDate("")
+      setCustomWorkoutForm({ name: "", description: "" })
+      setCustomExercises([{ name: "", reps: "" }])
+      setNotificationType("both")
+    } catch {
+      toast.error("Failed to assign workouts")
+    }
   }
 
   const handleSendNotification = (assignedWorkoutId: string, type: "sms" | "email") => {
@@ -817,7 +822,7 @@ export function WorkoutsList() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Selected Member</p>
-                      <p className="text-lg font-semibold">{mockMembers.find(m => m.id === selectedMemberId)?.name}</p>
+                      <p className="text-lg font-semibold">{members.find(m => m.id === selectedMemberId)?.name}</p>
                     </div>
                     <button
                       onClick={() => {

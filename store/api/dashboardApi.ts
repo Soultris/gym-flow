@@ -6,6 +6,7 @@ export interface DashboardStats {
   expiringSoon: number;
   checkInsToday: number;
   pendingPayments: number;
+  pendingPaymentAmount: number;
   totalRevenue: number;
   monthlyRevenue: number;
 }
@@ -27,15 +28,19 @@ export interface Activity {
 }
 
 interface RevenueDataPoint {
-  month?: number;
+  label?: string;
+  month?: number | string;
   monthName?: string;
   date?: string;
+  year?: string;
   revenue: number;
 }
 
 interface RevenueChartResponse {
-  period: string;
-  year: number;
+  view: string;
+  groupBy: 'day' | 'month' | 'year';
+  from: string;
+  to: string;
   data: RevenueDataPoint[];
 }
 
@@ -78,7 +83,7 @@ export const dashboardApi = baseApi.injectEndpoints({
     getMembershipReport: builder.query<any, void>({
       query: () => '/reports/membership',
     }),
-    getRevenueChartData: builder.query<RevenueChartResponse, { period?: string; year?: number } | void>({
+    getRevenueChartData: builder.query<RevenueChartResponse, { view?: string; from?: string; to?: string } | void>({
       query: (params) => ({
         url: '/reports/revenue',
         params: params || {},

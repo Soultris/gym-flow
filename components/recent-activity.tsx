@@ -26,7 +26,8 @@ function getActivityColor(type: string): string {
 }
 
 export function RecentActivity() {
-  const { data: activities, isLoading } = useGetActivityFeedQuery({ limit: 10 })
+  const { data, isLoading } = useGetActivityFeedQuery({ limit: 10 })
+  const activities = data?.activities || []
 
   if (isLoading) {
     return (
@@ -47,7 +48,7 @@ export function RecentActivity() {
     )
   }
 
-  if (!activities || activities.length === 0) {
+  if (activities.length === 0) {
     return (
       <Card className="p-6">
         <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>

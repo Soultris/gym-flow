@@ -61,7 +61,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: () => '/dashboard/stats',
       providesTags: ['Dashboard'],
     }),
-    getActivityFeed: builder.query<Activity[], { limit?: number } | void>({
+    getActivityFeed: builder.query<{ activities: Activity[]; users: { userId: number; name: string }[]; total: number }, { limit?: number; from?: string; to?: string; type?: string; userId?: string; search?: string } | void>({
       query: (params) => ({
         url: '/dashboard/activity',
         params: params || {},

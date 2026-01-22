@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+
 import { Plus, Edit, Trash2, Check } from "lucide-react"
 import {
   Dialog,
@@ -16,53 +16,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
+import {
+  useGetPackagesQuery,
+  useCreatePackageMutation,
+  useUpdatePackageMutation,
+  useDeletePackageMutation,
+} from "@/store/api/packagesApi"
+import { toast } from "react-hot-toast"
 
-const packages = [
-  {
-    id: 1,
-    name: "Basic",
-    price: 30,
-    duration: "1 Month",
-    features: ["Gym Access", "Locker Facility", "Basic Equipment"],
-    members: 89,
-    popular: false,
-  },
-  {
-    id: 2,
-    name: "Standard",
-    price: 50,
-    duration: "1 Month",
-    features: ["Gym Access", "Locker Facility", "All Equipment", "Group Classes"],
-    members: 134,
-    popular: false,
-  },
-  {
-    id: 3,
-    name: "Premium",
-    price: 80,
-    duration: "1 Month",
-    features: ["Gym Access", "Locker Facility", "All Equipment", "Group Classes", "Personal Trainer", "Diet Plan"],
-    members: 89,
-    popular: false,
-  },
-  {
-    id: 4,
-    name: "Annual Pass",
-    price: 600,
-    duration: "12 Months",
-    features: [
-      "Gym Access",
-      "Locker Facility",
-      "All Equipment",
-      "Group Classes",
-      "Personal Trainer",
-      "Diet Plan",
-      "Free Guest Pass",
-    ],
-    members: 30,
-    popular: false,
-  },
-]
+
 
 type DialogType = "add-package" | "edit-package" | null
 
@@ -72,23 +34,50 @@ export function PackagesList() {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    duration: "1 Month",
+    duration: "1",
+    durationType: "months",
     features: "",
   })
 
-  const selectedPackage = selectedPackageId ? packages.find(p => p.id === selectedPackageId) : null
+  const { data: packages = [], isLoading } = useGetPackagesQuery()
+  const [createPackage] = useCreatePackageMutation()
+  const [updatePackage] = useUpdatePackageMutation()
+  const [deletePackage] = useDeletePackageMutation()
+
+  // Helper to format duration for display
+  const formatDuration = (duration: number, type: string) => {
+
+    // simple mapping for 'months' -> 'Month' / 'Months'
+    if (type === 'months') return `${duration} ${duration === 1 ? 'Month' : 'Months'}`;
+    if (type === 'weeks') return `${duration} ${duration === 1 ? 'Week' : 'Weeks'}`;
+    if (type === 'days') return `${duration} ${duration === 1 ? 'Day' : 'Days'}`;
+    return `${duration} ${type}`;
+  }
 
   const handleEditClick = (packageId: number) => {
     setSelectedPackageId(packageId)
-    const pkg = packages.find(p => p.id === packageId)
+    const pkg = packages.find(p => p.packageId === packageId)
     if (pkg) {
       setFormData({
         name: pkg.name,
         price: pkg.price.toString(),
-        duration: pkg.duration,
+        duration: pkg.duration.toString(),
+        durationType: pkg.durationType,
         features: pkg.features.join("\n"),
       })
       setDialogType("edit-package")
+    }
+  }
+
+  const handleDeleteClick = async (packageId: number) => {
+    if (confirm("Are you sure you want to delete this package?")) {
+      try {
+        await deletePackage(packageId).unwrap()
+        toast.success("Package deleted successfully")
+      } catch (error) {
+        toast.error("Failed to delete package")
+        console.error(error)
+      }
     }
   }
 
@@ -98,9 +87,46 @@ export function PackagesList() {
     setFormData({
       name: "",
       price: "",
-      duration: "1 Month",
+      duration: "1",
+      durationType: "months", // Default
       features: "",
     })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Split features by newline and filter empty strings
+    const featuresList = formData.features
+      .split("\n")
+      .map(f => f.trim())
+      .filter(f => f.length > 0)
+
+    const payload = {
+      name: formData.name,
+      price: parseFloat(formData.price),
+      duration: parseInt(formData.duration),
+      durationType: formData.durationType as 'days' | 'weeks' | 'months',
+      features: featuresList,
+    }
+
+    try {
+      if (dialogType === "edit-package" && selectedPackageId) {
+        await updatePackage({ id: selectedPackageId, data: payload }).unwrap()
+        toast.success("Package updated successfully")
+      } else {
+        await createPackage(payload).unwrap()
+        toast.success("Package created successfully")
+      }
+      closeDialog()
+    } catch (error) {
+      toast.error(dialogType === "edit-package" ? "Failed to update package" : "Failed to create package")
+      console.error(error)
+    }
+  }
+
+  if (isLoading) {
+    return <div>Loading packages...</div>
   }
 
   return (
@@ -121,7 +147,7 @@ export function PackagesList() {
               <DialogTitle>Create Membership Package</DialogTitle>
               <DialogDescription>Add a new membership package</DialogDescription>
             </DialogHeader>
-            <form className="space-y-4 mt-4">
+            <form className="space-y-4 mt-4" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="packageName">Package Name *</Label>
@@ -148,17 +174,26 @@ export function PackagesList() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
-                <select 
-                  id="duration" 
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                >
-                  <option>1 Month</option>
-                  <option>3 Months</option>
-                  <option>6 Months</option>
-                  <option>12 Months</option>
-                </select>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    className="w-1/3"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                  />
+                  <select 
+                    id="durationType" 
+                    className="w-2/3 px-3 py-2 rounded-lg bg-secondary border border-border text-sm"
+                    value={formData.durationType}
+                    onChange={(e) => setFormData({...formData, durationType: e.target.value})}
+                  >
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                  </select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="features">Features (one per line)</Label>
@@ -192,7 +227,7 @@ export function PackagesList() {
             <DialogTitle>Edit Package</DialogTitle>
             <DialogDescription>Update the package details and features</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4 mt-4">
+          <form className="space-y-4 mt-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="editPackageName">Package Name *</Label>
@@ -219,17 +254,25 @@ export function PackagesList() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="editDuration">Duration</Label>
-              <select 
-                id="editDuration" 
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm"
-                value={formData.duration}
-                onChange={(e) => setFormData({...formData, duration: e.target.value})}
-              >
-                <option>1 Month</option>
-                <option>3 Months</option>
-                <option>6 Months</option>
-                <option>12 Months</option>
-              </select>
+              <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    className="w-1/3"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                  />
+                  <select 
+                    id="editDurationType" 
+                    className="w-2/3 px-3 py-2 rounded-lg bg-secondary border border-border text-sm"
+                    value={formData.durationType}
+                    onChange={(e) => setFormData({...formData, durationType: e.target.value})}
+                  >
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                  </select>
+                </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="editFeatures">Features (one per line)</Label>
@@ -256,15 +299,14 @@ export function PackagesList() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {packages.map((pkg) => (
           <Card
-            key={pkg.id}
-            className={`p-6 transition-colors flex flex-col ${pkg.popular ? "border-[#E8FF00] border-2" : ""}`}
+            key={pkg.packageId}
+            className={`p-6 transition-colors flex flex-col`}
           >
-            {pkg.popular && <Badge className="mb-4 bg-[#E8FF00] text-black font-semibold">Most Popular</Badge>}
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold">{pkg.name}</h3>
               <div className="mt-2">
                 <span className="text-4xl font-bold text-[#E8FF00]">LKR {pkg.price}</span>
-                <span className="text-muted-foreground">/{pkg.duration}</span>
+                <span className="text-muted-foreground">/{formatDuration(pkg.duration, pkg.durationType)}</span>
               </div>
             </div>
 
@@ -278,14 +320,14 @@ export function PackagesList() {
             </div>
 
             <div className="text-center text-sm text-muted-foreground mb-4">
-              <span className="font-medium text-[#E8FF00]">{pkg.members}</span> active members
+              <span className="font-medium text-[#E8FF00]">{pkg._count?.members || 0}</span> active members
             </div>
 
             <div className="flex items-center gap-2">
               <Button 
                 size="sm" 
                 className="flex-1 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
-                onClick={() => handleEditClick(pkg.id)}
+                onClick={() => handleEditClick(pkg.packageId)}
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -294,6 +336,7 @@ export function PackagesList() {
                 size="sm" 
                 variant="ghost" 
                 className="text-destructive hover:bg-destructive/10"
+                onClick={() => handleDeleteClick(pkg.packageId)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

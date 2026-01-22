@@ -7,6 +7,9 @@ export interface Package {
   duration: number;
   durationType: 'days' | 'weeks' | 'months';
   features: string[];
+  _count?: {
+    members: number;
+  };
 }
 
 interface CreatePackageRequest {

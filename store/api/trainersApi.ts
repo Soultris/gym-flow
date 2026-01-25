@@ -6,6 +6,7 @@ export interface Trainer {
   phone: string;
   specialization: string;
   isPending: boolean;
+  strikePoints: number;
   _count?: {
     transactions: number;
     users: number;
@@ -72,6 +73,14 @@ export const trainersApi = baseApi.injectEndpoints({
         body: data,
       }),
     }),
+    updateStrikePoints: builder.mutation<{ message: string; trainer: Trainer }, { id: number; strikePoints: number }>({
+      query: ({ id, strikePoints }) => ({
+        url: `/trainers/${id}/strike`,
+        method: 'PUT',
+        body: { strikePoints },
+      }),
+      invalidatesTags: (_result, _error, { id }) => ['Trainers', { type: 'Trainer', id }],
+    }),
   }),
 });
 
@@ -83,4 +92,5 @@ export const {
   useDeleteTrainerMutation,
   useApproveTrainerMutation,
   useSignupTrainerMutation,
+  useUpdateStrikePointsMutation,
 } = trainersApi;

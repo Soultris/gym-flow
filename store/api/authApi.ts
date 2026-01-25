@@ -1,78 +1,54 @@
-import { baseApi } from './baseApi';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { RootState } from '../../index';
 
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-  roleId?: number;
-}
-
-interface User {
+export interface User {
   userId: number;
   email: string;
   name: string;
   roleId: number;
+  gymId?: number;
+  features: string[];
   role?: {
     roleId: number;
     name: string;
   };
 }
 
-interface AuthResponse {
-  message: string;
-  user: User;
-  token: string;
-}
-
-interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export const authApi = baseApi.injectEndpoints({
+export const authApi = createApi({
+  reducerPath: 'authApi',
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'http://localhost:3001/api/auth',
+    prepareHeaders: (headers, { getState }) => {
+      const token = (getState() as RootState).auth.token;
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  tagTypes: ['User'],
   endpoints: (builder) => ({
-    login: builder.mutation<AuthResponse, LoginRequest>({
+    getMe: builder.query<User, void>({
+      query: () => '/me',
+      providesTags: ['User'],
+    }),
+    login: builder.mutation<{ user: User; token: string }, any>({
       query: (credentials) => ({
-        url: '/auth/login',
+        url: '/login',
         method: 'POST',
         body: credentials,
       }),
+      invalidatesTags: ['User'],
     }),
-    register: builder.mutation<AuthResponse, RegisterRequest>({
-      query: (data) => ({
-        url: '/auth/register',
+    register: builder.mutation<{ user: User; token: string }, any>({
+      query: (userData) => ({
+        url: '/register',
         method: 'POST',
-        body: data,
+        body: userData,
       }),
-    }),
-    getMe: builder.query<User, void>({
-      query: () => '/auth/me',
-    }),
-    logout: builder.mutation<{ message: string }, void>({
-      query: () => ({
-        url: '/auth/logout',
-        method: 'POST',
-      }),
-    }),
-    changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
-      query: (data) => ({
-        url: '/auth/password',
-        method: 'PUT',
-        body: data,
-      }),
+      invalidatesTags: ['User'],
     }),
   }),
 });
 
-export const {
-  useLoginMutation,
-  useRegisterMutation,
-  useGetMeQuery,
-  useLogoutMutation,
-  useChangePasswordMutation,
-} = authApi;
+export const { useGetMeQuery, useLoginMutation, useRegisterMutation } = authApi;

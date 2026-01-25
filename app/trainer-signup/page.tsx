@@ -84,6 +84,7 @@ export default function TrainerSignupPage() {
         name: formData.fullName,
         phone: formData.mobileNo,
         specialization: formData.specialization,
+        gymId: 1,
       }).unwrap()
 
       setSuccess(true)

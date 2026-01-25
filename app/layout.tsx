@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ReduxProvider } from "@/store/provider"
 import { Toaster } from "react-hot-toast"
+import { AuthProvider } from "@/components/auth-provider"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -40,8 +41,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
         <ReduxProvider>
-          {children}
-          <Toaster
+          <AuthProvider>
+            {children}
+            <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -63,7 +65,8 @@ export default function RootLayout({
                 },
               },
             }}
-          />
+            />
+          </AuthProvider>
         </ReduxProvider>
       </body>
     </html>

@@ -33,6 +33,7 @@ import {
   Package,
   ActivitySquare,
   Crown,
+  Building2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
@@ -45,10 +46,10 @@ const navigation = [
   { name: "Members", href: "/members", icon: Users },
   { name: "Attendance", href: "/attendance", icon: ClipboardList },
   { name: "Finance", href: "/finance", icon: DollarSign },
-  { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Inventory", href: "/inventory", icon: Package, feature: "INVENTORY" },
   { name: "Workouts", href: "/workouts", icon: Dumbbell },
   { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Bulk SMS", href: "/bulk-sms", icon: MessageSquare },
+  { name: "Bulk SMS", href: "/bulk-sms", icon: MessageSquare, feature: "BULK_SMS" },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -96,6 +97,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3">
             {navigation.map((item) => {
+              // Hide standard items for Super Admin
+              if (user?.roleId === 4) {
+                return null
+              }
+
+              // Check if feature is enabled for the gym
+              if (item.feature && user && user.features && !user.features.includes(item.feature)) {
+                return null
+              }
+
               const isActive = item.href === "/" 
                 ? pathname === "/" 
                 : pathname === item.href || pathname.startsWith(item.href + "/")
@@ -116,6 +127,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               )
             })}
+            
+            {/* Super Admin Links */}
+            {user?.roleId === 4 && (
+              <Link
+                href="/admin/gyms"
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Building2 className="h-5 w-5" />
+                Gym Management
+              </Link>
+            )}
           </nav>
 
           {/* User profile */}

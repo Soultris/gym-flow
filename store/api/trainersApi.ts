@@ -64,6 +64,7 @@ export const trainersApi = baseApi.injectEndpoints({
       name: string;
       phone: string;
       specialization: string;
+      gymId: number;
     }>({
       query: (data) => ({
         url: '/trainers/signup',

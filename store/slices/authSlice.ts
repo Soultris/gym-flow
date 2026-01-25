@@ -5,6 +5,8 @@ interface User {
   email: string;
   name: string;
   roleId: number;
+  gymId?: number;
+  features: string[];
   role?: {
     roleId: number;
     name: string;

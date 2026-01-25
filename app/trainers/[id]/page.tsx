@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { StrikePointsManager } from "@/components/trainers/strike-points-manager"
 import { ArrowLeft, Mail, Phone, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { use } from "react"
@@ -126,6 +127,13 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-muted-foreground mt-2">Associated Members</p>
               </Card>
             </div>
+
+            {/* Strike Points Manager */}
+            <StrikePointsManager
+              trainerId={trainer.trainerId}
+              currentStrikePoints={trainer.strikePoints || 0}
+              trainerName={trainer.name}
+            />
           </div>
         </div>
       </div>

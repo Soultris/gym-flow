@@ -24,7 +24,7 @@ export interface GymFeature {
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3001/api/admin',
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/admin`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {

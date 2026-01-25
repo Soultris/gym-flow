@@ -17,7 +17,7 @@ export interface User {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3001/api/auth',
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/auth`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {

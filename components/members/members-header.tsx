@@ -5,9 +5,26 @@ import { Input } from "@/components/ui/input"
 import { Search, SlidersHorizontal, Plus, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
 
 export function MembersHeader() {
   const pathname = usePathname()
+
+  // Fetch members to get real counts
+  const { data: membersData } = useGetMembersQuery({ limit: 1000 })
+  const { data: trainersData } = useGetTrainersQuery()
+
+  const members = membersData?.members || []
+  const trainers = trainersData || []
+
+  // Calculate counts from actual data
+  const totalCount = members.length
+  const activeCount = members.filter(m => m.status === 'active').length
+  const expiredCount = members.filter(m => m.status === 'expired').length
+  const pendingCount = members.filter(m => m.status === 'pending' || m.isPending).length
+  const pendingTrainersCount = trainers.filter((t: Trainer) => t.isPending).length
+  const trainersCount = trainers.filter((t: Trainer) => !t.isPending).length
 
   const getTabs = () => {
     const baseTab = pathname.split("/")[2] || ""
@@ -17,28 +34,28 @@ export function MembersHeader() {
   const currentTab = getTabs()
 
   const tabs = [
-    { name: "View all", href: "/members", count: 248 },
-    { name: "Active", href: "/members/active", count: 128 },
-    { name: "Expired", href: "/members/expired", count: 48 },
-    { name: "Pending", href: "/members/pending", count: 38 },
-    { name: "Pending Trainers", href: "/members/pending-trainers", count: 8 },
-    { name: "Trainers", href: "/members/trainers", count: 15 },
+    { name: "View all", href: "/members", count: totalCount },
+    { name: "Active", href: "/members/active", count: activeCount },
+    { name: "Expired", href: "/members/expired", count: expiredCount },
+    { name: "Pending", href: "/members/pending", count: pendingCount },
+    { name: "Pending Trainers", href: "/members/pending-trainers", count: pendingTrainersCount },
+    { name: "Trainers", href: "/members/trainers", count: trainersCount },
   ]
 
   const getHeaderTitle = () => {
     switch (currentTab) {
       case "active":
-        return "Active members (128)"
+        return `Active members (${activeCount})`
       case "pending":
-        return "Pending members (38)"
+        return `Pending members (${pendingCount})`
       case "pending-trainers":
-        return "Pending Trainers (8)"
+        return `Pending Trainers (${pendingTrainersCount})`
       case "expired":
-        return "Expired members (48)"
+        return `Expired members (${expiredCount})`
       case "trainers":
-        return "Trainers (15)"
+        return `Trainers (${trainersCount})`
       default:
-        return "All members (248)"
+        return `All members (${totalCount})`
     }
   }
 

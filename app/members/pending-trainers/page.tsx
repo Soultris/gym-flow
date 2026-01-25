@@ -15,133 +15,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye } from "lucide-react"
+import { Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
+import toast from "react-hot-toast"
 
-interface PendingTrainer {
-  id: string
-  name: string
-  username: string
-  email: string
-  phone: string
-  submittedDate: string
-  avatar: string
-  trainerNo: string
-  dob: string
-  age: number
-  gender: string
-  nic: string
-  address: string
-  joiningDate: string
-  specialization: string
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
-
-const pendingTrainers: PendingTrainer[] = [
-  {
-    id: "T001",
-    name: "Sarah Johnson",
-    username: "@sarahj",
-    email: "sarah.j@email.com",
-    phone: "+1 234 567 8901",
-    submittedDate: "January 7, 2024",
-    avatar: "SJ",
-    trainerNo: "TR001",
-    dob: "1992-03-15",
-    age: 32,
-    gender: "Female",
-    nic: "45678901234567",
-    address: "456 Oak Ave, City, State 67890",
-    joiningDate: "2024-01-07",
-    specialization: "Yoga & Pilates",
-  },
-  {
-    id: "T002",
-    name: "Emily Davis",
-    username: "@emilyd",
-    email: "emily.d@email.com",
-    phone: "+1 234 567 8903",
-    submittedDate: "November 15, 2023",
-    avatar: "ED",
-    trainerNo: "TR002",
-    dob: "1990-11-10",
-    age: 34,
-    gender: "Female",
-    nic: "67890123456789",
-    address: "321 Elm St, City, State 44556",
-    joiningDate: "2023-11-15",
-    specialization: "Strength Training",
-  },
-  {
-    id: "T003",
-    name: "Marcus Thompson",
-    username: "@marcust",
-    email: "marcus.t@email.com",
-    phone: "+1 234 567 8907",
-    submittedDate: "December 20, 2023",
-    avatar: "MT",
-    trainerNo: "TR003",
-    dob: "1988-06-22",
-    age: 36,
-    gender: "Male",
-    nic: "12345678901234",
-    address: "567 Pine St, City, State 33445",
-    joiningDate: "2023-12-20",
-    specialization: "CrossFit",
-  },
-  {
-    id: "T004",
-    name: "Lisa Chen",
-    username: "@lisac",
-    email: "lisa.c@email.com",
-    phone: "+1 234 567 8908",
-    submittedDate: "February 5, 2024",
-    avatar: "LC",
-    trainerNo: "TR004",
-    dob: "1993-09-18",
-    age: 31,
-    gender: "Female",
-    nic: "23456789012345",
-    address: "890 Maple Dr, City, State 55667",
-    joiningDate: "2024-02-05",
-    specialization: "Cardio & HIIT",
-  },
-]
 
 export default function PendingTrainersPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
-  const [trainerToReview, setTrainerToReview] = useState<PendingTrainer | null>(null)
+  const [trainerToReview, setTrainerToReview] = useState<Trainer | null>(null)
+  
+  // API hooks
+  const { data: trainersData, isLoading, isError } = useGetTrainersQuery()
+  const [approveTrainer, { isLoading: isApproving }] = useApproveTrainerMutation()
+  const [deleteTrainer, { isLoading: isDeleting }] = useDeleteTrainerMutation()
+  
+  // Filter for pending trainers only
+  const pendingTrainers = (trainersData || []).filter((trainer: Trainer) => trainer.isPending)
   
   // Form state for editable fields
   const [formData, setFormData] = useState({
     trainerNo: "",
     name: "",
-    dob: "",
-    age: "",
     phone: "",
-    email: "",
-    gender: "Male",
-    nic: "",
-    address: "",
-    joiningDate: "",
+    gender: "male",
     specialization: "",
   })
 
-  const handleReview = (trainer: PendingTrainer) => {
+  const handleReview = (trainer: Trainer) => {
     setTrainerToReview(trainer)
     // Initialize form with trainer data
     setFormData({
-      trainerNo: trainer.trainerNo,
+      trainerNo: `TR${String(trainer.trainerId).padStart(3, '0')}`,
       name: trainer.name,
-      dob: trainer.dob,
-      age: String(trainer.age),
       phone: trainer.phone,
-      email: trainer.email,
-      gender: trainer.gender,
-      nic: trainer.nic,
-      address: trainer.address,
-      joiningDate: trainer.joiningDate,
+      gender: "male",
       specialization: trainer.specialization,
     })
     setReviewDialogOpen(true)
@@ -151,16 +69,60 @@ export default function PendingTrainersPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleAccept = () => {
-    console.log("Accepting trainer:", trainerToReview?.id, formData)
-    setReviewDialogOpen(false)
-    setTrainerToReview(null)
+  const handleAccept = async () => {
+    if (!trainerToReview) return
+    
+    try {
+      await approveTrainer(trainerToReview.trainerId).unwrap()
+      toast.success(`${trainerToReview.name} has been approved`)
+      setReviewDialogOpen(false)
+      setTrainerToReview(null)
+    } catch {
+      toast.error("Failed to approve trainer")
+    }
   }
 
-  const handleReject = () => {
-    console.log("Rejecting trainer:", trainerToReview?.id)
-    setReviewDialogOpen(false)
-    setTrainerToReview(null)
+  const handleReject = async () => {
+    if (!trainerToReview) return
+    
+    try {
+      await deleteTrainer(trainerToReview.trainerId).unwrap()
+      toast.success(`${trainerToReview.name} has been rejected`)
+      setReviewDialogOpen(false)
+      setTrainerToReview(null)
+    } catch {
+      toast.error("Failed to reject trainer")
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <MembersHeader />
+          <div className="border border-[#2a2a2a] rounded-lg p-8 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading pending trainers...</span>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <MembersHeader />
+          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+            <p className="text-destructive">Failed to load pending trainers</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -168,68 +130,73 @@ export default function PendingTrainersPage() {
       <div className="space-y-6">
         <MembersHeader />
 
-        {/* Table */}
-        <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-                <th className="w-12 px-4 py-3">
-                  <Checkbox className="border-[#3a3a3a]" />
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Submitted Date</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingTrainers.map((trainer, index) => (
-                <tr
-                  key={trainer.id}
-                  className={`border-b border-[#2a2a2a] transition-colors ${
-                    index % 2 === 0 ? "bg-[#151515]" : "bg-background"
-                  }`}
-                >
-                  <td className="px-4 py-4">
-                    <Checkbox className="border-[#3a3a3a]" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link
-                      href={`/members/${trainer.id}`}
-                      className="flex items-center gap-3 transition-opacity"
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src="/placeholder.svg?height=36&width=36" />
-                        <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                          {trainer.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{trainer.name}</div>
-                        <div className="text-sm text-muted-foreground">{trainer.username}</div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-muted-foreground">{trainer.specialization}</td>
-                  <td className="px-4 py-4 text-sm text-muted-foreground">{trainer.submittedDate}</td>
-                  <td className="px-4 py-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2 border-primary text-primary hover:bg-primary/10"
-                      onClick={() => handleReview(trainer)}
-                    >
-                      <Eye className="h-4 w-4" />
-                      Review
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            </table>
+        {pendingTrainers.length === 0 ? (
+          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+            <p className="text-muted-foreground">No pending trainers found</p>
           </div>
-        </div>
+        ) : (
+          <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
+                  <th className="w-12 px-4 py-3">
+                    <Checkbox className="border-[#3a3a3a]" />
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Phone</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingTrainers.map((trainer: Trainer, index: number) => (
+                  <tr
+                    key={trainer.trainerId}
+                    className={`border-b border-[#2a2a2a] transition-colors ${
+                      index % 2 === 0 ? "bg-[#151515]" : "bg-background"
+                    }`}
+                  >
+                    <td className="px-4 py-4">
+                      <Checkbox className="border-[#3a3a3a]" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link
+                        href={`/trainers/${trainer.trainerId}`}
+                        className="flex items-center gap-3 transition-opacity"
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
+                            {getInitials(trainer.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{trainer.name}</div>
+                          <div className="text-sm text-muted-foreground">{trainer.phone}</div>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-muted-foreground">{trainer.specialization}</td>
+                    <td className="px-4 py-4 text-sm text-muted-foreground">{trainer.phone}</td>
+                    <td className="px-4 py-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2 border-primary text-primary hover:bg-primary/10"
+                        onClick={() => handleReview(trainer)}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Review
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Review Dialog */}
         <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
@@ -257,6 +224,7 @@ export default function PendingTrainersPage() {
                         value={formData.trainerNo}
                         onChange={(e) => updateFormField("trainerNo", e.target.value)}
                         className="bg-secondary border-[#3a3a3a]"
+                        disabled
                       />
                     </div>
                     <div className="space-y-2">
@@ -269,44 +237,11 @@ export default function PendingTrainersPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="dob">Date of Birth</Label>
-                      <Input
-                        id="dob"
-                        type="date"
-                        value={formData.dob}
-                        onChange={(e) => updateFormField("dob", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        value={formData.age}
-                        onChange={(e) => updateFormField("age", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div className="space-y-2">
                       <Label htmlFor="phone">Mobile No.</Label>
                       <Input
                         id="phone"
                         value={formData.phone}
                         onChange={(e) => updateFormField("phone", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => updateFormField("email", e.target.value)}
                         className="bg-secondary border-[#3a3a3a]"
                       />
                     </div>
@@ -317,43 +252,15 @@ export default function PendingTrainersPage() {
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nic">NIC</Label>
-                      <Input
-                        id="nic"
-                        value={formData.nic}
-                        onChange={(e) => updateFormField("nic", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => updateFormField("address", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="joiningDate">Joining Date</Label>
-                      <Input
-                        id="joiningDate"
-                        type="date"
-                        value={formData.joiningDate}
-                        onChange={(e) => updateFormField("joiningDate", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="specialization">Specialization</Label>
                       <Input
@@ -372,6 +279,7 @@ export default function PendingTrainersPage() {
                     variant="outline"
                     onClick={() => setReviewDialogOpen(false)}
                     className="bg-transparent border-[#3a3a3a]"
+                    disabled={isApproving || isDeleting}
                   >
                     Cancel
                   </Button>
@@ -379,14 +287,16 @@ export default function PendingTrainersPage() {
                     variant="outline"
                     onClick={handleReject}
                     className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white"
+                    disabled={isApproving || isDeleting}
                   >
-                    Reject
+                    {isDeleting ? "Rejecting..." : "Reject"}
                   </Button>
                   <Button
                     onClick={handleAccept}
                     className="bg-green-600 text-white hover:bg-green-700"
+                    disabled={isApproving || isDeleting}
                   >
-                    Accept Trainer Request
+                    {isApproving ? "Accepting..." : "Accept Trainer Request"}
                   </Button>
                 </div>
               </div>

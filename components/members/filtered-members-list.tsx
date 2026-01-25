@@ -38,7 +38,11 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-export function MembersList() {
+interface FilteredMembersListProps {
+  status: 'active' | 'expired' | 'pending'
+}
+
+export function FilteredMembersList({ status }: FilteredMembersListProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   
@@ -52,18 +56,23 @@ export function MembersList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
 
-  // API hooks
-  const { data, isLoading, isError } = useGetMembersQuery()
+  // API hooks - fetch all members and filter client-side
+  const { data, isLoading, isError } = useGetMembersQuery({ limit: 1000 })
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
     if (!open && renewMemberId) {
-      router.replace("/members")
+      router.replace(`/members/${status}`)
     }
   }
 
-  const members = data?.members || []
+  // Filter members by status
+  const allMembers = data?.members || []
+  const members = allMembers.filter((member: Member) => {
+    const memberStatus = member.status || (member.isPending ? "pending" : "active")
+    return memberStatus === status
+  })
 
   const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })
@@ -106,7 +115,7 @@ export function MembersList() {
   if (members.length === 0) {
     return (
       <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-        <p className="text-muted-foreground">No members found</p>
+        <p className="text-muted-foreground">No {status} members found</p>
         <Link href="/members/add">
           <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
         </Link>
@@ -127,7 +136,9 @@ export function MembersList() {
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Package</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Enrolled</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Expiry Date</th>
+            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+              {status === 'expired' ? 'Expired Date' : 'Expiry Date'}
+            </th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Renew</th>
             <th className="w-12 px-4 py-3"></th>
           </tr>
@@ -136,7 +147,7 @@ export function MembersList() {
           {members.map((member: Member, index: number) => {
             const latestPackage = member.memberPackages?.[0]
             const expiryDate = latestPackage?.expiresAt
-            const status = member.status || (member.isPending ? "pending" : "active")
+            const memberStatus = member.status || (member.isPending ? "pending" : "active")
             
             return (
               <tr
@@ -170,14 +181,14 @@ export function MembersList() {
                   <Badge
                     variant="outline"
                     className={
-                      status === "active"
+                      memberStatus === "active"
                         ? "border-accent text-accent bg-accent/10"
-                        : status === "expired"
+                        : memberStatus === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
                         : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
                     }
                   >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                    {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
                   </Badge>
                 </td>
                 <td className="px-4 py-4 text-sm text-muted-foreground">
@@ -191,6 +202,8 @@ export function MembersList() {
                     memberId={String(member.memberId)}
                     memberName={member.name}
                     triggerStyle="renew"
+                    defaultTransactionType="membership"
+                    defaultPackageId={latestPackage?.packageId?.toString() || member.package?.packageId?.toString() || ""}
                   />
                 </td>
                 <td className="px-4 py-4">

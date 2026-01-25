@@ -1,19 +1,37 @@
 "use client"
 
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dumbbell } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useLoginMutation } from "@/store/api/authApi"
+import { useAppDispatch } from "@/store/hooks"
+import { setCredentials } from "@/store/slices/authSlice"
+import toast from "react-hot-toast"
 
 export default function LoginPage() {
   const router = useRouter()
+  const dispatch = useAppDispatch()
+  const [login, { isLoading }] = useLoginMutation()
+  
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Redirect to dashboard without authentication
-    router.push("/dashboard")
+    
+    try {
+      const response = await login({ email, password }).unwrap()
+      dispatch(setCredentials({ user: response.user, token: response.token }))
+      toast.success("Login successful!")
+      router.push("/dashboard")
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string } }
+      toast.error(err?.data?.error || "Invalid email or password")
+    }
   }
 
   return (
@@ -30,12 +48,26 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email or Username</Label>
-            <Input id="email" type="text" placeholder="admin@gym.com" required />
+            <Input 
+              id="email" 
+              type="text" 
+              placeholder="admin@gym.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" required />
+            <Input 
+              id="password" 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required 
+            />
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -48,8 +80,12 @@ export default function LoginPage() {
             </a>
           </div>
 
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            Sign In
+          <Button 
+            type="submit" 
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isLoading}
+          >
+            {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 

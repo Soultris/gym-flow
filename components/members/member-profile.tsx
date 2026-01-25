@@ -14,25 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Weight } from "lucide-react"
-import { useState } from "react"
+import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Weight, Loader2 } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import toast from "react-hot-toast"
+import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery } from "@/store/api/membersApi"
+import { useGetAssignedWorkoutsQuery } from "@/store/api/workoutsApi"
 
-const attendanceHistory = [
-  { date: "Jun 23, 2024", time: "06:30 AM", duration: "1.5 hrs" },
-  { date: "Jun 21, 2024", time: "06:15 AM", duration: "1.2 hrs" },
-  { date: "Jun 19, 2024", time: "07:00 AM", duration: "1.8 hrs" },
-  { date: "Jun 17, 2024", time: "06:45 AM", duration: "1.3 hrs" },
-  { date: "Jun 15, 2024", time: "06:30 AM", duration: "1.5 hrs" },
-]
-
-const paymentHistory = [
-  { date: "Jun 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
-  { date: "May 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
-  { date: "Apr 1, 2024", amount: "LKR 80", method: "Cash", status: "Paid" },
-  { date: "Mar 1, 2024", amount: "LKR 80", method: "Card", status: "Paid" },
-]
-
-interface MemberData {
+interface MemberFormData {
   fullName: string
   email: string
   phone: string
@@ -44,38 +32,69 @@ interface MemberData {
   weight: string
   address: string
   joiningDate: string
-  package: string
-  duration: string
-  expiryDate: string
-  amountPaid: string
-  status: string
 }
 
 export function MemberProfile({ memberId }: { memberId: string }) {
+  const numericMemberId = parseInt(memberId, 10)
+  
+  // API Queries
+  const { data: member, isLoading: memberLoading, error: memberError } = useGetMemberByIdQuery(numericMemberId)
+  const { data: attendanceData } = useGetMemberAttendanceQuery({ id: numericMemberId })
+  const { data: transactionsData } = useGetMemberTransactionsQuery(numericMemberId)
+  const { data: assignedWorkoutsData } = useGetAssignedWorkoutsQuery({ memberId: numericMemberId })
+  
+  // API Mutations
+  const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+  
+  // UI State
   const [isEditing, setIsEditing] = useState(false)
   const [attendanceFromDate, setAttendanceFromDate] = useState("")
   const [attendanceToDate, setAttendanceToDate] = useState("")
-  const [memberData, setMemberData] = useState<MemberData>({
-    fullName: "John Smith",
-    email: "john.smith@email.com",
-    phone: "+1 234 567 8900",
-    dob: "1990-01-15",
-    age: "34",
-    gender: "Male",
-    nic: "123456789V",
-    height: "175",
-    weight: "70",
-    address: "123 Main St, City, ST 12345",
-    joiningDate: "2024-01-15",
-    package: "Premium",
-    duration: "6 Months",
-    expiryDate: "2024-07-15",
-    amountPaid: "480",
-    status: "Active",
+  
+  // Form state (separate from API data for editing)
+  const [formData, setFormData] = useState<MemberFormData>({
+    fullName: "",
+    email: "",
+    phone: "",
+    dob: "",
+    age: "",
+    gender: "",
+    nic: "",
+    height: "",
+    weight: "",
+    address: "",
+    joiningDate: "",
   })
 
-  const updateField = (field: keyof MemberData, value: string) => {
-    setMemberData(prev => ({ ...prev, [field]: value }))
+  // Populate form when member data loads
+  useEffect(() => {
+    if (member) {
+      const birthDate = new Date(member.dob)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
+      setFormData({
+        fullName: member.name,
+        email: member.email,
+        phone: member.phone,
+        dob: member.dob?.split('T')[0] || "",
+        age: age.toString(),
+        gender: member.gender.charAt(0).toUpperCase() + member.gender.slice(1),
+        nic: member.nic,
+        height: member.height?.toString() || "",
+        weight: member.weight?.toString() || "",
+        address: member.address,
+        joiningDate: member.joiningDate?.split('T')[0] || "",
+      })
+    }
+  }, [member])
+
+  const updateField = (field: keyof MemberFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
     
     // Auto-calculate age when DOB changes
     if (field === "dob" && value) {
@@ -86,22 +105,65 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-      setMemberData(prev => ({ ...prev, age: age.toString() }))
+      setFormData(prev => ({ ...prev, age: age.toString() }))
     }
   }
 
-  const handleSave = () => {
-    console.log("Saving member data:", memberData)
-    setIsEditing(false)
+  const handleSave = async () => {
+    try {
+      await updateMember({
+        id: numericMemberId,
+        data: {
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          dob: formData.dob,
+          gender: formData.gender.toLowerCase() as 'male' | 'female' | 'other',
+          nic: formData.nic,
+          height: parseFloat(formData.height) || 0,
+          weight: parseFloat(formData.weight) || 0,
+          address: formData.address,
+          joiningDate: formData.joiningDate,
+        }
+      }).unwrap()
+      toast.success("Profile updated successfully")
+      setIsEditing(false)
+    } catch {
+      toast.error("Failed to update profile")
+    }
   }
 
   const handleCancel = () => {
+    // Reset form data from member
+    if (member) {
+      const birthDate = new Date(member.dob)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
+      setFormData({
+        fullName: member.name,
+        email: member.email,
+        phone: member.phone,
+        dob: member.dob?.split('T')[0] || "",
+        age: age.toString(),
+        gender: member.gender.charAt(0).toUpperCase() + member.gender.slice(1),
+        nic: member.nic,
+        height: member.height?.toString() || "",
+        weight: member.weight?.toString() || "",
+        address: member.address,
+        joiningDate: member.joiningDate?.split('T')[0] || "",
+      })
+    }
     setIsEditing(false)
   }
 
   const getInitials = () => {
-    const names = memberData.fullName.split(" ")
-    return names.length > 1 ? `${names[0][0]}${names[1][0]}` : names[0][0]
+    const names = formData.fullName.split(" ")
+    return names.length > 1 ? `${names[0][0]}${names[1][0]}` : names[0]?.[0] || "?"
   }
 
   const formatDate = (dateString: string) => {
@@ -110,42 +172,66 @@ export function MemberProfile({ memberId }: { memberId: string }) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
   }
 
-  // Parse attendance date string to Date object for comparison
-  const parseAttendanceDate = (dateStr: string) => {
-    // Format: "Jun 23, 2024"
-    return new Date(dateStr)
-  }
+  // Get member status
+  const memberStatus = member?.status || (member?.isPending ? "pending" : "active")
+
+  // Get active package info
+  const activePackage = member?.memberPackages?.find(pkg => {
+    const expDate = new Date(pkg.expiresAt)
+    return expDate >= new Date()
+  })
 
   // Filter attendance based on date range
-  const filteredAttendance = attendanceHistory.filter((record) => {
-    if (!attendanceFromDate && !attendanceToDate) return true
+  const filteredAttendance = useMemo(() => {
+    if (!attendanceData) return []
     
-    const recordDate = parseAttendanceDate(record.date)
-    
-    if (attendanceFromDate && attendanceToDate) {
-      const from = new Date(attendanceFromDate)
-      const to = new Date(attendanceToDate)
-      to.setHours(23, 59, 59, 999) // Include the entire end date
-      return recordDate >= from && recordDate <= to
-    }
-    
-    if (attendanceFromDate) {
-      const from = new Date(attendanceFromDate)
-      return recordDate >= from
-    }
-    
-    if (attendanceToDate) {
-      const to = new Date(attendanceToDate)
-      to.setHours(23, 59, 59, 999)
-      return recordDate <= to
-    }
-    
-    return true
-  })
+    return attendanceData.filter((record: { checkInTime: string }) => {
+      if (!attendanceFromDate && !attendanceToDate) return true
+      
+      const recordDate = new Date(record.checkInTime)
+      
+      if (attendanceFromDate && attendanceToDate) {
+        const from = new Date(attendanceFromDate)
+        const to = new Date(attendanceToDate)
+        to.setHours(23, 59, 59, 999)
+        return recordDate >= from && recordDate <= to
+      }
+      
+      if (attendanceFromDate) {
+        return recordDate >= new Date(attendanceFromDate)
+      }
+      
+      if (attendanceToDate) {
+        const to = new Date(attendanceToDate)
+        to.setHours(23, 59, 59, 999)
+        return recordDate <= to
+      }
+      
+      return true
+    })
+  }, [attendanceData, attendanceFromDate, attendanceToDate])
 
   const clearAttendanceFilters = () => {
     setAttendanceFromDate("")
     setAttendanceToDate("")
+  }
+
+  // Loading state
+  if (memberLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Error state
+  if (memberError || !member) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-muted-foreground">Member not found</p>
+      </div>
+    )
   }
 
   return (
@@ -153,7 +239,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       {/* Header with Edit/Save buttons */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{memberData.fullName}</h1>
+          <h1 className="text-2xl font-semibold">{formData.fullName}</h1>
           <p className="text-sm text-muted-foreground">Member ID: {memberId}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -163,8 +249,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                 <X className="h-4 w-4" />
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
-                <Save className="h-4 w-4" />
+              <Button onClick={handleSave} disabled={isUpdating} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+                {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save Changes
               </Button>
             </>
@@ -183,42 +269,42 @@ export function MemberProfile({ memberId }: { memberId: string }) {
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
               <Avatar className="h-24 w-24">
-                <AvatarImage src="/placeholder.svg?height=96&width=96" />
+                <AvatarImage src={member.imageUrl || undefined} />
                 <AvatarFallback className="bg-secondary text-foreground text-2xl font-bold">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="text-xl font-bold mt-4">{memberData.fullName}</h2>
+              <h2 className="text-xl font-bold mt-4">{formData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
-              <Badge variant="outline" className={`mt-2 ${memberData.status === "Active" ? "border-accent text-accent" : "border-destructive text-destructive"}`}>
-                {memberData.status}
+              <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-accent text-accent" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
+                {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
               </Badge>
             </div>
 
             <div className="space-y-4 mt-6">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{memberData.email}</span>
+                <span>{formData.email}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{memberData.phone}</span>
+                <span>{formData.phone}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Born: {formatDate(memberData.dob)} (Age: {memberData.age})</span>
+                <span>Born: {formatDate(formData.dob)} (Age: {formData.age})</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{memberData.gender}</span>
+                <span>{formData.gender}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Ruler className="h-4 w-4 text-muted-foreground" />
-                <span>{memberData.height} cm / {memberData.weight} kg</span>
+                <span>{formData.height} cm / {formData.weight} kg</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{memberData.address}</span>
+                <span>{formData.address}</span>
               </div>
             </div>
 
@@ -254,12 +340,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       <Label>Full Name</Label>
                       {isEditing ? (
                         <Input
-                          value={memberData.fullName}
+                          value={formData.fullName}
                           onChange={(e) => updateField("fullName", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.fullName}</p>
+                        <p className="text-sm py-2">{formData.fullName}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -267,29 +353,29 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       {isEditing ? (
                         <Input
                           type="date"
-                          value={memberData.dob}
+                          value={formData.dob}
                           onChange={(e) => updateField("dob", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{formatDate(memberData.dob)}</p>
+                        <p className="text-sm py-2">{formatDate(formData.dob)}</p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label>Age</Label>
-                      <p className="text-sm py-2">{memberData.age}</p>
+                      <p className="text-sm py-2">{formData.age}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Mobile No.</Label>
                       {isEditing ? (
                         <Input
                           type="tel"
-                          value={memberData.phone}
+                          value={formData.phone}
                           onChange={(e) => updateField("phone", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.phone}</p>
+                        <p className="text-sm py-2">{formData.phone}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -297,18 +383,18 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       {isEditing ? (
                         <Input
                           type="email"
-                          value={memberData.email}
+                          value={formData.email}
                           onChange={(e) => updateField("email", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.email}</p>
+                        <p className="text-sm py-2">{formData.email}</p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label>Gender</Label>
                       {isEditing ? (
-                        <Select value={memberData.gender} onValueChange={(value) => updateField("gender", value)}>
+                        <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
                           <SelectTrigger className="bg-secondary border-[#3a3a3a]">
                             <SelectValue />
                           </SelectTrigger>
@@ -319,19 +405,19 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <p className="text-sm py-2">{memberData.gender}</p>
+                        <p className="text-sm py-2">{formData.gender}</p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label>NIC</Label>
                       {isEditing ? (
                         <Input
-                          value={memberData.nic}
+                          value={formData.nic}
                           onChange={(e) => updateField("nic", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.nic}</p>
+                        <p className="text-sm py-2">{formData.nic}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -339,12 +425,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       {isEditing ? (
                         <Input
                           type="number"
-                          value={memberData.height}
+                          value={formData.height}
                           onChange={(e) => updateField("height", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.height} cm</p>
+                        <p className="text-sm py-2">{formData.height} cm</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -352,12 +438,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       {isEditing ? (
                         <Input
                           type="number"
-                          value={memberData.weight}
+                          value={formData.weight}
                           onChange={(e) => updateField("weight", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.weight} kg</p>
+                        <p className="text-sm py-2">{formData.weight} kg</p>
                       )}
                     </div>
                   </div>
@@ -366,12 +452,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       <Label>Address</Label>
                       {isEditing ? (
                         <Input
-                          value={memberData.address}
+                          value={formData.address}
                           onChange={(e) => updateField("address", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{memberData.address}</p>
+                        <p className="text-sm py-2">{formData.address}</p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -379,12 +465,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       {isEditing ? (
                         <Input
                           type="date"
-                          value={memberData.joiningDate}
+                          value={formData.joiningDate}
                           onChange={(e) => updateField("joiningDate", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
                         />
                       ) : (
-                        <p className="text-sm py-2">{formatDate(memberData.joiningDate)}</p>
+                        <p className="text-sm py-2">{formatDate(formData.joiningDate)}</p>
                       )}
                     </div>
                   </div>
@@ -395,88 +481,34 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               <TabsContent value="membership" className="space-y-6 mt-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Membership Details</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Package</Label>
-                      {isEditing ? (
-                        <Select value={memberData.package} onValueChange={(value) => updateField("package", value)}>
-                          <SelectTrigger className="bg-secondary border-[#3a3a3a]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Basic">Basic - LKR 30/month</SelectItem>
-                            <SelectItem value="Standard">Standard - LKR 50/month</SelectItem>
-                            <SelectItem value="Premium">Premium - LKR 80/month</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="text-lg font-semibold text-primary">{memberData.package}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Duration</Label>
-                      {isEditing ? (
-                        <Select value={memberData.duration} onValueChange={(value) => updateField("duration", value)}>
-                          <SelectTrigger className="bg-secondary border-[#3a3a3a]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1 Month">1 Month</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="12 Months">12 Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="text-lg font-semibold">{memberData.duration}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Expiry Date</Label>
-                      {isEditing ? (
-                        <Input
-                          type="date"
-                          value={memberData.expiryDate}
-                          onChange={(e) => updateField("expiryDate", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-lg font-semibold">{formatDate(memberData.expiryDate)}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Amount Paid</Label>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          value={memberData.amountPaid}
-                          onChange={(e) => updateField("amountPaid", e.target.value)}
-                          className="bg-secondary border-[#3a3a3a]"
-                        />
-                      ) : (
-                        <p className="text-lg font-semibold">LKR {memberData.amountPaid}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      {isEditing ? (
-                        <Select value={memberData.status} onValueChange={(value) => updateField("status", value)}>
-                          <SelectTrigger className="bg-secondary border-[#3a3a3a]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Expired">Expired</SelectItem>
-                            <SelectItem value="Pending">Pending</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant="outline" className={`${memberData.status === "Active" ? "border-accent text-accent" : "border-destructive text-destructive"}`}>
-                          {memberData.status}
+                  {activePackage ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Package</Label>
+                        <p className="text-lg font-semibold text-primary">{activePackage.package?.name || "N/A"}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Purchased</Label>
+                        <p className="text-lg font-semibold">{formatDate(activePackage.purchasedAt)}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Expiry Date</Label>
+                        <p className="text-lg font-semibold">{formatDate(activePackage.expiresAt)}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Amount</Label>
+                        <p className="text-lg font-semibold">LKR {activePackage.package?.price || 0}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Badge variant="outline" className="border-accent text-accent">
+                          Active
                         </Badge>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-muted-foreground">No active membership</p>
+                  )}
                 </div>
               </TabsContent>
 
@@ -485,86 +517,46 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Assigned Workout Plans</h3>
                   <div className="space-y-4">
-                    {/* Day 01 Workout */}
-                    <Card className="p-5 bg-secondary/30 border border-border">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg">
-                            01
-                          </span>
-                          <div>
-                            <h4 className="font-semibold text-lg">Chest Builder</h4>
-                            <p className="text-sm text-muted-foreground">📅 Jan 01, 2025 - Mar 01, 2025</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="border-accent text-accent">Active</Badge>
-                      </div>
-                      <div className="space-y-3 bg-background/50 p-4 rounded-lg">
-                        <p className="font-medium text-sm mb-2">Exercises:</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Upper Chest</span>
-                            <span className="text-muted-foreground">12 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Middle Chest</span>
-                            <span className="text-muted-foreground">10 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Lower Chest</span>
-                            <span className="text-muted-foreground">12 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Front Shoulders</span>
-                            <span className="text-muted-foreground">10 x 3</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Triceps</span>
-                            <span className="text-muted-foreground">12 x 3</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-
-                    {/* Day 02 Workout */}
-                    <Card className="p-5 bg-secondary/30 border border-border">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg">
-                            02
-                          </span>
-                          <div>
-                            <h4 className="font-semibold text-lg">Leg Day</h4>
-                            <p className="text-sm text-muted-foreground">📅 Jan 01, 2025 - Mar 01, 2025</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="border-accent text-accent">Active</Badge>
-                      </div>
-                      <div className="space-y-3 bg-background/50 p-4 rounded-lg">
-                        <p className="font-medium text-sm mb-2">Exercises:</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Squats</span>
-                            <span className="text-muted-foreground">12 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Leg Press</span>
-                            <span className="text-muted-foreground">10 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Leg Curls</span>
-                            <span className="text-muted-foreground">12 x 4</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Calf Raises</span>
-                            <span className="text-muted-foreground">15 x 3</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-
-                    {/* Empty State Message */}
-                    <p className="text-center text-muted-foreground text-sm mt-6">No additional workouts assigned. Assign new workout plans from the Workouts menu.</p>
+                    {assignedWorkoutsData && assignedWorkoutsData.length > 0 ? (
+                      assignedWorkoutsData.map((workout) => {
+                        const isActive = new Date(workout.endDate) >= new Date()
+                        return (
+                          <Card key={workout.assignedWorkoutId} className="p-5 bg-secondary/30 border border-border">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E8FF00] text-black font-bold text-lg">
+                                  {String(workout.dayNumber).padStart(2, '0')}
+                                </span>
+                                <div>
+                                  <h4 className="font-semibold text-lg">{workout.name}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    📅 {formatDate(workout.startDate)} - {formatDate(workout.endDate)}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={isActive ? "border-accent text-accent" : "border-muted-foreground text-muted-foreground"}>
+                                {isActive ? "Active" : "Expired"}
+                              </Badge>
+                            </div>
+                            {workout.rows && workout.rows.length > 0 && (
+                              <div className="space-y-3 bg-background/50 p-4 rounded-lg">
+                                <p className="font-medium text-sm mb-2">Exercises:</p>
+                                <div className="space-y-2">
+                                  {workout.rows.map((row) => (
+                                    <div key={row.assignedWorkoutRowId} className="flex items-center justify-between text-sm">
+                                      <span>{row.name}</span>
+                                      <span className="text-muted-foreground">{row.reps}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </Card>
+                        )
+                      })
+                    ) : (
+                      <p className="text-center text-muted-foreground text-sm mt-6">No workout plans assigned. Assign new workout plans from the Workouts menu.</p>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -614,27 +606,36 @@ export function MemberProfile({ memberId }: { memberId: string }) {
 
                 <div className="space-y-3">
                   {filteredAttendance.length > 0 ? (
-                    filteredAttendance.map((record, i) => (
-                      <Card key={i} className="p-4 bg-secondary/50">
+                    filteredAttendance.map((record: { attendanceId: number; checkInTime: string; checkOutTime?: string }, i: number) => (
+                      <Card key={record.attendanceId || i} className="p-4 bg-secondary/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-accent/10 p-2">
                               <Clock className="h-4 w-4 text-accent" />
                             </div>
                             <div>
-                              <p className="font-medium">{record.date}</p>
-                              <p className="text-sm text-muted-foreground">Check-in: {record.time}</p>
+                              <p className="font-medium">{formatDate(record.checkInTime)}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Check-in: {new Date(record.checkInTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
                             </div>
                           </div>
-                          <Badge variant="outline" className="border-primary text-primary">
-                            {record.duration}
-                          </Badge>
+                          {record.checkOutTime && (
+                            <Badge variant="outline" className="border-primary text-primary">
+                              {(() => {
+                                const checkIn = new Date(record.checkInTime)
+                                const checkOut = new Date(record.checkOutTime)
+                                const hours = ((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)).toFixed(1)
+                                return `${hours} hrs`
+                              })()}
+                            </Badge>
+                          )}
                         </div>
                       </Card>
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      No attendance records found for the selected date range.
+                      No attendance records found{attendanceFromDate || attendanceToDate ? " for the selected date range" : ""}.
                     </div>
                   )}
                 </div>
@@ -643,26 +644,32 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               {/* Payments Tab */}
               <TabsContent value="payments" className="space-y-4 mt-6">
                 <div className="space-y-3">
-                  {paymentHistory.map((payment, i) => (
-                    <Card key={i} className="p-4 bg-secondary/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-lg bg-primary/10 p-2">
-                            <CreditCard className="h-4 w-4 text-primary" />
+                  {transactionsData && transactionsData.length > 0 ? (
+                    transactionsData.map((payment: { transactionId: number; paidAt: string; price: number; paymentMethod?: string }, i: number) => (
+                      <Card key={payment.transactionId || i} className="p-4 bg-secondary/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-primary/10 p-2">
+                              <CreditCard className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">LKR {payment.price}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(payment.paidAt)} {payment.paymentMethod ? `• ${payment.paymentMethod}` : ""}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{payment.amount}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {payment.date} • {payment.method}
-                            </p>
-                          </div>
+                          <Badge variant="outline" className="border-accent text-accent">
+                            Paid
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="border-accent text-accent">
-                          {payment.status}
-                        </Badge>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No payment records found.
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

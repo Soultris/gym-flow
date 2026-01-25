@@ -1,29 +1,58 @@
+"use client"
+
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, FileText, Users, TrendingUp } from "lucide-react"
-
-const reports = [
-  {
-    title: "Daily Income",
-    description: "Today's revenue summary",
-    value: "LKR 1,450",
-    icon: TrendingUp,
-  },
-  {
-    title: "Total Attendance",
-    description: "Members checked in today",
-    value: "127",
-    icon: Users,
-  },
-  {
-    title: "Active Members",
-    description: "Current active memberships",
-    value: "342",
-    icon: FileText,
-  },
-]
+import { Download, FileText, Users, TrendingUp, Loader2 } from "lucide-react"
+import { useGetDashboardStatsQuery } from "@/store/api/dashboardApi"
 
 export function ReportCards() {
+  const { data: stats, isLoading, error } = useGetDashboardStatsQuery()
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-6">
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="p-6">
+          <p className="text-muted-foreground text-center">Failed to load stats</p>
+        </Card>
+      </div>
+    )
+  }
+
+  const reports = [
+    {
+      title: "Daily Income",
+      description: "Today's revenue summary",
+      value: `LKR ${(stats?.monthlyRevenue || 0).toLocaleString()}`,
+      icon: TrendingUp,
+    },
+    {
+      title: "Total Attendance",
+      description: "Members checked in today",
+      value: String(stats?.checkInsToday || 0),
+      icon: Users,
+    },
+    {
+      title: "Active Members",
+      description: "Current active memberships",
+      value: String(stats?.activeMembers || 0),
+      icon: FileText,
+    },
+  ]
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {reports.map((report) => (

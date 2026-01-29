@@ -10,6 +10,8 @@ import { Search, Download, Calendar, Loader2 } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useGetAttendanceQuery, Attendance } from "@/store/api/attendanceApi"
 
+import { AttendanceSync } from "@/components/attendance/attendance-sync"
+
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -127,6 +129,7 @@ export default function AttendanceLogPage() {
             <h1 className="text-2xl font-semibold">Attendance Log</h1>
             <p className="text-sm text-muted-foreground">Track member check-ins and check-outs</p>
           </div>
+          <AttendanceSync />
         </div>
 
         {/* Filters */}

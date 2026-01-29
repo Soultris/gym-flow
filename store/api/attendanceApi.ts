@@ -58,6 +58,13 @@ export const attendanceApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Attendance'],
     }),
+    syncAttendance: builder.mutation<{ syncedCount: number; message: string }, void>({
+      query: () => ({
+        url: '/attendance/sync',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Attendance'],
+    }),
   }),
 });
 
@@ -65,4 +72,5 @@ export const {
   useGetAttendanceQuery,
   useGetTodayAttendanceQuery,
   useRecordCheckInMutation,
+  useSyncAttendanceMutation,
 } = attendanceApi;

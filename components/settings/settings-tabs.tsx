@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
+import { DeviceSettingsForm } from "./device-settings-form"
+
 export function SettingsTabs() {
   const searchParams = useSearchParams()
   const currentTab = searchParams.get("tab") || "notifications"
@@ -14,6 +16,7 @@ export function SettingsTabs() {
   const tabs = [
     { name: "Notifications", value: "notifications" },
     { name: "Security", value: "security" },
+    { name: "Device Configuration", value: "device" },
   ]
 
   return (
@@ -99,6 +102,11 @@ export function SettingsTabs() {
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Update Security</Button>
           </form>
         </Card>
+      )}
+
+      {/* Device Config Tab Content */}
+      {currentTab === "device" && (
+        <DeviceSettingsForm />
       )}
     </div>
   )

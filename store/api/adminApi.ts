@@ -8,10 +8,20 @@ export interface Gym {
   phone: string | null;
   createdAt: string;
   features: GymFeature[];
+  users?: User[]; // Admin users
+  subdomain?: string;
   _count?: {
     members: number;
     trainers: number;
   };
+}
+
+export interface User {
+  userId: number;
+  email: string;
+  name: string;
+  roleId: number;
+  isActive: boolean;
 }
 
 export interface GymFeature {
@@ -59,6 +69,22 @@ export const adminApi = createApi({
       }),
       invalidatesTags: (result, error, { gymId }) => [{ type: 'Gym', id: gymId }],
     }),
+    updateGym: builder.mutation<Gym, { id: number; data: Partial<Gym> }>({
+      query: ({ id, data }) => ({
+        url: `/gyms/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Gym', id }, 'Gyms'],
+    }),
+    createGymAdmin: builder.mutation<User, { gymId: number; data: { email: string; password: string; name: string } }>({
+      query: ({ gymId, data }) => ({
+        url: `/gyms/${gymId}/admins`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { gymId }) => [{ type: 'Gym', id: gymId }],
+    }),
   }),
 });
 
@@ -67,4 +93,6 @@ export const {
   useGetGymByIdQuery,
   useCreateGymMutation,
   useToggleFeatureMutation,
+  useUpdateGymMutation,
+  useCreateGymAdminMutation,
 } = adminApi;

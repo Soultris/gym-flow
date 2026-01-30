@@ -192,7 +192,7 @@ export function RevenueChart() {
                 border: "1px solid #374151",
                 borderRadius: "8px",
               }}
-              labelStyle={{ color: "#00FF9D" }}
+              labelStyle={{ color: "#FFFFFF" }}
               formatter={(value: number | undefined) => value !== undefined ? [`LKR ${value.toLocaleString()}`, "Revenue"] : ""}
             />
             <Line

@@ -241,7 +241,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   const getStatusColor = (status: string) => {
     switch (status) {
       case "sent":
-        return "bg-[#00FF9D]/10 text-[#00FF9D]"
+        return "bg-[#22c55e]/10 text-[#22c55e]"
       case "pending":
         return "bg-[#E8FF00]/10 text-[#E8FF00]"
       case "failed":

@@ -59,6 +59,81 @@ export function AttendanceReport() {
     )
   }
 
+  // Export PDF function
+  const handleExportPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Weekly Attendance Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; margin-bottom: 5px; }
+            .date { color: #666; margin-bottom: 20px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f4f4f4; font-weight: bold; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px; font-size: 12px; }
+            .stats { display: flex; gap: 20px; margin-bottom: 20px; }
+            .stat-box { border: 1px solid #eee; padding: 15px; border-radius: 8px; flex: 1; }
+            .stat-label { font-size: 12px; color: #666; }
+            .stat-value { font-size: 20px; font-weight: bold; margin-top: 5px; }
+          </style>
+        </head>
+        <body>
+          <h1>Weekly Attendance Report</h1>
+          <div class="date">
+            Range: Past 7 Days<br/>
+            Generated on: ${new Date().toLocaleString()}
+          </div>
+
+          <div class="stats">
+            <div class="stat-box">
+              <div class="stat-label">Total Check-ins</div>
+              <div class="stat-value">${totalCheckIns.toLocaleString()}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Daily Average</div>
+              <div class="stat-value">${dailyAverage}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Peak Day</div>
+              <div class="stat-value">${peakDay}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Check-ins</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${chartData.map((item: { day: string; checkins: number }) => `
+                <tr>
+                  <td>${item.day}</td>
+                  <td>${item.checkins}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+             GymFlow Analytics
+          </div>
+        </body>
+      </html>
+    `
+    
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
+
   return (
     <Card className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -66,7 +141,11 @@ export function AttendanceReport() {
           <h3 className="text-lg font-semibold">Weekly Attendance Report</h3>
           <p className="text-sm text-muted-foreground">Member check-ins for the past 7 days</p>
         </div>
-        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button 
+          size="sm" 
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={handleExportPDF}
+        >
           <Download className="h-4 w-4 mr-2" />
           Export Report
         </Button>
@@ -86,7 +165,7 @@ export function AttendanceReport() {
                 color: "#FFFFFF",
               }}
             />
-            <Bar dataKey="checkins" fill="#00FF9D" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="checkins" fill="#FFFFFF" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       ) : (

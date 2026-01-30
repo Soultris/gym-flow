@@ -25,6 +25,7 @@ export default function GymsPage() {
     name: "",
     address: "",
     phone: "",
+    subdomain: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +34,7 @@ export default function GymsPage() {
       await createGym(formData).unwrap()
       toast.success("Gym created successfully")
       setOpen(false)
-      setFormData({ name: "", address: "", phone: "" })
+      setFormData({ name: "", address: "", phone: "", subdomain: "" })
     } catch (error) {
       toast.error("Failed to create gym")
     }
@@ -60,7 +61,7 @@ export default function GymsPage() {
                 Add New Gym
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Add New Gym</DialogTitle>
               </DialogHeader>
@@ -90,6 +91,15 @@ export default function GymsPage() {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subdomain">Subdomain</Label>
+                  <Input
+                    id="subdomain"
+                    value={formData.subdomain}
+                    onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">Used for gym identification (e.g., gym1)</p>
+                </div>
                 <Button type="submit" className="w-full" disabled={isCreating}>
                   {isCreating ? "Creating..." : "Create Gym"}
                 </Button>
@@ -111,6 +121,11 @@ export default function GymsPage() {
                     <MapPin className="h-3 w-3" />
                     {gym.address || "No address"}
                   </p>
+                  {gym.subdomain && (
+                    <p className="text-sm font-medium text-primary">
+                      {gym.subdomain}.soultris.com
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-full bg-primary/10 p-2 text-primary">
                   <Building2 className="h-4 w-4" />

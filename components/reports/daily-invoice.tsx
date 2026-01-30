@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Download, Printer, Loader2 } from "lucide-react"
+import { Download, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useGetDailyInvoiceReportQuery } from "@/store/api/dashboardApi"
 
@@ -20,6 +20,73 @@ export function DailyInvoice() {
       minute: "2-digit",
       hour12: true
     })
+  }
+
+  const handleExportPDF = () => {
+    const transactions = data?.transactions || []
+    const summary = data?.summary
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Daily Invoice Report - ${selectedDate}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; margin-bottom: 5px; }
+            .date { color: #666; margin-bottom: 20px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f4f4f4; font-weight: bold; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .amount { font-weight: bold; }
+            .footer { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px; }
+            .total { font-weight: bold; font-size: 18px; text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h1>Daily Invoice Report</h1>
+          <div class="date">
+            Date: ${selectedDate}<br/>
+            Generated on: ${new Date().toLocaleString()}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Member</th>
+                <th>Package</th>
+                <th>Time</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${transactions.map((invoice: any) => `
+                <tr>
+                  <td>INV-${String(invoice.transactionId).padStart(3, '0')}</td>
+                  <td>${invoice.member?.name || "N/A"}</td>
+                  <td>${invoice.memberPackage?.package?.name || "N/A"}</td>
+                  <td>${formatTime(invoice.paidAt)}</td>
+                  <td class="amount">LKR ${invoice.price}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+             <div class="total">
+               Total Revenue: LKR ${summary?.totalRevenue?.toFixed(2) || "0.00"}
+             </div>
+          </div>
+        </body>
+      </html>
+    `
+    
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
   }
 
   return (
@@ -42,11 +109,11 @@ export function DailyInvoice() {
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button 
+            size="sm" 
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={handleExportPDF}
+          >
             <Download className="h-4 w-4 mr-2" />
             Download PDF
           </Button>

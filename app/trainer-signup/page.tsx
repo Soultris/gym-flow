@@ -84,7 +84,7 @@ export default function TrainerSignupPage() {
         name: formData.fullName,
         phone: formData.mobileNo,
         specialization: formData.specialization,
-        gymId: 1,
+        subdomain: window.location.hostname.split('.')[0], // Derive subdomain from hostname
       }).unwrap()
 
       setSuccess(true)

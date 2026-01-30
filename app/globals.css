@@ -15,15 +15,15 @@
   --secondary-foreground: #ffffff;
   --muted: #2c2c2e;
   --muted-foreground: #a0a0a0;
-  --accent: #00ff9d;
-  --accent-foreground: #121212;
+  --accent: #2c2c2e;
+  --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #2c2c2e;
   --input: #2c2c2e;
   --ring: #f4f933;
   --chart-1: #f4f933;
-  --chart-2: #00ff9d;
+  --chart-2: #ffffff;
   --chart-3: #ffffff;
   --chart-4: #a0a0a0;
   --chart-5: #2c2c2e;

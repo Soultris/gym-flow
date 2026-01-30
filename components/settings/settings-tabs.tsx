@@ -11,10 +11,9 @@ import { DeviceSettingsForm } from "./device-settings-form"
 
 export function SettingsTabs() {
   const searchParams = useSearchParams()
-  const currentTab = searchParams.get("tab") || "notifications"
+  const currentTab = searchParams.get("tab") || "security"
 
   const tabs = [
-    { name: "Notifications", value: "notifications" },
     { name: "Security", value: "security" },
     { name: "Device Configuration", value: "device" },
   ]
@@ -40,44 +39,6 @@ export function SettingsTabs() {
           )
         })}
       </div>
-
-      {/* Notifications Tab Content */}
-      {currentTab === "notifications" && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
-              <div>
-                <p className="font-medium">Payment Reminders</p>
-                <p className="text-sm text-muted-foreground">Send SMS reminders for pending payments</p>
-              </div>
-              <input type="checkbox" defaultChecked className="rounded border-border" />
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
-              <div>
-                <p className="font-medium">Membership Expiry</p>
-                <p className="text-sm text-muted-foreground">Notify members 7 days before expiry</p>
-              </div>
-              <input type="checkbox" defaultChecked className="rounded border-border" />
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
-              <div>
-                <p className="font-medium">New Member Welcome</p>
-                <p className="text-sm text-muted-foreground">Send welcome message to new members</p>
-              </div>
-              <input type="checkbox" defaultChecked className="rounded border-border" />
-            </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
-              <div>
-                <p className="font-medium">Daily Reports</p>
-                <p className="text-sm text-muted-foreground">Receive daily revenue and attendance summary</p>
-              </div>
-              <input type="checkbox" className="rounded border-border" />
-            </div>
-          </div>
-          <Button className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">Save Preferences</Button>
-        </Card>
-      )}
 
       {/* Security Tab Content */}
       {currentTab === "security" && (

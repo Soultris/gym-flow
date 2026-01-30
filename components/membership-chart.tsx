@@ -33,7 +33,7 @@ export function MembershipChart() {
             }}
           />
           <Line type="monotone" dataKey="members" stroke="#F4F933" strokeWidth={2} dot={{ fill: "#F4F933", r: 4 }} />
-          <Line type="monotone" dataKey="revenue" stroke="#00FF9D" strokeWidth={2} dot={{ fill: "#00FF9D", r: 4 }} />
+          <Line type="monotone" dataKey="revenue" stroke="#FFFFFF" strokeWidth={2} dot={{ fill: "#FFFFFF", r: 4 }} />
         </LineChart>
       </ResponsiveContainer>
       <div className="flex items-center gap-6 mt-4">

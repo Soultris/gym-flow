@@ -7,7 +7,7 @@ import { Pie, PieChart, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { useGetMembershipReportQuery } from "@/store/api/dashboardApi"
 import { useMemo } from "react"
 
-const COLORS = ["#F4F933", "#00FF9D", "#FFFFFF", "#A0A0A0", "#FF6B6B", "#4ECDC4"]
+const COLORS = ["#F4F933", "#22c55e", "#FFFFFF", "#A0A0A0", "#FF6B6B", "#4ECDC4"]
 
 export function MembershipReport() {
   const { data, isLoading, error } = useGetMembershipReportQuery()
@@ -47,6 +47,71 @@ export function MembershipReport() {
     )
   }
 
+  const handleExportPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Membership Distribution Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; margin-bottom: 5px; }
+            .date { color: #666; margin-bottom: 20px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #f4f4f4; font-weight: bold; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px; font-size: 12px; }
+            .total-box { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9; }
+            .total-label { font-size: 12px; color: #666; }
+            .total-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+          </style>
+        </head>
+        <body>
+          <h1>Membership Distribution Report</h1>
+          <div class="date">
+            Data Analysis by Package Type<br/>
+            Generated on: ${new Date().toLocaleString()}
+          </div>
+
+          <div class="total-box">
+            <div class="total-label">Total Active Members</div>
+            <div class="total-value">${totalMembers.toLocaleString()}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Package Name</th>
+                <th>Member Count</th>
+                <th>Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${chartData.map((item: { name: string; value: number }) => `
+                <tr>
+                  <td>${item.name} Package</td>
+                  <td>${item.value}</td>
+                  <td>${totalMembers > 0 ? ((item.value / totalMembers) * 100).toFixed(1) : 0}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+             GymFlow Analytics
+          </div>
+        </body>
+      </html>
+    `
+    
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
+
   return (
     <Card className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -54,7 +119,11 @@ export function MembershipReport() {
           <h3 className="text-lg font-semibold">Membership Distribution</h3>
           <p className="text-sm text-muted-foreground">Active members by package type</p>
         </div>
-        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button 
+          size="sm" 
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={handleExportPDF}
+        >
           <Download className="h-4 w-4 mr-2" />
           Export Report
         </Button>

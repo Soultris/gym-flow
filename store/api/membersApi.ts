@@ -69,10 +69,20 @@ interface MembersQueryParams {
 export const membersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getMembers: builder.query<MembersResponse, MembersQueryParams | void>({
-      query: (params) => ({
-        url: '/members',
-        params: params || {},
-      }),
+      query: (params) => {
+        // Build query parameters
+        const queryParams: any = {};
+        if (params) {
+          if (params.status) queryParams.status = params.status;
+          if (params.search) queryParams.search = params.search;
+          if (params.page) queryParams.page = params.page;
+          if (params.limit) queryParams.limit = params.limit;
+        }
+        return {
+          url: '/members',
+          params: queryParams,
+        };
+      },
       providesTags: ['Members'],
     }),
     getMemberById: builder.query<Member, number>({

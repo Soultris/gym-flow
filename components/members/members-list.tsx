@@ -19,6 +19,7 @@ import {
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { MembersFilter } from "@/components/members/members-filter"
 import toast from "react-hot-toast"
 
 function formatDate(dateString: string): string {
@@ -51,9 +52,11 @@ export function MembersList() {
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [searchValue, setSearchValue] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending'>('all')
 
-  // API hooks
-  const { data, isLoading, isError } = useGetMembersQuery()
+  // API hooks - fetch all members without status filter (all members view)
+  const { data, isLoading, isError } = useGetMembersQuery({ limit: 1000 })
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
 
   // Clear URL params when dialog is closed
@@ -63,7 +66,22 @@ export function MembersList() {
     }
   }
 
-  const members = data?.members || []
+  let members = data?.members || []
+
+  // Apply status filter
+  if (selectedStatus !== 'all') {
+    members = members.filter((m: Member) => m.status === selectedStatus)
+  }
+
+  // Apply search filter
+  if (searchValue.trim()) {
+    const searchLower = searchValue.toLowerCase()
+    members = members.filter((m: Member) =>
+      m.name.toLowerCase().includes(searchLower) ||
+      m.email.toLowerCase().includes(searchLower) ||
+      m.phone.includes(searchValue)
+    )
+  }
 
   const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })
@@ -105,20 +123,35 @@ export function MembersList() {
 
   if (members.length === 0) {
     return (
-      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-        <p className="text-muted-foreground">No members found</p>
-        <Link href="/members/add">
-          <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
-        </Link>
+      <div className="flex flex-col gap-4">
+        <MembersFilter
+          onSearchChange={setSearchValue}
+          onStatusFilterChange={setSelectedStatus}
+          searchValue={searchValue}
+          selectedStatus={selectedStatus}
+        />
+        <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">No members found</p>
+          <Link href="/members/new">
+            <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-        <thead>
+    <div className="flex flex-col gap-4">
+      <MembersFilter
+        onSearchChange={setSearchValue}
+        onStatusFilterChange={setSelectedStatus}
+        searchValue={searchValue}
+        selectedStatus={selectedStatus}
+      />
+      <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+          <thead>
           <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
             <th className="w-12 px-4 py-3">
               <Checkbox className="border-[#3a3a3a]" />
@@ -236,6 +269,7 @@ export function MembersList() {
         </tbody>
         </table>
       </div>
+    </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

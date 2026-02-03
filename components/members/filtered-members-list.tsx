@@ -56,8 +56,8 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
 
-  // API hooks - fetch all members and filter client-side
-  const { data, isLoading, isError } = useGetMembersQuery({ limit: 1000 })
+  // API hooks - fetch members with status filter
+  const { data, isLoading, isError } = useGetMembersQuery({ status, limit: 1000 })
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
 
   // Clear URL params when dialog is closed
@@ -67,12 +67,8 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
     }
   }
 
-  // Filter members by status
-  const allMembers = data?.members || []
-  const members = allMembers.filter((member: Member) => {
-    const memberStatus = member.status || (member.isPending ? "pending" : "active")
-    return memberStatus === status
-  })
+  // Use members directly from API response
+  const members = data?.members || []
 
   const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })

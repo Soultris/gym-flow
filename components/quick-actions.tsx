@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { UserPlus, ClipboardList, MessageSquare, RotateCw, Search } from "lucide-react"
+import { UserPlus, ClipboardList, MessageSquare, RotateCw, Search, Loader2 } from "lucide-react"
+import { useGetMembersQuery } from "@/store/api/membersApi"
 
 const actions = [
   {
@@ -22,25 +23,27 @@ const actions = [
   },
 ]
 
-// Mock members data - in a real app, this would come from an API
-const members = [
-  { id: "M001", name: "John Smith" },
-  { id: "M002", name: "Sarah Johnson" },
-  { id: "M003", name: "Mike Wilson" },
-  { id: "M004", name: "Emily Davis" },
-  { id: "M005", name: "Chris Brown" },
-  { id: "M006", name: "Jessica Martinez" },
-  { id: "M007", name: "David Lee" },
-]
-
 export function QuickActions() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Fetch members from API
+  const { data: membersData, isLoading } = useGetMembersQuery({ limit: 1000 })
+
+  // Transform API members to match the format needed
+  const members = useMemo(() => {
+    if (!membersData?.members) return []
+    return membersData.members.map((member: any) => ({
+      id: String(member.memberId),
+      name: member.name,
+    }))
+  }, [membersData])
+
   const filteredMembers = members.filter((member) =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase())
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.id.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleMemberSelect = (member: { id: string; name: string }) => {
@@ -101,8 +104,11 @@ export function QuickActions() {
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {isLoading && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
             <Input
-              placeholder="Search member by name..."
+              placeholder="Search member by name or ID..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
@@ -110,6 +116,7 @@ export function QuickActions() {
               }}
               onFocus={() => searchTerm.length > 0 && setShowDropdown(true)}
               className="pl-10 bg-secondary border-[#3a3a3a]"
+              disabled={isLoading}
             />
           </div>
           {showDropdown && filteredMembers.length > 0 && (
@@ -121,17 +128,17 @@ export function QuickActions() {
                   className="w-full px-4 py-3 text-left hover:bg-secondary transition-colors flex items-center gap-3 border-b border-border last:border-b-0"
                 >
                   <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-medium">
-                    {member.name.split(" ").map((n) => n[0]).join("")}
+                    {member.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div>
                     <p className="font-medium text-sm">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">{member.id}</p>
+                    <p className="text-xs text-muted-foreground">ID: {member.id}</p>
                   </div>
                 </button>
               ))}
             </div>
           )}
-          {showDropdown && searchTerm.length > 0 && filteredMembers.length === 0 && (
+          {showDropdown && searchTerm.length > 0 && filteredMembers.length === 0 && !isLoading && (
             <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg p-4">
               <p className="text-sm text-muted-foreground text-center">No members found</p>
             </div>

@@ -178,7 +178,7 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                     variant="outline"
                     className={
                       memberStatus === "active"
-                        ? "border-accent text-accent bg-accent/10"
+                        ? "border-green-500 text-green-500 bg-green-500/10"
                         : memberStatus === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
                         : "border-yellow-500 text-yellow-500 bg-yellow-500/10"

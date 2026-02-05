@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useState, useEffect, useMemo } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { MembersFilter } from "@/components/members/members-filter"
 import toast from "react-hot-toast"
 
 function formatDate(dateString: string): string {
@@ -41,6 +42,7 @@ function getInitials(name: string): string {
 export function MembersList() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const pathname = usePathname()
   
   // Quick renewal params from URL
   const renewMemberId = searchParams.get("renewMemberId")
@@ -51,10 +53,34 @@ export function MembersList() {
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [searchValue, setSearchValue] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending' | 'deactivated'>('all')
 
-  // API hooks
-  const { data, isLoading, isError } = useGetMembersQuery()
+  // Set status filter based on URL pathname
+  useEffect(() => {
+    const pathSegment = pathname.split("/")[2]
+    if (pathSegment && ['active', 'expired', 'pending', 'deactivated'].includes(pathSegment)) {
+      setSelectedStatus(pathSegment as 'active' | 'expired' | 'pending' | 'deactivated')
+    } else {
+      setSelectedStatus('all')
+    }
+  }, [pathname])
+
+  // Memoize query params to ensure RTK Query cache key changes properly
+  const queryParams = useMemo(() => {
+    return selectedStatus !== 'all' 
+      ? { status: selectedStatus, limit: 1000 }
+      : { limit: 1000 }
+  }, [selectedStatus])
+
+  // API hooks - fetch members with status filter if selected
+  const { data, isLoading, isError, refetch } = useGetMembersQuery(queryParams)
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+
+  // Refetch when selected status changes (not query params to avoid infinite loops)
+  useEffect(() => {
+    refetch()
+  }, [selectedStatus, refetch])
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
@@ -63,7 +89,17 @@ export function MembersList() {
     }
   }
 
-  const members = data?.members || []
+  let members = data?.members || []
+
+  // Apply search filter (API already handles status filtering)
+  if (searchValue.trim()) {
+    const searchLower = searchValue.toLowerCase()
+    members = members.filter((m: Member) =>
+      m.name.toLowerCase().includes(searchLower) ||
+      m.email.toLowerCase().includes(searchLower) ||
+      m.phone.includes(searchValue)
+    )
+  }
 
   const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })
@@ -115,10 +151,17 @@ export function MembersList() {
   }
 
   return (
-    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-        <thead>
+    <div className="flex flex-col gap-4">
+      <MembersFilter
+        onSearchChange={setSearchValue}
+        onStatusFilterChange={setSelectedStatus}
+        searchValue={searchValue}
+        selectedStatus={selectedStatus}
+      />
+      <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-96">
+          <thead>
           <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
             <th className="w-12 px-4 py-3">
               <Checkbox className="border-[#3a3a3a]" />
@@ -174,6 +217,8 @@ export function MembersList() {
                         ? "border-accent text-accent bg-accent/10"
                         : status === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
+                        : status === "deactivated"
+                        ? "border-gray-500 text-gray-500 bg-gray-500/10"
                         : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
                     }
                   >
@@ -277,6 +322,7 @@ export function MembersList() {
           onOpenChange={handleRenewDialogClose}
         />
       )}
+    </div>
     </div>
   )
 }

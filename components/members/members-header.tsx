@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, SlidersHorizontal, Plus, MessageSquare } from "lucide-react"
+import { Plus, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useGetMembersQuery } from "@/store/api/membersApi"
@@ -37,7 +36,7 @@ export function MembersHeader() {
     { name: "View all", href: "/members", count: totalCount },
     { name: "Active", href: "/members/active", count: activeCount },
     { name: "Expired", href: "/members/expired", count: expiredCount },
-    { name: "Pending", href: "/members/pending", count: pendingCount },
+    { name: "QR Members", href: "/members/pending", count: pendingCount },
     { name: "Pending Trainers", href: "/members/pending-trainers", count: pendingTrainersCount },
     { name: "Trainers", href: "/members/trainers", count: trainersCount },
   ]
@@ -47,7 +46,7 @@ export function MembersHeader() {
       case "active":
         return `Active members (${activeCount})`
       case "pending":
-        return `Pending members (${pendingCount})`
+        return `QR Members (${pendingCount})`
       case "pending-trainers":
         return `Pending Trainers (${pendingTrainersCount})`
       case "expired":
@@ -67,14 +66,6 @@ export function MembersHeader() {
         
         {/* Actions - Wraps on mobile */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="relative flex-1 sm:flex-initial min-w-[120px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search" className="pl-9 bg-[#1a1a1a] border-[#2a2a2a] w-full" />
-          </div>
-          <Button variant="outline" size="sm" className="gap-2 border-[#2a2a2a] bg-transparent">
-            <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
           <Link href="/members/new">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <Plus className="h-4 w-4" />

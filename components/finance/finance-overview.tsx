@@ -40,14 +40,14 @@ export function FinanceOverview() {
       title: "Total Revenue",
       value: formatCurrency(stats.totalRevenue),
       change: "All time",
-      trend: "up" as const,
+      trend: "neutral" as const,
       icon: DollarSign,
     },
     {
       title: "This Month",
       value: formatCurrency(stats.monthlyRevenue),
       change: "Current month",
-      trend: "up" as const,
+      trend: "neutral" as const,
       icon: CreditCard,
     },
     {
@@ -64,10 +64,10 @@ export function FinanceOverview() {
       {statCards.map((stat) => (
         <Card key={stat.title} className="p-6">
           <div className="flex items-center justify-between">
-            <div className={`rounded-lg p-2 ${stat.trend === "up" ? "bg-accent/10" : "bg-secondary"}`}>
-              <stat.icon className={`h-4 w-4 ${stat.trend === "up" ? "text-accent" : "text-primary"}`} />
+            <div className="rounded-lg p-2 bg-secondary">
+              <stat.icon className="h-4 w-4 text-primary" />
             </div>
-            <span className={`text-xs font-medium ${stat.trend === "up" ? "text-accent" : "text-muted-foreground"}`}>
+            <span className="text-xs font-medium text-muted-foreground">
               {stat.change}
             </span>
           </div>

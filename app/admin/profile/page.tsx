@@ -17,7 +17,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetTrainersQuery } from "@/store/api/trainersApi"
+import { useGetPackagesQuery } from "@/store/api/packagesApi"
+import { useGetTransactionsQuery } from "@/store/api/transactionsApi"
 
 type DialogType = "edit-profile" | "update-info" | null
 
@@ -31,6 +35,27 @@ export default function AdminProfilePage() {
     bio: "Gym management system administrator responsible for overall system operations and user management.",
   })
 
+  // Fetch data from APIs
+  const { data: membersData } = useGetMembersQuery({ limit: 1000 })
+  const { data: trainersData } = useGetTrainersQuery()
+  const { data: packagesData } = useGetPackagesQuery()
+  const { data: transactionsData } = useGetTransactionsQuery({ limit: 1000 })
+
+  // Calculate stats from real data
+  const stats = useMemo(() => {
+    const totalMembers = membersData?.members?.length || 0
+    const activeTrainers = trainersData?.filter((t: any) => !t.isPending).length || 0
+    const packagesManaged = packagesData?.length || 0
+    const totalTransactions = transactionsData?.transactions?.length || 0
+
+    return {
+      totalMembers,
+      activeTrainers,
+      packagesManaged,
+      totalTransactions,
+    }
+  }, [membersData, trainersData, packagesData, transactionsData])
+
   const adminData = {
     name: "Admin User",
     email: "admin@gym.com",
@@ -40,12 +65,7 @@ export default function AdminProfilePage() {
     role: "System Administrator",
     avatar: "/placeholder.svg?height=200&width=200",
     bio: "Gym management system administrator responsible for overall system operations and user management.",
-    stats: {
-      totalMembers: 892,
-      activeTrainers: 15,
-      packagesManaged: 4,
-      totalTransactions: 1250,
-    },
+    stats,
   }
 
   const closeDialog = () => {

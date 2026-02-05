@@ -214,7 +214,7 @@ export function MembersList() {
                     variant="outline"
                     className={
                       status === "active"
-                        ? "border-accent text-accent bg-accent/10"
+                        ? "border-green-500 text-green-500 bg-green-500/10"
                         : status === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
                         : status === "deactivated"

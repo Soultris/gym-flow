@@ -22,6 +22,7 @@ export function MembersHeader() {
   const activeCount = members.filter(m => m.status === 'active').length
   const expiredCount = members.filter(m => m.status === 'expired').length
   const pendingCount = members.filter(m => m.status === 'pending' || m.isPending).length
+  const deactivatedCount = members.filter(m => m.status === 'deactivated').length
   const pendingTrainersCount = trainers.filter((t: Trainer) => t.isPending).length
   const trainersCount = trainers.filter((t: Trainer) => !t.isPending).length
 
@@ -37,6 +38,7 @@ export function MembersHeader() {
     { name: "Active", href: "/members/active", count: activeCount },
     { name: "Expired", href: "/members/expired", count: expiredCount },
     { name: "QR Members", href: "/members/pending", count: pendingCount },
+    { name: "Deactivated", href: "/members/deactivated", count: deactivatedCount },
     { name: "Pending Trainers", href: "/members/pending-trainers", count: pendingTrainersCount },
     { name: "Trainers", href: "/members/trainers", count: trainersCount },
   ]
@@ -47,6 +49,8 @@ export function MembersHeader() {
         return `Active members (${activeCount})`
       case "pending":
         return `QR Members (${pendingCount})`
+      case "deactivated":
+        return `Deactivated members (${deactivatedCount})`
       case "pending-trainers":
         return `Pending Trainers (${pendingTrainersCount})`
       case "expired":
@@ -66,6 +70,14 @@ export function MembersHeader() {
         
         {/* Actions - Wraps on mobile */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 sm:flex-initial min-w-30">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search" className="pl-9 bg-[#1a1a1a] border-[#2a2a2a] w-full" />
+          </div>
+          <Button variant="outline" size="sm" className="gap-2 border-[#2a2a2a] bg-transparent">
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="hidden sm:inline">Filters</span>
+          </Button>
           <Link href="/members/new">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <Plus className="h-4 w-4" />

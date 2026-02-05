@@ -16,7 +16,7 @@ export interface Member {
   address: string;
   joiningDate: string;
   imageUrl: string | null;
-  status?: 'active' | 'expired' | 'pending';
+  status?: 'active' | 'expired' | 'pending' | 'deactivated';
   package?: {
     packageId: number;
     name: string;
@@ -120,6 +120,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),
+    deactivateMember: builder.mutation<Member, number>({
+      query: (id) => ({
+        url: `/members/${id}/deactivate`,
+        method: 'PUT',
+      }),
+      invalidatesTags: (_result, _error, id) => ['Members', { type: 'Member', id }],
+    }),
     getMemberAttendance: builder.query<any[], { id: number; from?: string; to?: string }>({
       query: ({ id, ...params }) => ({
         url: `/members/${id}/attendance`,
@@ -142,6 +149,7 @@ export const {
   useUpdateMemberMutation,
   useDeleteMemberMutation,
   useApproveMemberMutation,
+  useDeactivateMemberMutation,
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,

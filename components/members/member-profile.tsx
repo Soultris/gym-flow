@@ -18,8 +18,16 @@ import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery } from "@/store/api/membersApi"
+import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery, useDeactivateMemberMutation } from "@/store/api/membersApi"
 import { useGetAssignedWorkoutsQuery } from "@/store/api/workoutsApi"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface MemberFormData {
   fullName: string
@@ -47,9 +55,11 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   
   // API Mutations
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+  const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
   
   // UI State
   const [isEditing, setIsEditing] = useState(false)
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
   const [attendanceFromDate, setAttendanceFromDate] = useState("")
   const [attendanceToDate, setAttendanceToDate] = useState("")
   
@@ -161,6 +171,18 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       })
     }
     setIsEditing(false)
+  }
+
+  const handleDeactivateClick = async () => {
+    try {
+      await deactivateMember(numericMemberId).unwrap()
+      toast.success("Member has been deactivated")
+      setDeactivateDialogOpen(false)
+      // Optionally navigate back to members list
+      router.push("/members?status=deactivated")
+    } catch {
+      toast.error("Failed to deactivate member")
+    }
   }
 
   const getInitials = () => {
@@ -323,7 +345,11 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               >
                 Send SMS
               </Button>
-              <Button variant="outline" className="w-full text-destructive hover:text-destructive bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full text-destructive hover:text-destructive bg-transparent"
+                onClick={() => setDeactivateDialogOpen(true)}
+              >
                 Deactivate
               </Button>
             </div>
@@ -687,6 +713,40 @@ export function MemberProfile({ memberId }: { memberId: string }) {
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate {formData.fullName}? This member will no longer be able to access their account and won't appear in active members list.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeactivateDialogOpen(false)}
+              disabled={isDeactivating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeactivateClick}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deactivating...
+                </>
+              ) : (
+                "Deactivate"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>    </div>
   )
 }

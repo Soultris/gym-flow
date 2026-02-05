@@ -16,9 +16,9 @@ import { SlidersHorizontal, Search, X } from "lucide-react"
 
 interface MembersFilterProps {
   onSearchChange: (search: string) => void
-  onStatusFilterChange: (status: 'all' | 'active' | 'expired' | 'pending') => void
+  onStatusFilterChange: (status: 'all' | 'active' | 'expired' | 'pending' | 'deactivated') => void
   searchValue: string
-  selectedStatus: 'all' | 'active' | 'expired' | 'pending'
+  selectedStatus: 'all' | 'active' | 'expired' | 'pending' | 'deactivated' | string
 }
 
 export function MembersFilter({
@@ -34,20 +34,21 @@ export function MembersFilter({
     { value: 'active', label: 'Active' },
     { value: 'expired', label: 'Expired' },
     { value: 'pending', label: 'Pending' },
+    { value: 'deactivated', label: 'Deactivated' },
   ]
 
   const handleClearSearch = () => {
     onSearchChange("")
   }
 
-  const handleStatusSelect = (status: 'all' | 'active' | 'expired' | 'pending') => {
+  const handleStatusSelect = (status: 'all' | 'active' | 'expired' | 'pending' | 'deactivated') => {
     onStatusFilterChange(status)
   }
 
   return (
     <div className="flex items-center gap-2">
       {/* Search Input */}
-      <div className="relative flex-1 sm:flex-initial min-w-[120px]">
+      <div className="relative flex-1 sm:flex-initial min-w-30">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search members..."
@@ -90,7 +91,7 @@ export function MembersFilter({
             <DropdownMenuCheckboxItem
               key={option.value}
               checked={selectedStatus === option.value}
-              onCheckedChange={() => handleStatusSelect(option.value as 'all' | 'active' | 'expired' | 'pending')}
+              onCheckedChange={() => handleStatusSelect(option.value as 'all' | 'active' | 'expired' | 'pending' | 'deactivated')}
               className="cursor-pointer"
             >
               {option.label}

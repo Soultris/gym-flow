@@ -241,7 +241,7 @@ export default function AttendanceLogPage() {
                 <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
                   <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Member</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Check-in Time</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Check - In / Out  Time</th>
                 </tr>
               </thead>
               <tbody>

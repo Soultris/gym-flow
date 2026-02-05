@@ -141,11 +141,19 @@ export function MembersList() {
 
   if (members.length === 0) {
     return (
-      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-        <p className="text-muted-foreground">No members found</p>
-        <Link href="/members/add">
-          <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
-        </Link>
+      <div className="flex flex-col gap-4">
+        <MembersFilter
+          onSearchChange={setSearchValue}
+          onStatusFilterChange={setSelectedStatus}
+          searchValue={searchValue}
+          selectedStatus={selectedStatus}
+        />
+        <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">No members found</p>
+          <Link href="/members/new">
+            <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
+          </Link>
+        </div>
       </div>
     )
   }
@@ -281,6 +289,7 @@ export function MembersList() {
         </tbody>
         </table>
       </div>
+    </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

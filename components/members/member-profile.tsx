@@ -300,7 +300,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               </Avatar>
               <h2 className="text-xl font-bold mt-4">{formData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
-              <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-accent text-accent" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
+              <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-green-500 text-green-500" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
                 {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
               </Badge>
             </div>
@@ -333,7 +333,16 @@ export function MemberProfile({ memberId }: { memberId: string }) {
             </div>
 
             <div className="flex flex-col gap-2 mt-6">
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent"
+                onClick={() => {
+                  const params = new URLSearchParams()
+                  params.set("memberId", member?.memberId?.toString() || "")
+                  params.set("memberName", member?.name || "")
+                  router.push(`/bulk-sms?${params.toString()}`)
+                }}
+              >
                 Send SMS
               </Button>
               <Button 

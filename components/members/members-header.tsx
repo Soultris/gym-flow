@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, SlidersHorizontal, Plus, MessageSquare } from "lucide-react"
+import { Plus, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useGetMembersQuery } from "@/store/api/membersApi"

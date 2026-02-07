@@ -123,7 +123,7 @@ export default function GymsPage() {
                   </p>
                   {gym.subdomain && (
                     <p className="text-sm font-medium text-primary">
-                      {gym.subdomain}.soultris.com
+                      {gym.subdomain}.seynextech.com
                     </p>
                   )}
                 </div>

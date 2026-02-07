@@ -27,6 +27,12 @@ interface TodayAttendanceResponse {
   date: string;
   count: number;
   attendance: Attendance[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 interface AttendanceQueryParams {

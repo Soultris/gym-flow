@@ -17,14 +17,26 @@ interface CreateProductRequest {
   imageUrl?: string;
 }
 
+interface ProductsResponse {
+  data: Product[];
+  meta: {
+    total: number;
+    page: number;
+    last_page: number;
+    limit: number;
+  };
+}
+
 interface ProductsQueryParams {
   category?: string;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const productsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getProducts: builder.query<Product[], ProductsQueryParams | void>({
+    getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
         url: '/products',
         params: params || {},

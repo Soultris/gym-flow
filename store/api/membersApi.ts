@@ -1,4 +1,7 @@
 import { baseApi } from './baseApi';
+import { Attendance } from './attendanceApi';
+import { Transaction } from './transactionsApi';
+import { AssignedWorkout } from './workoutsApi';
 
 export interface Member {
   memberId: number;
@@ -71,7 +74,7 @@ export const membersApi = baseApi.injectEndpoints({
     getMembers: builder.query<MembersResponse, MembersQueryParams | void>({
       query: (params) => {
         // Build query parameters
-        const queryParams: any = {};
+        const queryParams: Record<string, string | number> = {};
         if (params) {
           if (params.status) queryParams.status = params.status;
           if (params.search) queryParams.search = params.search;
@@ -127,16 +130,16 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, id) => ['Members', { type: 'Member', id }],
     }),
-    getMemberAttendance: builder.query<any[], { id: number; from?: string; to?: string }>({
+    getMemberAttendance: builder.query<Attendance[], { id: number; from?: string; to?: string }>({
       query: ({ id, ...params }) => ({
         url: `/members/${id}/attendance`,
         params,
       }),
     }),
-    getMemberTransactions: builder.query<any[], number>({
+    getMemberTransactions: builder.query<Transaction[], number>({
       query: (id) => `/members/${id}/transactions`,
     }),
-    getMemberWorkouts: builder.query<any[], number>({
+    getMemberWorkouts: builder.query<AssignedWorkout[], number>({
       query: (id) => `/members/${id}/workouts`,
     }),
   }),

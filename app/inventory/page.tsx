@@ -39,9 +39,10 @@ export default function InventoryPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [showTransactionDialog, setShowTransactionDialog] = useState(false)
 
-  const { data: products = [], isLoading, refetch } = useGetProductsQuery(
+  const { data: productsData, isLoading, refetch } = useGetProductsQuery(
     categoryFilter !== "All" ? { category: categoryFilter, search: searchTerm || undefined } : { search: searchTerm || undefined }
   )
+  const products = productsData?.data || []
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation()
 
   // Filter and sort products

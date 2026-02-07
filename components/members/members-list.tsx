@@ -60,6 +60,7 @@ export function MembersList() {
   useEffect(() => {
     const pathSegment = pathname.split("/")[2]
     if (pathSegment && ['active', 'expired', 'pending', 'deactivated'].includes(pathSegment)) {
+      // eslint-disable-next-line
       setSelectedStatus(pathSegment as 'active' | 'expired' | 'pending' | 'deactivated')
     } else {
       setSelectedStatus('all')
@@ -114,7 +115,7 @@ export function MembersList() {
       toast.success(`${memberToDelete.name} has been deleted`)
       setDeleteDialogOpen(false)
       setMemberToDelete(null)
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete member")
     }
   }
@@ -331,7 +332,6 @@ export function MembersList() {
           onOpenChange={handleRenewDialogClose}
         />
       )}
-    </div>
     </div>
   )
 }

@@ -14,12 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Weight, Loader2 } from "lucide-react"
+import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Loader2 } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery, useDeactivateMemberMutation } from "@/store/api/membersApi"
-import { useGetAssignedWorkoutsQuery } from "@/store/api/workoutsApi"
+import { useGetAssignedWorkoutsQuery, AssignedWorkout } from "@/store/api/workoutsApi"
+import { Transaction } from "@/store/api/transactionsApi"
 import {
   Dialog,
   DialogContent,
@@ -51,7 +52,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   const { data: member, isLoading: memberLoading, error: memberError } = useGetMemberByIdQuery(numericMemberId)
   const { data: attendanceData } = useGetMemberAttendanceQuery({ id: numericMemberId })
   const { data: transactionsData } = useGetMemberTransactionsQuery(numericMemberId)
-  const { data: assignedWorkoutsData } = useGetAssignedWorkoutsQuery({ memberId: numericMemberId })
+  const { data: assignedWorkoutsResponse } = useGetAssignedWorkoutsQuery({ memberId: numericMemberId })
+  const assignedWorkoutsData = assignedWorkoutsResponse?.workouts || []
   
   // API Mutations
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
@@ -209,10 +211,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   const filteredAttendance = useMemo(() => {
     if (!attendanceData) return []
     
-    return attendanceData.filter((record: { checkInTime: string }) => {
+    return attendanceData.filter((record: { timestamp: string }) => {
       if (!attendanceFromDate && !attendanceToDate) return true
       
-      const recordDate = new Date(record.checkInTime)
+      const recordDate = new Date(record.timestamp)
       
       if (attendanceFromDate && attendanceToDate) {
         const from = new Date(attendanceFromDate)
@@ -555,7 +557,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                   <h3 className="text-lg font-semibold mb-4">Assigned Workout Plans</h3>
                   <div className="space-y-4">
                     {assignedWorkoutsData && assignedWorkoutsData.length > 0 ? (
-                      assignedWorkoutsData.map((workout) => {
+                      assignedWorkoutsData.map((workout: AssignedWorkout) => {
                         const isActive = new Date(workout.endDate) >= new Date()
                         return (
                           <Card key={workout.assignedWorkoutId} className="p-5 bg-secondary/30 border border-border">
@@ -643,7 +645,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
 
                 <div className="space-y-3">
                   {filteredAttendance.length > 0 ? (
-                    filteredAttendance.map((record: { attendanceId: number; checkInTime: string; checkOutTime?: string }, i: number) => (
+                    filteredAttendance.map((record: { attendanceId: number; timestamp: string }, i: number) => (
                       <Card key={record.attendanceId || i} className="p-4 bg-secondary/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -651,22 +653,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                               <Clock className="h-4 w-4 text-accent" />
                             </div>
                             <div>
-                              <p className="font-medium">{formatDate(record.checkInTime)}</p>
+                              <p className="font-medium">{formatDate(record.timestamp)}</p>
                               <p className="text-sm text-muted-foreground">
-                                Check-in: {new Date(record.checkInTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                                Check-in: {new Date(record.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                               </p>
                             </div>
                           </div>
-                          {record.checkOutTime && (
-                            <Badge variant="outline" className="border-primary text-primary">
-                              {(() => {
-                                const checkIn = new Date(record.checkInTime)
-                                const checkOut = new Date(record.checkOutTime)
-                                const hours = ((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)).toFixed(1)
-                                return `${hours} hrs`
-                              })()}
-                            </Badge>
-                          )}
                         </div>
                       </Card>
                     ))
@@ -682,7 +674,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               <TabsContent value="payments" className="space-y-4 mt-6">
                 <div className="space-y-3">
                   {transactionsData && transactionsData.length > 0 ? (
-                    transactionsData.map((payment: { transactionId: number; paidAt: string; price: number; paymentMethod?: string }, i: number) => (
+                    transactionsData.map((payment: Transaction, i: number) => (
                       <Card key={payment.transactionId || i} className="p-4 bg-secondary/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -720,7 +712,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
           <DialogHeader>
             <DialogTitle>Deactivate Member</DialogTitle>
             <DialogDescription>
-              Are you sure you want to deactivate {formData.fullName}? This member will no longer be able to access their account and won't appear in active members list.
+              Are you sure you want to deactivate {formData.fullName}? This member will no longer be able to access their account and won&apos;t appear in active members list.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -51,6 +51,16 @@ interface AssignWorkoutRequest {
   rows?: WorkoutRow[];
 }
 
+interface AssignedWorkoutsResponse {
+  workouts: AssignedWorkout[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const workoutsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Workout Templates
@@ -87,7 +97,7 @@ export const workoutsApi = baseApi.injectEndpoints({
     }),
 
     // Assigned Workouts
-    getAssignedWorkouts: builder.query<AssignedWorkout[], { memberId?: number } | void>({
+    getAssignedWorkouts: builder.query<AssignedWorkoutsResponse, { memberId?: number; page?: number; limit?: number } | void>({
       query: (params) => ({
         url: '/assigned-workouts',
         params: params || {},

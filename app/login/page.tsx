@@ -27,7 +27,12 @@ export default function LoginPage() {
       const response = await login({ email, password }).unwrap()
       dispatch(setCredentials({ user: response.user, token: response.token }))
       toast.success("Login successful!")
-      router.push("/dashboard")
+      
+      if (response.user.role?.name === 'Superadmin' || response.user.roleId === 4) {
+        router.push("/admin/gyms")
+      } else {
+        router.push("/dashboard")
+      }
     } catch (error: unknown) {
       const err = error as { data?: { error?: string } }
       toast.error(err?.data?.error || "Invalid email or password")

@@ -1,11 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plus, MessageSquare } from "lucide-react"
+import { Plus, MessageSquare, Search, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
+import { Input } from "../ui/input"
 
 export function MembersHeader() {
   const pathname = usePathname()

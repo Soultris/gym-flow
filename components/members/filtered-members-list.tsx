@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
-import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutation, useReactivateMemberMutation, Member } from "@/store/api/membersApi"
 import toast from "react-hot-toast"
 
 function formatDate(dateString: string): string {
@@ -39,7 +39,7 @@ function getInitials(name: string): string {
 }
 
 interface FilteredMembersListProps {
-  status: 'active' | 'expired' | 'pending'
+  status: 'active' | 'expired' | 'pending' | 'deactivated'
 }
 
 export function FilteredMembersList({ status }: FilteredMembersListProps) {
@@ -53,12 +53,15 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
   // Derive dialog open state from URL params
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
   
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [actionDialogOpen, setActionDialogOpen] = useState(false)
+  const [actionType, setActionType] = useState<'deactivate' | 'delete' | 'reactivate' | null>(null)
+  const [memberToAction, setMemberToAction] = useState<{ id: number; name: string } | null>(null)
 
   // API hooks - fetch all members and filter client-side
   const { data, isLoading, isError } = useGetMembersQuery({ limit: 1000 })
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+  const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
+  const [reactivateMember, { isLoading: isReactivating }] = useReactivateMemberMutation()
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
@@ -74,21 +77,34 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
     return memberStatus === status
   })
 
-  const handleDeleteClick = (id: number, name: string) => {
-    setMemberToDelete({ id, name })
-    setDeleteDialogOpen(true)
+  const handleActionClick = (action: 'deactivate' | 'delete' | 'reactivate', id: number, name: string) => {
+    setActionType(action)
+    setMemberToAction({ id, name })
+    setActionDialogOpen(true)
   }
 
-  const handleConfirmDelete = async () => {
-    if (!memberToDelete) return
+  const handleConfirmAction = async () => {
+    if (!memberToAction || !actionType) return
     
     try {
-      await deleteMember(memberToDelete.id).unwrap()
-      toast.success(`${memberToDelete.name} has been deleted`)
-      setDeleteDialogOpen(false)
-      setMemberToDelete(null)
+      if (actionType === 'deactivate') {
+        await deactivateMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been deactivated`)
+      } else if (actionType === 'reactivate') {
+        await reactivateMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been reactivated`)
+        // After reactivation, the member moves to Active tab
+        // RTK Query cache invalidation handles the refetch
+      } else if (actionType === 'delete') {
+        await deleteMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been permanently deleted`)
+      }
+      setActionDialogOpen(false)
+      setMemberToAction(null)
+      setActionType(null)
+      // Don't manually refetch - let RTK Query cache invalidation handle it
     } catch (error) {
-      toast.error("Failed to delete member")
+      toast.error(`Failed to ${actionType} member`)
     }
   }
 
@@ -185,6 +201,8 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                         ? "border-accent text-accent bg-accent/10"
                         : memberStatus === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
+                        : memberStatus === "deactivated"
+                        ? "border-gray-500 text-gray-500 bg-gray-500/10"
                         : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
                     }
                   >
@@ -224,22 +242,44 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                           Edit Member
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
-                          Assign Workout
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
-                          Send Message
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive cursor-pointer"
-                        onClick={() => handleDeleteClick(member.memberId, member.name)}
-                      >
-                        Delete Member
-                      </DropdownMenuItem>
+                      {memberStatus !== "deactivated" && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
+                              Assign Workout
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
+                              Send Message
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {memberStatus !== "deactivated" && (
+                        <DropdownMenuItem 
+                          className="text-yellow-600 cursor-pointer"
+                          onClick={() => handleActionClick('deactivate', member.memberId, member.name)}
+                        >
+                          Deactivate Member
+                        </DropdownMenuItem>
+                      )}
+                      {memberStatus === "deactivated" && (
+                        <>
+                          <DropdownMenuItem 
+                            className="text-blue-600 cursor-pointer"
+                            onClick={() => handleActionClick('reactivate', member.memberId, member.name)}
+                          >
+                            Reactivate Member
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive cursor-pointer"
+                            onClick={() => handleActionClick('delete', member.memberId, member.name)}
+                          >
+                            Permanently Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -250,30 +290,61 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
         </table>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Action Confirmation Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Delete Member</DialogTitle>
+            <DialogTitle>
+              {actionType === 'deactivate' && 'Deactivate Member'}
+              {actionType === 'reactivate' && 'Reactivate Member'}
+              {actionType === 'delete' && 'Permanently Delete Member'}
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-foreground">{memberToDelete?.name}</span>? This action cannot be undone.
+              {actionType === 'deactivate' && (
+                <>
+                  Are you sure you want to deactivate <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  They will appear in the Deactivated tab but can be reactivated later.
+                </>
+              )}
+              {actionType === 'reactivate' && (
+                <>
+                  Are you sure you want to reactivate <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  They will be able to access the gym again.
+                </>
+              )}
+              {actionType === 'delete' && (
+                <>
+                  Are you sure you want to permanently delete <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  This action cannot be undone and all their data will be removed.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setDeleteDialogOpen(false)} 
+              onClick={() => setActionDialogOpen(false)} 
               className="flex-1 bg-transparent border-[#3a3a3a]"
-              disabled={isDeleting}
+              disabled={isDeleting || isDeactivating || isReactivating}
             >
               Cancel
             </Button>
             <Button 
-              onClick={handleConfirmDelete} 
-              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
+              onClick={handleConfirmAction} 
+              className={`flex-1 ${
+                actionType === 'delete' 
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
+                  : actionType === 'deactivate'
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              disabled={isDeleting || isDeactivating || isReactivating}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {(isDeleting || isDeactivating || isReactivating) ? 'Processing...' : (
+                actionType === 'deactivate' ? 'Deactivate' :
+                actionType === 'reactivate' ? 'Reactivate' :
+                'Delete'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

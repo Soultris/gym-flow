@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
-import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutation, useReactivateMemberMutation, Member } from "@/store/api/membersApi"
+import { MembersFilter } from "@/components/members/members-filter"
 import toast from "react-hot-toast"
 
 function formatDate(dateString: string): string {
@@ -50,11 +51,39 @@ export function MembersList() {
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [actionType, setActionType] = useState<'deactivate' | 'delete' | null>(null)
+  const [memberToAction, setMemberToAction] = useState<{ id: number; name: string } | null>(null)
+  const [searchValue, setSearchValue] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending' | 'deactivated'>('all')
 
-  // API hooks
-  const { data, isLoading, isError } = useGetMembersQuery()
+  // Set status filter based on URL pathname
+  useEffect(() => {
+    const pathSegment = pathname.split("/")[2]
+    if (pathSegment && ['active', 'expired', 'pending', 'deactivated'].includes(pathSegment)) {
+      // eslint-disable-next-line
+      setSelectedStatus(pathSegment as 'active' | 'expired' | 'pending' | 'deactivated')
+    } else {
+      setSelectedStatus('all')
+    }
+  }, [pathname])
+
+  // Memoize query params to ensure RTK Query cache key changes properly
+  const queryParams = useMemo(() => {
+    return selectedStatus !== 'all' 
+      ? { status: selectedStatus, limit: 1000 }
+      : { limit: 1000 }
+  }, [selectedStatus])
+
+  // API hooks - fetch members with status filter if selected
+  const { data, isLoading, isError } = useGetMembersQuery(queryParams)
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+  const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
+  const [reactivateMember, { isLoading: isReactivating }] = useReactivateMemberMutation()
+
+  // Refetch when selected status changes (not query params to avoid infinite loops)
+  useEffect(() => {
+    // RTK Query handles automatic refetch on status change via query params
+  }, [selectedStatus])
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
@@ -66,20 +95,33 @@ export function MembersList() {
   const members = data?.members || []
 
   const handleDeleteClick = (id: number, name: string) => {
-    setMemberToDelete({ id, name })
+    setActionType('deactivate')
+    setMemberToAction({ id, name })
     setDeleteDialogOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (!memberToDelete) return
+    if (!memberToAction || !actionType) return
     
     try {
-      await deleteMember(memberToDelete.id).unwrap()
-      toast.success(`${memberToDelete.name} has been deleted`)
+      if (actionType === 'deactivate') {
+        await deactivateMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been deactivated`)
+      } else if (actionType === 'reactivate') {
+        await reactivateMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been reactivated`)
+        // After reactivation, the member moves to Active tab
+        // RTK Query cache invalidation handles the refetch
+      } else if (actionType === 'delete') {
+        await deleteMember(memberToAction.id).unwrap()
+        toast.success(`${memberToAction.name} has been permanently deleted`)
+      }
       setDeleteDialogOpen(false)
-      setMemberToDelete(null)
-    } catch (error) {
-      toast.error("Failed to delete member")
+      setMemberToAction(null)
+      setActionType(null)
+      // Don't manually refetch - let RTK Query cache invalidation handle it
+    } catch {
+      toast.error(`Failed to ${actionType} member`)
     }
   }
 
@@ -211,22 +253,52 @@ export function MembersList() {
                           Edit Member
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
-                          Assign Workout
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
-                          Send Message
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive cursor-pointer"
-                        onClick={() => handleDeleteClick(member.memberId, member.name)}
-                      >
-                        Delete Member
-                      </DropdownMenuItem>
+                      {status !== "deactivated" && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
+                              Assign Workout
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
+                              Send Message
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {status !== "deactivated" && (
+                        <DropdownMenuItem 
+                          className="text-yellow-600 cursor-pointer"
+                          onClick={() => handleDeleteClick(member.memberId, member.name)}
+                        >
+                          Deactivate Member
+                        </DropdownMenuItem>
+                      )}
+                      {status === "deactivated" && (
+                        <>
+                          <DropdownMenuItem 
+                            className="text-blue-600 cursor-pointer"
+                            onClick={() => {
+                              setActionType('reactivate')
+                              setMemberToAction({ id: member.memberId, name: member.name })
+                              setDeleteDialogOpen(true)
+                            }}
+                          >
+                            Reactivate Member
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive cursor-pointer"
+                            onClick={() => {
+                              setActionType('delete')
+                              setMemberToAction({ id: member.memberId, name: member.name })
+                              setDeleteDialogOpen(true)
+                            }}
+                          >
+                            Permanently Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -241,9 +313,30 @@ export function MembersList() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Delete Member</DialogTitle>
+            <DialogTitle>
+              {actionType === 'deactivate' && 'Deactivate Member'}
+              {actionType === 'reactivate' && 'Reactivate Member'}
+              {actionType === 'delete' && 'Permanently Delete Member'}
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-foreground">{memberToDelete?.name}</span>? This action cannot be undone.
+              {actionType === 'deactivate' && (
+                <>
+                  Are you sure you want to deactivate <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  They will appear in the Deactivated tab but can be reactivated later.
+                </>
+              )}
+              {actionType === 'reactivate' && (
+                <>
+                  Are you sure you want to reactivate <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  They will be able to access the gym again.
+                </>
+              )}
+              {actionType === 'delete' && (
+                <>
+                  Are you sure you want to permanently delete <span className="font-semibold text-foreground">{memberToAction?.name}</span>? 
+                  This action cannot be undone and all their data will be removed.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
@@ -251,16 +344,26 @@ export function MembersList() {
               variant="outline" 
               onClick={() => setDeleteDialogOpen(false)} 
               className="flex-1 bg-transparent border-[#3a3a3a]"
-              disabled={isDeleting}
+              disabled={isDeleting || isDeactivating || isReactivating}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleConfirmDelete} 
-              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
+              className={`flex-1 ${
+                actionType === 'delete'
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
+                  : actionType === 'deactivate'
+                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              disabled={isDeleting || isDeactivating || isReactivating}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {(isDeleting || isDeactivating || isReactivating) ? 'Processing...' : (
+                actionType === 'deactivate' ? 'Deactivate' :
+                actionType === 'reactivate' ? 'Reactivate' :
+                'Delete'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

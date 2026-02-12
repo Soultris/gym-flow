@@ -110,7 +110,53 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),
-    getMemberAttendance: builder.query<any[], { id: number; from?: string; to?: string }>({
+    deactivateMember: builder.mutation<Member, number>({
+      query: (id) => ({
+        url: `/members/${id}/deactivate`,
+        method: 'PUT',
+      }),
+      // Invalidate all member-related queries to force refetch
+      invalidatesTags: (result, error, id) => {
+        if (error) return [];
+        return [
+          'Members',
+          { type: 'Member', id },
+        ];
+      },
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          // Invalidate both filters to ensure both tabs update
+          dispatch(membersApi.util.invalidateTags(['Members']));
+        } catch (error) {
+          // Error handled by mutation
+        }
+      },
+    }),
+    reactivateMember: builder.mutation<Member, number>({
+      query: (id) => ({
+        url: `/members/${id}/reactivate`,
+        method: 'PUT',
+      }),
+      // Invalidate all member-related queries to force refetch
+      invalidatesTags: (result, error, id) => {
+        if (error) return [];
+        return [
+          'Members',
+          { type: 'Member', id },
+        ];
+      },
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          // Invalidate all Members queries to update both tabs
+          dispatch(membersApi.util.invalidateTags(['Members']));
+        } catch (error) {
+          // Error handled by mutation
+        }
+      },
+    }),
+    getMemberAttendance: builder.query<Attendance[], { id: number; from?: string; to?: string }>({
       query: ({ id, ...params }) => ({
         url: `/members/${id}/attendance`,
         params,
@@ -132,6 +178,8 @@ export const {
   useUpdateMemberMutation,
   useDeleteMemberMutation,
   useApproveMemberMutation,
+  useDeactivateMemberMutation,
+  useReactivateMemberMutation,
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,

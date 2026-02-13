@@ -2,12 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical, Loader2 } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -16,43 +10,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import Link from "next/link"
-import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
-import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { Button } from "@/components/ui/button"
+import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutation, useReactivateMemberMutation, Member } from "@/store/api/membersApi"
 import { MembersFilter } from "@/components/members/members-filter"
+import { MembersTable } from "@/components/members/members-table"
 import toast from "react-hot-toast"
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
-}
 
 export function MembersList() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  
+
   // Quick renewal params from URL
   const renewMemberId = searchParams.get("renewMemberId")
   const renewMemberName = searchParams.get("renewMemberName")
-  
+
   // Derive dialog open state from URL params
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [memberToDeactivate, setMemberToDeactivate] = useState<{ id: number; name: string } | null>(null)
+  const [memberToReactivate, setMemberToReactivate] = useState<{ id: number; name: string } | null>(null)
   const [searchValue, setSearchValue] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending' | 'deactivated'>('all')
 
@@ -69,16 +50,18 @@ export function MembersList() {
 
   // Memoize query params to ensure RTK Query cache key changes properly
   const queryParams = useMemo(() => {
-    return selectedStatus !== 'all' 
+    return selectedStatus !== 'all'
       ? { status: selectedStatus, limit: 1000 }
       : { limit: 1000 }
   }, [selectedStatus])
 
-  // API hooks - fetch members with status filter if selected
+  // API hooks
   const { data, isLoading, isError, refetch } = useGetMembersQuery(queryParams)
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+  const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
+  const [reactivateMember, { isLoading: isReactivating }] = useReactivateMemberMutation()
 
-  // Refetch when selected status changes (not query params to avoid infinite loops)
+  // Refetch when selected status changes
   useEffect(() => {
     refetch()
   }, [selectedStatus, refetch])
@@ -107,9 +90,19 @@ export function MembersList() {
     setDeleteDialogOpen(true)
   }
 
+  const handleDeactivateClick = (id: number, name: string) => {
+    setMemberToDeactivate({ id, name })
+    setDeactivateDialogOpen(true)
+  }
+
+  const handleReactivateClick = (id: number, name: string) => {
+    setMemberToReactivate({ id, name })
+    setReactivateDialogOpen(true)
+  }
+
   const handleConfirmDelete = async () => {
     if (!memberToDelete) return
-    
+
     try {
       await deleteMember(memberToDelete.id).unwrap()
       toast.success(`${memberToDelete.name} has been deleted`)
@@ -120,27 +113,33 @@ export function MembersList() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="border border-[#2a2a2a] rounded-lg p-8 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading members...</span>
-      </div>
-    )
+  const handleConfirmDeactivate = async () => {
+    if (!memberToDeactivate) return
+
+    try {
+      await deactivateMember(memberToDeactivate.id).unwrap()
+      toast.success(`${memberToDeactivate.name} has been deactivated`)
+      setDeactivateDialogOpen(false)
+      setMemberToDeactivate(null)
+    } catch {
+      toast.error("Failed to deactivate member")
+    }
   }
 
-  if (isError) {
-    return (
-      <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-        <p className="text-destructive">Failed to load members</p>
-        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-          Retry
-        </Button>
-      </div>
-    )
+  const handleConfirmReactivate = async () => {
+    if (!memberToReactivate) return
+
+    try {
+      await reactivateMember(memberToReactivate.id).unwrap()
+      toast.success(`${memberToReactivate.name} has been reactivated`)
+      setReactivateDialogOpen(false)
+      setMemberToReactivate(null)
+    } catch {
+      toast.error("Failed to reactivate member")
+    }
   }
 
-  if (members.length === 0) {
+  if (members.length === 0 && !isLoading && searchValue.trim()) {
     return (
       <div className="flex flex-col gap-4">
         <MembersFilter
@@ -150,10 +149,7 @@ export function MembersList() {
           selectedStatus={selectedStatus}
         />
         <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-          <p className="text-muted-foreground">No members found</p>
-          <Link href="/members/new">
-            <Button className="mt-4 bg-primary text-primary-foreground">Add Member</Button>
-          </Link>
+          <p className="text-muted-foreground">No members found matching your search</p>
         </div>
       </div>
     )
@@ -167,130 +163,16 @@ export function MembersList() {
         searchValue={searchValue}
         selectedStatus={selectedStatus}
       />
-      <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-96">
-          <thead>
-          <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-            <th className="w-12 px-4 py-3">
-              <Checkbox className="border-[#3a3a3a]" />
-            </th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Package</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Enrolled</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Expiry Date</th>
-            <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Renew</th>
-            <th className="w-12 px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((member: Member, index: number) => {
-            const latestPackage = member.memberPackages?.[0]
-            const expiryDate = latestPackage?.expiresAt
-            const status = member.status || (member.isPending ? "pending" : "active")
-            
-            return (
-              <tr
-                key={member.memberId}
-                className={`border-b border-[#2a2a2a] transition-colors ${
-                  index % 2 === 0 ? "bg-[#151515]" : "bg-background"
-                }`}
-              >
-                <td className="px-4 py-4">
-                  <Checkbox className="border-[#3a3a3a]" />
-                </td>
-                <td className="px-4 py-4">
-                  <Link
-                    href={`/members/${member.memberId}`}
-                    className="flex items-center gap-3 transition-opacity"
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={member.imageUrl || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                        {getInitials(member.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-sm text-muted-foreground">{member.email}</div>
-                    </div>
-                  </Link>
-                </td>
-                <td className="px-4 py-4 text-sm">{member.package?.name || "No Package"}</td>
-                <td className="px-4 py-4">
-                  <Badge
-                    variant="outline"
-                    className={
-                      status === "active"
-                        ? "border-green-500 text-green-500 bg-green-500/10"
-                        : status === "expired"
-                        ? "border-destructive text-destructive bg-destructive/10"
-                        : status === "deactivated"
-                        ? "border-gray-500 text-gray-500 bg-gray-500/10"
-                        : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
-                    }
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </Badge>
-                </td>
-                <td className="px-4 py-4 text-sm text-muted-foreground">
-                  {formatDate(member.joiningDate)}
-                </td>
-                <td className="px-4 py-4 text-sm text-muted-foreground">
-                  {expiryDate ? formatDate(expiryDate) : "-"}
-                </td>
-                <td className="px-4 py-4">
-                  <NewTransactionDialog 
-                    memberId={String(member.memberId)}
-                    memberName={member.name}
-                    triggerStyle="renew"
-                  />
-                </td>
-                <td className="px-4 py-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/members/${member.memberId}`} className="cursor-pointer">
-                          View Profile
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/members/${member.memberId}`} className="cursor-pointer">
-                          Edit Member
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
-                          Assign Workout
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
-                          Send Message
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive cursor-pointer"
-                        onClick={() => handleDeleteClick(member.memberId, member.name)}
-                      >
-                        Delete Member
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-        </table>
-      </div>
-    </div>
+      <MembersTable
+        members={members}
+        isLoading={isLoading}
+        isError={isError}
+        statusFilter={selectedStatus as any}
+        onDeleteClick={handleDeleteClick}
+        onDeactivateClick={handleDeactivateClick}
+        onReactivateClick={handleReactivateClick}
+        onRetry={() => refetch()}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -302,16 +184,16 @@ export function MembersList() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setDeleteDialogOpen(false)} 
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
               className="flex-1 bg-transparent border-[#3a3a3a]"
               disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleConfirmDelete} 
+            <Button
+              onClick={handleConfirmDelete}
               className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
@@ -321,17 +203,63 @@ export function MembersList() {
         </DialogContent>
       </Dialog>
 
-      {/* Quick Renewal Transaction Dialog */}
-      {renewMemberId && renewMemberName && (
-        <NewTransactionDialog
-          memberId={renewMemberId}
-          memberName={renewMemberName}
-          triggerStyle="hidden"
-          defaultTransactionType="membership"
-          openByDefault={isRenewDialogOpen}
-          onOpenChange={handleRenewDialogClose}
-        />
-      )}
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Deactivate Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate <span className="font-semibold text-foreground">{memberToDeactivate?.name}</span>? They will be moved to the Deactivated tab and can be reactivated later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeactivateDialogOpen(false)}
+              className="flex-1 bg-transparent border-[#3a3a3a]"
+              disabled={isDeactivating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDeactivate}
+              className="flex-1 bg-orange-600 text-white hover:bg-orange-700"
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? "Deactivating..." : "Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reactivate Confirmation Dialog */}
+      <Dialog open={reactivateDialogOpen} onOpenChange={setReactivateDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Reactivate Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reactivate <span className="font-semibold text-foreground">{memberToReactivate?.name}</span>? They will be moved back to the Active tab.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setReactivateDialogOpen(false)}
+              className="flex-1 bg-transparent border-[#3a3a3a]"
+              disabled={isReactivating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmReactivate}
+              className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              disabled={isReactivating}
+            >
+              {isReactivating ? "Reactivating..." : "Reactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

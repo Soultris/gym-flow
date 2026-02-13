@@ -7,6 +7,7 @@ export interface Member {
   memberId: number;
   packageId: number | null;
   isPending: boolean;
+  isActive?: boolean;
   name: string;
   email: string;
   phone: string;
@@ -126,7 +127,14 @@ export const membersApi = baseApi.injectEndpoints({
     deactivateMember: builder.mutation<Member, number>({
       query: (id) => ({
         url: `/members/${id}/deactivate`,
-        method: 'PUT',
+        method: 'PATCH',
+      }),
+      invalidatesTags: (_result, _error, id) => ['Members', { type: 'Member', id }],
+    }),
+    reactivateMember: builder.mutation<Member, number>({
+      query: (id) => ({
+        url: `/members/${id}/reactivate`,
+        method: 'PATCH',
       }),
       invalidatesTags: (_result, _error, id) => ['Members', { type: 'Member', id }],
     }),
@@ -153,6 +161,7 @@ export const {
   useDeleteMemberMutation,
   useApproveMemberMutation,
   useDeactivateMemberMutation,
+  useReactivateMemberMutation,
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,

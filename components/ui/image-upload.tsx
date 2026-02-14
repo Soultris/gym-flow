@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react"
-import Image from "next/image"
+import { Upload, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ImageUploadProps {
@@ -21,6 +20,17 @@ export function ImageUpload({ value, onChange, onRemove, className, previewClass
     if (value instanceof File) return URL.createObjectURL(value)
     return null
   })
+
+  // Sync preview when value prop changes externally (e.g. after refetch)
+  useEffect(() => {
+    if (typeof value === 'string') {
+      setPreviewUrl(value)
+    } else if (value instanceof File) {
+      setPreviewUrl(URL.createObjectURL(value))
+    } else if (value === null || value === undefined) {
+      setPreviewUrl(null)
+    }
+  }, [value])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -72,11 +82,11 @@ export function ImageUpload({ value, onChange, onRemove, className, previewClass
       ) : (
         <div className={cn("relative rounded-lg overflow-hidden border border-border group", previewClassName)}>
           <div className="aspect-square relative w-full h-full min-h-[200px] bg-muted">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={previewUrl}
               alt="Preview"
-              fill
-              className="object-cover"
+              className="object-cover w-full h-full"
             />
           </div>
           <Button

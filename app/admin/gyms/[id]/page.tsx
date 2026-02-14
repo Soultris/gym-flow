@@ -14,9 +14,10 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import toast from "react-hot-toast"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ImageUpload } from "@/components/ui/image-upload"
 import {
     Dialog,
     DialogContent,
@@ -43,6 +44,8 @@ export default function GymDetailsPage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({ name: "", subdomain: "" })
+  const [logoFile, setLogoFile] = useState<File | string | null>(null)
+  const [removeLogo, setRemoveLogo] = useState(false)
   
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false)
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "" })
@@ -50,6 +53,8 @@ export default function GymDetailsPage() {
   const startEditing = () => {
       if (gym) {
           setEditForm({ name: gym.name, subdomain: gym.subdomain || "" })
+          setLogoFile(gym.logoUrl || null)
+          setRemoveLogo(false)
           setIsEditing(true)
       }
   }
@@ -57,7 +62,15 @@ export default function GymDetailsPage() {
   const handleUpdateGym = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await updateGym({ id: gymId, data: editForm }).unwrap()
+      const fd = new FormData()
+      fd.append("name", editForm.name)
+      fd.append("subdomain", editForm.subdomain)
+      if (logoFile instanceof File) {
+        fd.append("logo", logoFile)
+      } else if (removeLogo) {
+        fd.append("removeLogo", "true")
+      }
+      await updateGym({ id: gymId, data: fd }).unwrap()
       toast.success("Gym updated successfully")
       setIsEditing(false)
     } catch (error) {
@@ -153,6 +166,22 @@ export default function GymDetailsPage() {
                                 onChange={(e) => setEditForm({...editForm, subdomain: e.target.value})} 
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label>Gym Logo</Label>
+                            <div className="max-w-[200px]">
+                                <ImageUpload
+                                    value={logoFile}
+                                    onChange={(file) => {
+                                        setLogoFile(file)
+                                        setRemoveLogo(false)
+                                    }}
+                                    onRemove={() => {
+                                        setLogoFile(null)
+                                        setRemoveLogo(true)
+                                    }}
+                                />
+                            </div>
+                        </div>
                         <div className="flex gap-2 justify-end">
                             <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
                             <Button type="submit" disabled={isUpdating}>Save Changes</Button>
@@ -167,6 +196,14 @@ export default function GymDetailsPage() {
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Subdomain</p>
                             <p className="text-lg">{gym.subdomain || "N/A"}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">Logo</p>
+                            {gym.logoUrl ? (
+                                <img src={gym.logoUrl} alt="Gym Logo" className="mt-2 h-16 w-16 object-cover rounded-lg border" />
+                            ) : (
+                                <p className="text-lg">N/A</p>
+                            )}
                         </div>
                         <div className="text-sm text-muted-foreground pt-2">
                             * Address and Phone fields have been hidden as per policy.

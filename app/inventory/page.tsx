@@ -244,8 +244,16 @@ export default function InventoryPage() {
                   </DropdownMenu>
 
                   {/* Product Image */}
-                  <div className="aspect-square bg-secondary/50 flex items-center justify-center p-4">
-                    <Package className="h-16 w-16 text-muted-foreground" />
+                  <div className="aspect-square bg-secondary/50 flex items-center justify-center p-4 relative overflow-hidden">
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <Package className="h-16 w-16 text-muted-foreground" />
+                    )}
                   </div>
 
                   {/* Product Info */}

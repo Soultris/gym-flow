@@ -17,6 +17,7 @@ import { Check, Loader2 } from "lucide-react"
 import { useCreateMemberMutation } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
 import toast from "react-hot-toast"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 const MEMBERSHIP_FEE = 10
 const TAX_RATE = 0.04 // 4% tax
@@ -38,6 +39,8 @@ export function AddMemberForm() {
     joiningDate: new Date().toISOString().split("T")[0],
   })
 
+  const [image, setImage] = useState<File | null>(null)
+  
   const { data: packages, isLoading: packagesLoading } = useGetPackagesQuery()
   const [createMember, { isLoading: isCreating }] = useCreateMemberMutation()
 
@@ -66,19 +69,27 @@ export function AddMemberForm() {
     e.preventDefault()
     
     try {
-      await createMember({
-        name: formData.fullName,
-        email: formData.email,
-        phone: formData.mobile,
-        dob: formData.dob,
-        gender: formData.gender,
-        nic: formData.nic,
-        height: parseFloat(formData.height) || 0,
-        weight: parseFloat(formData.weight) || 0,
-        address: formData.address,
-        joiningDate: formData.joiningDate,
-        packageId: selectedPlan || undefined,
-      }).unwrap()
+      const submitData = new FormData()
+      submitData.append('name', formData.fullName)
+      submitData.append('email', formData.email)
+      submitData.append('phone', formData.mobile)
+      submitData.append('dob', formData.dob)
+      submitData.append('gender', formData.gender)
+      submitData.append('nic', formData.nic)
+      submitData.append('height', formData.height)
+      submitData.append('weight', formData.weight)
+      submitData.append('address', formData.address)
+      submitData.append('joiningDate', formData.joiningDate)
+      
+      if (selectedPlan) {
+        submitData.append('packageId', selectedPlan.toString())
+      }
+      
+      if (image) {
+        submitData.append('image', image)
+      }
+
+      await createMember(submitData).unwrap()
       
       toast.success("Member added successfully!")
       router.push("/members")
@@ -96,6 +107,16 @@ export function AddMemberForm() {
           <p className="text-sm text-muted-foreground">
             Enter member&apos;s basic information below
           </p>
+        </div>
+
+        <div className="flex justify-center mb-6">
+          <ImageUpload
+            value={image}
+            onChange={setImage}
+            onRemove={() => setImage(null)}
+            className="w-full max-w-xs "
+            previewClassName="aspect-square object-cover"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

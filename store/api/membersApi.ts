@@ -92,7 +92,7 @@ export const membersApi = baseApi.injectEndpoints({
       query: (id) => `/members/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Member', id }],
     }),
-    createMember: builder.mutation<Member, CreateMemberRequest>({
+    createMember: builder.mutation<Member, CreateMemberRequest | FormData>({
       query: (data) => ({
         url: '/members',
         method: 'POST',
@@ -100,7 +100,7 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> }>({
+    updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/members/${id}`,
         method: 'PUT',

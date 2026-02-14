@@ -10,6 +10,7 @@ export interface Member {
   name: string;
   email: string;
   phone: string;
+  phoneVerified?: boolean;
   dob: string;
   age: number;
   gender: 'male' | 'female' | 'other';

@@ -4,6 +4,7 @@ export interface Trainer {
   trainerId: number;
   name: string;
   phone: string;
+  phoneVerified?: boolean;
   specialization: string;
   isPending: boolean;
   strikePoints: number;

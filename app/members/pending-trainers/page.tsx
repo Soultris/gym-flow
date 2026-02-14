@@ -21,6 +21,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
+import { PhoneOtpVerify } from "@/components/phone-otp-verify"
 
 function getInitials(name: string): string {
   return name
@@ -243,6 +244,12 @@ export default function PendingTrainersPage() {
                         value={formData.phone}
                         onChange={(e) => updateFormField("phone", e.target.value)}
                         className="bg-secondary border-[#3a3a3a]"
+                      />
+                      <PhoneOtpVerify
+                        phone={formData.phone}
+                        type="trainer"
+                        id={trainerToReview.trainerId}
+                        phoneVerified={trainerToReview.phoneVerified}
                       />
                     </div>
                     <div className="space-y-2">

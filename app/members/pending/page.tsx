@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useGetMembersQuery, useApproveMemberMutation, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
 import toast from "react-hot-toast"
+import { PhoneOtpVerify } from "@/components/phone-otp-verify"
 
 const MEMBERSHIP_FEE = 10
 const TAX_RATE = 0.04 // 4% tax
@@ -304,6 +305,12 @@ export default function PendingMembersPage() {
                         value={formData.phone}
                         onChange={(e) => updateFormField("phone", e.target.value)}
                         className="bg-secondary border-[#3a3a3a]"
+                      />
+                      <PhoneOtpVerify
+                        phone={formData.phone}
+                        type="member"
+                        id={memberToReview.memberId}
+                        phoneVerified={memberToReview.phoneVerified}
                       />
                     </div>
                   </div>

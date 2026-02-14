@@ -33,15 +33,15 @@ export function DeviceSettingsForm() {
     }
 
     try {
-      await updateGym({
-        ...gymProfile, // Keep other fields
-        name: gymProfile.name || "", // Ensure required fields are present and not null
-        address: gymProfile.address || "",
-        phone: gymProfile.phone || "",
-        fingerprintUsername: username,
-        fingerprintPassword: password,
-        terminalSerial: serial,
-      }).unwrap()
+      const fd = new FormData()
+      fd.append("name", gymProfile.name || "")
+      fd.append("address", gymProfile.address || "")
+      fd.append("phone", gymProfile.phone || "")
+      fd.append("fingerprintUsername", username)
+      fd.append("fingerprintPassword", password)
+      fd.append("terminalSerial", serial)
+
+      await updateGym(fd).unwrap()
       
       toast.success("Device settings updated successfully")
     } catch (error) {

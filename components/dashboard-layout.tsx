@@ -83,10 +83,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary overflow-hidden">
+             {user?.gymLogoUrl ? (
+                <img src={user.gymLogoUrl} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Dumbbell className="h-5 w-5 text-primary-foreground" />
+              )}
             </div>
-            <span className="text-lg font-bold">GymFlow</span>
+            <span className="text-lg font-bold truncate">{user?.gymName || "GymFlow"}</span>
           </div>
 
           {/* New Transaction Button */}

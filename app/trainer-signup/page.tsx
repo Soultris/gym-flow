@@ -17,6 +17,7 @@ import { useState } from "react"
 import { useSignupTrainerMutation } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 export default function TrainerSignupPage() {
   const router = useRouter()
@@ -39,6 +40,8 @@ export default function TrainerSignupPage() {
     address: "",
     specialization: "",
   })
+  
+  const [image, setImage] = useState<File | null>(null)
 
   const [signupTrainer, { isLoading }] = useSignupTrainerMutation()
 
@@ -78,14 +81,19 @@ export default function TrainerSignupPage() {
     }
 
     try {
-      await signupTrainer({
-        email: formData.email,
-        password: formData.password,
-        name: formData.fullName,
-        phone: formData.mobileNo,
-        specialization: formData.specialization,
-        subdomain: window.location.hostname.split('.')[0], // Derive subdomain from hostname
-      }).unwrap()
+      const submitData = new FormData()
+      submitData.append('email', formData.email)
+      submitData.append('password', formData.password)
+      submitData.append('name', formData.fullName)
+      submitData.append('phone', formData.mobileNo)
+      submitData.append('specialization', formData.specialization)
+      submitData.append('subdomain', window.location.hostname.split('.')[0])
+      
+      if (image) {
+        submitData.append('image', image)
+      }
+
+      await signupTrainer(submitData).unwrap()
 
       setSuccess(true)
     } catch (error: unknown) {
@@ -140,6 +148,16 @@ export default function TrainerSignupPage() {
           <p className="text-muted-foreground mt-2">
             Join our team of professional fitness trainers
           </p>
+        </div>
+
+        <div className="flex justify-center mb-8">
+          <ImageUpload
+            value={image}
+            onChange={setImage}
+            onRemove={() => setImage(null)}
+            className="w-full max-w-xs"
+            previewClassName="aspect-square object-cover"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

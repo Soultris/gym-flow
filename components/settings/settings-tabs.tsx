@@ -8,12 +8,14 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
 import { DeviceSettingsForm } from "./device-settings-form"
+import { GymProfileForm } from "./gym-profile-form"
 
 export function SettingsTabs() {
   const searchParams = useSearchParams()
-  const currentTab = searchParams.get("tab") || "security"
+  const currentTab = searchParams.get("tab") || "profile"
 
   const tabs = [
+    { name: "Gym Profile", value: "profile" },
     { name: "Security", value: "security" },
     { name: "Device Configuration", value: "device" },
   ]
@@ -39,6 +41,11 @@ export function SettingsTabs() {
           )
         })}
       </div>
+      
+      {/* Gym Profile Tab Content */}
+      {currentTab === "profile" && (
+        <GymProfileForm />
+      )}
 
       {/* Security Tab Content */}
       {currentTab === "security" && (

@@ -9,7 +9,6 @@ export interface Trainer {
   strikePoints: number;
   _count?: {
     transactions: number;
-    users: number;
   };
 }
 

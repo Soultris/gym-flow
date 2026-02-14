@@ -34,6 +34,9 @@ export default function GymDetailsPage() {
   const params = useParams()
   const gymId = parseInt(params.id as string)
   const { data: gym, isLoading } = useGetGymByIdQuery(gymId)
+  
+
+
   const [toggleFeature] = useToggleFeatureMutation()
   const [updateGym, { isLoading: isUpdating }] = useUpdateGymMutation()
   const [createAdmin, { isLoading: isCreatingAdmin }] = useCreateGymAdminMutation()
@@ -250,7 +253,7 @@ export default function GymDetailsPage() {
               {AVAILABLE_FEATURES.map((feature) => {
                 const isEnabled = gym.features.some(f => f.code === feature.code)
                 return (
-                  <div key={feature.code} className="flex items-center justify-between space-x-4">
+                  <div key={`${feature.code}-${isEnabled}`} className="flex items-center justify-between space-x-4">
                     <div className="flex-1 space-y-1">
                       <p className="font-medium leading-none">{feature.name}</p>
                       <p className="text-sm text-muted-foreground">

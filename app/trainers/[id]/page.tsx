@@ -122,10 +122,6 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                 <p className="text-3xl font-bold text-primary">{trainer._count?.transactions || 0}</p>
                 <p className="text-sm text-muted-foreground mt-2">Training Sessions</p>
               </Card>
-              <Card className="p-6 text-center">
-                <p className="text-3xl font-bold text-primary">{trainer._count?.users || 0}</p>
-                <p className="text-sm text-muted-foreground mt-2">Associated Members</p>
-              </Card>
             </div>
 
             {/* Strike Points Manager */}

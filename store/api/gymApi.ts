@@ -1,16 +1,29 @@
 import { baseApi } from './baseApi';
 import { authApi } from './authApi';
 
+export interface GymTerminal {
+  terminalId: string;
+  gymId: number;
+  name: string;
+  serial: string;
+  createdAt: string;
+}
+
 export interface Gym {
   gymId: number;
   name: string;
-  address: string | null;
-  phone: string | null;
-  fingerprintUsername: string | null;
-  fingerprintPassword: string | null;
-  terminalSerial: string | null;
-  logoUrl: string | null;
+  subdomain: string;
+  address?: string;
+  phone?: string;
+  logoUrl?: string;
   membershipFee: number;
+  fingerprintUsername?: string;
+  fingerprintPassword?: string;
+  terminalSerial?: string; // Kept for backward compatibility if needed
+  terminals?: GymTerminal[];
+  smsEmail?: string;
+  smsSenderId?: string;
+  smsApiKey?: string;
 }
 
 export const gymApi = baseApi.injectEndpoints({
@@ -39,6 +52,25 @@ export const gymApi = baseApi.injectEndpoints({
     getGymBySubdomain: builder.query<Gym, string>({
       query: (subdomain) => `/gym/public/${subdomain}`,
     }),
+    getSmsBalance: builder.query<{ balance: string; configured: boolean; email?: string }, void>({
+      query: () => '/gym/sms-balance',
+      providesTags: ['GymProfile'], // Invalidate when profile updates
+    }),
+    addTerminal: builder.mutation<GymTerminal, { serial: string; name: string; alias?: string }>({
+      query: (data) => ({
+        url: '/gyms/terminals',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['GymProfile'],
+    }),
+    deleteTerminal: builder.mutation<void, string>({
+      query: (terminalId) => ({
+        url: `/gyms/terminals/${terminalId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['GymProfile'],
+    }),
   }),
 });
 
@@ -46,4 +78,7 @@ export const {
   useGetGymProfileQuery,
   useUpdateGymProfileMutation,
   useGetGymBySubdomainQuery,
+  useGetSmsBalanceQuery,
+  useAddTerminalMutation,
+  useDeleteTerminalMutation,
 } = gymApi;

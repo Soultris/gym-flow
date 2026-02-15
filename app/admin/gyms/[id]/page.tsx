@@ -44,7 +44,20 @@ export default function GymDetailsPage() {
   const [createAdmin, { isLoading: isCreatingAdmin }] = useCreateGymAdminMutation()
 
   const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState({ name: "", subdomain: "" })
+  // Form States
+  const [editForm, setEditForm] = useState<{
+      name: string; 
+      subdomain: string;
+      smsEmail?: string | null;
+      smsSenderId?: string | null;
+      smsApiKey?: string | null;
+  }>({ 
+      name: "", 
+      subdomain: "",
+      smsEmail: "",
+      smsSenderId: "",
+      smsApiKey: ""
+  });
   const [logoFile, setLogoFile] = useState<File | string | null>(null)
   const [removeLogo, setRemoveLogo] = useState(false)
   
@@ -53,7 +66,13 @@ export default function GymDetailsPage() {
 
   const startEditing = () => {
       if (gym) {
-          setEditForm({ name: gym.name, subdomain: gym.subdomain || "" })
+          setEditForm({ 
+              name: gym.name, 
+              subdomain: gym.subdomain || "",
+              smsEmail: gym.smsEmail,
+              smsSenderId: gym.smsSenderId,
+              smsApiKey: gym.smsApiKey
+          });
           setLogoFile(gym.logoUrl || null)
           setRemoveLogo(false)
           setIsEditing(true)
@@ -160,6 +179,40 @@ export default function GymDetailsPage() {
                                 onChange={(e) => setEditForm({...editForm, subdomain: e.target.value})} 
                             />
                         </div>
+
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="text-lg font-medium mb-4">SMS Configuration</h3>
+                            <div className="grid gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="smsEmail">SMS Email</Label>
+                                    <Input 
+                                        id="smsEmail" 
+                                        value={editForm.smsEmail || ""} 
+                                        onChange={(e) => setEditForm({...editForm, smsEmail: e.target.value})} 
+                                        placeholder="quicksend@example.com"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="smsSenderId">Sender ID</Label>
+                                    <Input 
+                                        id="smsSenderId" 
+                                        value={editForm.smsSenderId || ""} 
+                                        onChange={(e) => setEditForm({...editForm, smsSenderId: e.target.value})} 
+                                        placeholder="QKSend"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="smsApiKey">API Key</Label>
+                                    <Input 
+                                        id="smsApiKey" 
+                                        type="password"
+                                        value={editForm.smsApiKey || ""} 
+                                        onChange={(e) => setEditForm({...editForm, smsApiKey: e.target.value})} 
+                                        placeholder="API Key"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                         <div className="space-y-2">
                             <Label>Gym Logo</Label>
                             <div className="max-w-[200px]">
@@ -190,6 +243,23 @@ export default function GymDetailsPage() {
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Subdomain</p>
                             <p className="text-lg">{gym.subdomain || "N/A"}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">SMS Configuration</p>
+                            <div className="grid grid-cols-2 gap-4 mt-2 p-4 border rounded bg-muted/50">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground">Email</p>
+                                    <p className="text-sm">{gym.smsEmail || "Not configured"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground">Sender ID</p>
+                                    <p className="text-sm">{gym.smsSenderId || "Not configured"}</p>
+                                </div>
+                                <div className="col-span-2">
+                                    <p className="text-xs font-medium text-muted-foreground">API Key</p>
+                                    <p className="text-sm font-mono">{gym.smsApiKey ? "••••••••" : "Not configured"}</p>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Logo</p>
@@ -271,6 +341,47 @@ export default function GymDetailsPage() {
                     ) : (
                         <p className="text-muted-foreground text-center py-4">No admin users found.</p>
                     )}
+                </div>
+            </CardContent>
+          </Card>
+
+          {/* Terminals List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Terminals</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b">
+                            <tr>
+                                <th className="px-4 py-3">Name</th>
+                                <th className="px-4 py-3">Serial</th>
+                                <th className="px-4 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {gym.terminals && gym.terminals.length > 0 ? (
+                                gym.terminals.map((terminal) => (
+                                    <tr key={terminal.terminalId} className="bg-background border-b last:border-0 hover:bg-muted/50">
+                                        <td className="px-4 py-3 font-medium">{terminal.name}</td>
+                                        <td className="px-4 py-3">{terminal.serial}</td>
+                                        <td className="px-4 py-3">
+                                            <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                                Active
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">
+                                        No terminals found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </CardContent>
           </Card>

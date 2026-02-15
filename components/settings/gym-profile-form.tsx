@@ -138,7 +138,7 @@ export function GymProfileForm() {
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t">
+                    {/* <div className="pt-4 border-t">
                         <h3 className="text-lg font-medium mb-4">Hardware Integration</h3>
                         <div className="grid gap-4 md:grid-cols-2">
                              <div className="space-y-2">
@@ -167,7 +167,7 @@ export function GymProfileForm() {
                                 />
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="flex justify-start pt-4">
                         <Button type="submit" disabled={isUpdating}>

@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation"
 
 import { DeviceSettingsForm } from "./device-settings-form"
 import { GymProfileForm } from "./gym-profile-form"
+import { SmsConfigForm } from "./sms-config-form"
 
 export function SettingsTabs() {
   const searchParams = useSearchParams()
@@ -18,6 +19,7 @@ export function SettingsTabs() {
     { name: "Gym Profile", value: "profile" },
     { name: "Security", value: "security" },
     { name: "Device Configuration", value: "device" },
+    { name: "SMS Configuration", value: "sms" },
   ]
 
   return (
@@ -75,6 +77,11 @@ export function SettingsTabs() {
       {/* Device Config Tab Content */}
       {currentTab === "device" && (
         <DeviceSettingsForm />
+      )}
+
+      {/* SMS Config Tab Content */}
+      {currentTab === "sms" && (
+        <SmsConfigForm />
       )}
     </div>
   )

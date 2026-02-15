@@ -15,6 +15,14 @@ export interface Gym {
     members: number;
     trainers: number;
   };
+  smsEmail?: string | null;
+  smsSenderId?: string | null;
+  smsApiKey?: string | null;
+  terminals?: {
+    terminalId: string;
+    serial: string;
+    name: string;
+  }[];
 }
 
 export interface User {

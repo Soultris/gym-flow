@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
         hostname: '*.s3.amazonaws.com', // Fallback for standard S3
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com', // Fallback for standard S3
+        port: '',
+        pathname: '/**',
       }
     ],
   },

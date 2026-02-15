@@ -101,6 +101,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
+    requestMembership: builder.mutation<Member, FormData>({
+      query: (formData) => ({
+        url: '/members/request',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
     updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/members/${id}`,
@@ -116,11 +123,11 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    approveMember: builder.mutation<Member, { id: number; packageId?: number }>({
-      query: ({ id, packageId }) => ({
+    approveMember: builder.mutation<Member, { id: number; packageId?: number; membershipFee?: number; paymentMethod?: 'cash' | 'card' }>({
+      query: ({ id, ...body }) => ({
         url: `/members/${id}/approve`,
         method: 'PUT',
-        body: { packageId },
+        body,
       }),
       invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),
@@ -157,4 +164,5 @@ export const {
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,
+  useRequestMembershipMutation,
 } = membersApi;

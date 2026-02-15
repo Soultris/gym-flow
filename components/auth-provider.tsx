@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Ensure hydration is complete before showing loading state
   useEffect(() => {
-    setIsHydrated(true)
+    setTimeout(() => setIsHydrated(true), 0)
   }, [])
 
   useEffect(() => {

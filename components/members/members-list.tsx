@@ -21,6 +21,7 @@ import { NewTransactionDialog } from "@/components/finance/new-transaction-dialo
 import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
 import { MembersFilter } from "@/components/members/members-filter"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -115,8 +116,8 @@ export function MembersList() {
       toast.success(`${memberToDelete.name} has been deleted`)
       setDeleteDialogOpen(false)
       setMemberToDelete(null)
-    } catch {
-      toast.error("Failed to delete member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete member"))
     }
   }
 
@@ -143,12 +144,12 @@ export function MembersList() {
   if (members.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <MembersFilter
+        {/* <MembersFilter
           onSearchChange={setSearchValue}
           onStatusFilterChange={setSelectedStatus}
           searchValue={searchValue}
           selectedStatus={selectedStatus}
-        />
+        /> */}
         <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
           <p className="text-muted-foreground">No members found</p>
           <Link href="/members/new">
@@ -161,12 +162,12 @@ export function MembersList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <MembersFilter
+      {/* <MembersFilter
         onSearchChange={setSearchValue}
         onStatusFilterChange={setSelectedStatus}
         searchValue={searchValue}
         selectedStatus={selectedStatus}
-      />
+      /> */}
       <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-96">

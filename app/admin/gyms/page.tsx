@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ImageUpload } from "@/components/ui/image-upload"
 
@@ -46,8 +47,8 @@ export default function GymsPage() {
       setOpen(false)
       setFormData({ name: "", address: "", phone: "", subdomain: "" })
       setLogoFile(null)
-    } catch {
-      toast.error("Failed to create gym")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create gym"))
     }
   }
 

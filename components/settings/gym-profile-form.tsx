@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ImageUpload } from "@/components/ui/image-upload"
 import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function GymProfileForm() {
     const { data: gym, isLoading } = useGetGymProfileQuery()
@@ -19,6 +20,7 @@ export function GymProfileForm() {
         fingerprintUsername: "",
         fingerprintPassword: "",
         terminalSerial: "",
+        membershipFee: "",
     })
     const [logoFile, setLogoFile] = useState<File | string | null>(null)
     const [removeLogo, setRemoveLogo] = useState(false)
@@ -26,17 +28,20 @@ export function GymProfileForm() {
     // Sync form state when gym data loads/changes
     useEffect(() => {
         if (gym) {
-            setFormData({
-                name: gym.name || "",
-                address: gym.address || "",
-                phone: gym.phone || "",
-                fingerprintUsername: gym.fingerprintUsername || "",
-                fingerprintPassword: gym.fingerprintPassword || "",
-                terminalSerial: gym.terminalSerial || "",
-            })
-            if (gym.logoUrl) {
-                setLogoFile(gym.logoUrl)
-            }
+            setTimeout(() => {
+                setFormData({
+                    name: gym.name || "",
+                    address: gym.address || "",
+                    phone: gym.phone || "",
+                    fingerprintUsername: gym.fingerprintUsername || "",
+                    fingerprintPassword: gym.fingerprintPassword || "",
+                    terminalSerial: gym.terminalSerial || "",
+                    membershipFee: gym.membershipFee ? String(gym.membershipFee) : "",
+                })
+                if (gym.logoUrl) {
+                    setLogoFile(gym.logoUrl)
+                }
+            }, 0)
         }
     }, [gym])
 
@@ -50,6 +55,7 @@ export function GymProfileForm() {
             fd.append("fingerprintUsername", formData.fingerprintUsername)
             fd.append("fingerprintPassword", formData.fingerprintPassword)
             fd.append("terminalSerial", formData.terminalSerial)
+            fd.append("membershipFee", formData.membershipFee)
 
             if (logoFile instanceof File) {
                 fd.append("logo", logoFile)
@@ -59,8 +65,8 @@ export function GymProfileForm() {
 
             await updateGym(fd).unwrap()
             toast.success("Gym profile updated successfully")
-        } catch {
-            toast.error("Failed to update gym profile")
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to update gym profile"))
         }
     }
 
@@ -102,6 +108,16 @@ export function GymProfileForm() {
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="membershipFee">Membership Fee (LKR)</Label>
+                            <Input
+                                id="membershipFee"
+                                type="number"
+                                value={formData.membershipFee}
+                                onChange={(e) => setFormData({ ...formData, membershipFee: e.target.value })}
+                                placeholder="0.00"
                             />
                         </div>
                         <div className="space-y-2">

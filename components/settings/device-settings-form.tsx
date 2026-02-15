@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useGetGymProfileQuery, useUpdateGymProfileMutation } from "@/store/api/gymApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function DeviceSettingsForm() {
   const { data: gymProfile, isLoading, isError } = useGetGymProfileQuery()
@@ -18,9 +19,11 @@ export function DeviceSettingsForm() {
 
   useEffect(() => {
     if (gymProfile) {
-      setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
-      setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
-      setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      setTimeout(() => {
+        setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
+        setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
+        setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      }, 0)
     }
   }, [gymProfile])
 
@@ -46,7 +49,7 @@ export function DeviceSettingsForm() {
       toast.success("Device settings updated successfully")
     } catch (error) {
       console.error("Failed to update settings", error)
-      toast.error("Failed to update settings")
+      toast.error(getErrorMessage(error, "Failed to update settings"))
     }
   }
 

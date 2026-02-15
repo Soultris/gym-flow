@@ -24,6 +24,7 @@ import { AddProductDialog } from "@/components/inventory/add-product-dialog"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useGetProductsQuery, useDeleteProductMutation, Product } from "@/store/api/productsApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export interface CartItem {
   product: Product
@@ -132,7 +133,7 @@ export default function InventoryPage() {
       setCart((prev) => prev.filter((item) => item.product.productId !== productId))
       toast.success(`${productName} deleted`)
     } catch (error) {
-      toast.error("Failed to delete product")
+      toast.error(getErrorMessage(error, "Failed to delete product"))
     }
   }
 

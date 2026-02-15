@@ -102,7 +102,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 space-y-1 px-3">
             {navigation.map((item) => {
               // Hide standard items for Super Admin
-              if (user?.role?.name === 'Superadmin' || user?.roleId === 4) {
+              if (user?.role?.name === 'Superadmin') {
                 return null
               }
 
@@ -133,7 +133,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             })}
             
             {/* Super Admin Links */}
-            {(user?.role?.name === 'Superadmin' || user?.roleId === 4) && (
+            {(user?.role?.name === 'Superadmin') && (
               <Link
                 href="/admin/gyms"
                 className={cn(

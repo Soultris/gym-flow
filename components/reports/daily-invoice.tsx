@@ -61,7 +61,7 @@ export function DailyInvoice() {
               </tr>
             </thead>
             <tbody>
-              ${transactions.map((invoice: any) => `
+              ${transactions.map((invoice) => `
                 <tr>
                   <td>INV-${String(invoice.transactionId).padStart(3, '0')}</td>
                   <td>${invoice.member?.name || "N/A"}</td>

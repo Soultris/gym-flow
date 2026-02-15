@@ -13,6 +13,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { useGetTrainersQuery, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 function getInitials(name: string): string {
   return name
@@ -47,8 +48,8 @@ export default function TrainersPage() {
       toast.success(`${trainerToDelete.name} has been deleted`)
       setDeleteDialogOpen(false)
       setTrainerToDelete(null)
-    } catch {
-      toast.error("Failed to delete trainer")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete trainer"))
     }
   }
 

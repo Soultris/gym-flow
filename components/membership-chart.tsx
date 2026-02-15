@@ -3,8 +3,8 @@
 import { Card } from "@/components/ui/card"
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { useGetMembershipReportQuery } from "@/store/api/dashboardApi"
-import { useGetTransactionsQuery } from "@/store/api/transactionsApi"
-import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetTransactionsQuery, Transaction } from "@/store/api/transactionsApi"
+import { useGetMembersQuery, Member } from "@/store/api/membersApi"
 import { useMemo } from "react"
 import { Loader2 } from "lucide-react"
 
@@ -28,11 +28,9 @@ export function MembershipChart() {
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const month = months[date.getMonth()]
-        const year = date.getFullYear()
-        const monthKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`
-
+        
         // Count members added in this month
-        const membersThisMonth = membersData.members.filter((member: any) => {
+        const membersThisMonth = membersData.members.filter((member: Member) => {
           const memberDate = new Date(member.joiningDate)
           return (
             memberDate.getFullYear() === date.getFullYear() &&
@@ -42,14 +40,14 @@ export function MembershipChart() {
 
         // Sum revenue for this month
         const revenueThisMonth = transactionsData.transactions
-          .filter((transaction: any) => {
-            const txDate = new Date(transaction.createdAt || transaction.date)
+          .filter((transaction: Transaction) => {
+            const txDate = new Date(transaction.paidAt) // Use paidAt instead of createdAt/date based on interface
             return (
               txDate.getFullYear() === date.getFullYear() &&
               txDate.getMonth() === date.getMonth()
             )
           })
-          .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0)
+          .reduce((sum: number, tx: Transaction) => sum + (tx.price || 0), 0) // Use price based on Transaction interface
 
         lastSixMonths.push({
           month,
@@ -77,7 +75,7 @@ export function MembershipChart() {
     <Card className="p-6">
       <div className="space-y-1 mb-6">
         <h3 className="text-lg font-semibold">Membership Growth</h3>
-        <p className="text-sm text-muted-foreground">Track your gym's growth over time</p>
+        <p className="text-sm text-muted-foreground">Track your gym&apos;s growth over time</p>
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center h-[300px]">

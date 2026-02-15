@@ -10,6 +10,7 @@ export interface Gym {
   fingerprintPassword: string | null;
   terminalSerial: string | null;
   logoUrl: string | null;
+  membershipFee: number;
 }
 
 export const gymApi = baseApi.injectEndpoints({
@@ -35,10 +36,14 @@ export const gymApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getGymBySubdomain: builder.query<Gym, string>({
+      query: (subdomain) => `/gym/public/${subdomain}`,
+    }),
   }),
 });
 
 export const {
   useGetGymProfileQuery,
   useUpdateGymProfileMutation,
+  useGetGymBySubdomainQuery,
 } = gymApi;

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { UserPlus, ClipboardList, MessageSquare, RotateCw, Search, Loader2 } from "lucide-react"
-import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetMembersQuery, Member } from "@/store/api/membersApi"
 
 const actions = [
   {
@@ -35,7 +35,7 @@ export function QuickActions() {
   // Transform API members to match the format needed
   const members = useMemo(() => {
     if (!membersData?.members) return []
-    return membersData.members.map((member: any) => ({
+    return membersData.members.map((member: Member) => ({
       id: String(member.memberId),
       name: member.name,
     }))

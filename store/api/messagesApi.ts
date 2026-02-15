@@ -28,7 +28,7 @@ interface CreateTemplateRequest {
   message: string;
 }
 
-interface CreateBulkMessageRequest {
+export interface CreateBulkMessageRequest {
   message: string;
   scheduledTime?: string;
   schedulingType: 'once' | 'weekly' | 'monthly' | 'yearly';
@@ -40,6 +40,25 @@ interface CreateBulkMessageRequest {
   startDate?: string;
   endDate?: string;
   memberIds?: number[];
+}
+
+export interface MessageHistoryItem {
+  messageOccurrenceId: number;
+  occurrenceTimestamp: string;
+  status: 'sent' | 'failed' | 'scheduled' | 'removed';
+  bulkMessageId: number;
+  bulkMessage?: {
+      message: string;
+      schedulingType: 'once' | 'weekly' | 'monthly' | 'yearly';
+  };
+  recipients?: Array<{
+      memberId: number;
+      status: string;
+      member?: {
+          name: string;
+          phone: string;
+      };
+  }>;
 }
 
 export const messagesApi = baseApi.injectEndpoints({
@@ -89,11 +108,11 @@ export const messagesApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['BulkMessages'],
     }),
-    getMessageHistory: builder.query<any[], void>({
+    getMessageHistory: builder.query<MessageHistoryItem[], void>({
       query: () => '/bulk-messages/history',
       providesTags: ['BulkMessages'],
     }),
-    getScheduledMessages: builder.query<any[], void>({
+    getScheduledMessages: builder.query<MessageHistoryItem[], void>({
       query: () => '/bulk-messages/scheduled',
       providesTags: ['BulkMessages'],
     }),

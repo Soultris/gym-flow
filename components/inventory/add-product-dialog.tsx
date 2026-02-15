@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Plus, Loader2 } from "lucide-react"
 import { useCreateProductMutation } from "@/store/api/productsApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { ImageUpload } from "@/components/ui/image-upload"
 
 interface AddProductDialogProps {
@@ -71,7 +72,7 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
       // Notify parent to refetch
       onAddProduct?.()
     } catch (error) {
-      toast.error("Failed to add product")
+      toast.error(getErrorMessage(error, "Failed to add product"))
     }
   }
 

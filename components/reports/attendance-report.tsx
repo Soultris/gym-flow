@@ -16,7 +16,7 @@ export function AttendanceReport() {
     
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     
-    return data.dailyData.map((item: { date: string; checkIns: number }) => {
+    return (data?.dailyData || []).map((item: { date: string; checkIns: number }) => {
       const date = new Date(item.date)
       return {
         day: dayNames[date.getDay()],
@@ -26,7 +26,7 @@ export function AttendanceReport() {
   }, [data])
   
   // Calculate stats
-  const totalCheckIns = data?.summary?.totalCheckIns || 0
+  const totalCheckIns = data?.summary?.totalCheckins || 0
   const dailyAverage = chartData.length > 0 
     ? Math.round(totalCheckIns / chartData.length) 
     : 0

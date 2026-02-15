@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useSyncAttendanceMutation } from "@/store/api/attendanceApi"
 import { RefreshCw } from "lucide-react"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 function formatTimeAgo(date: Date) {
   const diffInSeconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
@@ -34,9 +35,8 @@ export function AttendanceSync() {
       }
     } catch (error) {
        // Only show error for manual syncs to avoid annoyances
-      console.error("Failed to sync attendance", error)
       if (!silent) {
-        toast.error("Failed to sync attendance")
+        toast.error(getErrorMessage(error, "Failed to sync attendance"))
       }
     }
   }, [syncAttendance])

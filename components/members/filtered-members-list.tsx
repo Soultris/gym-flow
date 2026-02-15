@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
-import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { useGetMembersQuery, useDeleteMemberMutation, useReactivateMemberMutation, Member } from "@/store/api/membersApi"
 import toast from "react-hot-toast"
 
 function formatDate(dateString: string): string {
@@ -39,7 +39,7 @@ function getInitials(name: string): string {
 }
 
 interface FilteredMembersListProps {
-  status: 'active' | 'expired' | 'pending'
+  status: 'active' | 'expired' | 'pending' | 'deactivated'
 }
 
 export function FilteredMembersList({ status }: FilteredMembersListProps) {
@@ -54,11 +54,14 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false)
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [memberToReactivate, setMemberToReactivate] = useState<{ id: number; name: string } | null>(null)
 
   // API hooks - fetch members with status filter
   const { data, isLoading, isError } = useGetMembersQuery({ status, limit: 1000 })
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+  const [reactivateMember, { isLoading: isReactivating }] = useReactivateMemberMutation()
 
   // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
@@ -75,6 +78,11 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
     setDeleteDialogOpen(true)
   }
 
+  const handleReactivateClick = (id: number, name: string) => {
+    setMemberToReactivate({ id, name })
+    setReactivateDialogOpen(true)
+  }
+
   const handleConfirmDelete = async () => {
     if (!memberToDelete) return
     
@@ -85,6 +93,19 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
       setMemberToDelete(null)
     } catch (error) {
       toast.error("Failed to delete member")
+    }
+  }
+
+  const handleConfirmReactivate = async () => {
+    if (!memberToReactivate) return
+    
+    try {
+      await reactivateMember(memberToReactivate.id).unwrap()
+      toast.success(`${memberToReactivate.name} has been reactivated`)
+      setReactivateDialogOpen(false)
+      setMemberToReactivate(null)
+    } catch (error) {
+      toast.error("Failed to reactivate member")
     }
   }
 
@@ -181,6 +202,8 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                         ? "border-green-500 text-green-500 bg-green-500/10"
                         : memberStatus === "expired"
                         ? "border-destructive text-destructive bg-destructive/10"
+                        : memberStatus === "deactivated"
+                        ? "border-gray-500 text-gray-500 bg-gray-500/10"
                         : "border-yellow-500 text-yellow-500 bg-yellow-500/10"
                     }
                   >
@@ -194,13 +217,18 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                   {expiryDate ? formatDate(expiryDate) : "-"}
                 </td>
                 <td className="px-4 py-4">
-                  <NewTransactionDialog 
-                    memberId={String(member.memberId)}
-                    memberName={member.name}
-                    triggerStyle="renew"
-                    defaultTransactionType="membership"
-                    defaultPackageId={latestPackage?.packageId?.toString() || member.package?.packageId?.toString() || ""}
-                  />
+                  {memberStatus !== 'deactivated' && (
+                    <NewTransactionDialog 
+                      memberId={String(member.memberId)}
+                      memberName={member.name}
+                      triggerStyle="renew"
+                      defaultTransactionType="membership"
+                      defaultPackageId={latestPackage?.packageId?.toString() || member.package?.packageId?.toString() || ""}
+                    />
+                  )}
+                  {memberStatus === 'deactivated' && (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-4">
                   <DropdownMenu>
@@ -220,16 +248,28 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
                           Edit Member
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
-                          Assign Workout
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
-                          Send Message
-                        </Link>
-                      </DropdownMenuItem>
+                      {memberStatus !== 'deactivated' && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/workouts?assignMemberId=${member.memberId}&assignMemberName=${encodeURIComponent(member.name)}&tab=assign`} className="cursor-pointer">
+                              Assign Workout
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/bulk-sms?memberId=${member.memberId}&memberName=${member.name}`} className="cursor-pointer">
+                              Send Message
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {memberStatus === 'deactivated' && (
+                        <DropdownMenuItem
+                          className="text-green-500 cursor-pointer"
+                          onClick={() => handleReactivateClick(member.memberId, member.name)}
+                        >
+                          Reactivate Member
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem 
                         className="text-destructive cursor-pointer"
                         onClick={() => handleDeleteClick(member.memberId, member.name)}
@@ -270,6 +310,35 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reactivate Confirmation Dialog */}
+      <Dialog open={reactivateDialogOpen} onOpenChange={setReactivateDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Reactivate Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reactivate <span className="font-semibold text-foreground">{memberToReactivate?.name}</span>? They will be moved back to the Active tab.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setReactivateDialogOpen(false)} 
+              className="flex-1 bg-transparent border-[#3a3a3a]"
+              disabled={isReactivating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmReactivate} 
+              className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              disabled={isReactivating}
+            >
+              {isReactivating ? "Reactivating..." : "Reactivate"}
             </Button>
           </DialogFooter>
         </DialogContent>

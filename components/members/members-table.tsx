@@ -163,6 +163,9 @@ export function MembersTable({
                           triggerStyle="renew"
                         />
                       )}
+                      {status === 'deactivated' && (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <DropdownMenu>

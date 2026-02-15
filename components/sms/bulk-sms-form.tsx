@@ -24,6 +24,7 @@ import {
   useGetMessageHistoryQuery,
   useGetScheduledMessagesQuery,
   useCancelBulkMessageMutation,
+  type CreateBulkMessageRequest,
 } from "@/store/api/messagesApi"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { toast } from "react-hot-toast"
@@ -58,7 +59,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   // Initialize initial member selection
   useEffect(() => {
     if (initialMemberId) {
-      setSelectedMemberIds([parseInt(initialMemberId)])
+      setTimeout(() => setSelectedMemberIds([parseInt(initialMemberId)]), 0)
     }
   }, [initialMemberId])
 
@@ -81,7 +82,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   const [schedulingType, setSchedulingType] = useState<"once" | "weekly" | "monthly" | "yearly" | "immediate">("immediate")
   const [scheduleDate, setScheduleDate] = useState("")
   const [scheduleTime, setScheduleTime] = useState("09:00")
-  const [recurringFrequency, setRecurringFrequency] = useState<number>(1)
+  // const [recurringFrequency, setRecurringFrequency] = useState<number>(1)
   const [recurringEndDate, setRecurringEndDate] = useState("")
 
   const members = membersData?.members || []
@@ -188,10 +189,10 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     }
 
     try {
-      const payload: any = {
+      const payload: CreateBulkMessageRequest = {
         message,
         memberIds: selectedMemberIds,
-        schedulingType: schedulingType === "immediate" ? "once" : schedulingType,
+        schedulingType: (schedulingType === "immediate" ? "once" : schedulingType) as CreateBulkMessageRequest['schedulingType'],
       }
 
       if (schedulingType !== "immediate") {
@@ -204,7 +205,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
            if (recurringEndDate) {
              payload.endDate = new Date(recurringEndDate).toISOString()
            }
-           payload.recurringFrequency = recurringFrequency
+           payload.recurringFrequency = 1
            // basic mapping for day of week/month could be added here
         }
       }
@@ -572,7 +573,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                       </div>
                       <div>
                         <Label htmlFor="template-category" className="text-sm mb-2 block">Category</Label>
-                        <Select value={newTemplateCategory} onValueChange={(value: any) => setNewTemplateCategory(value)}>
+                        <Select value={newTemplateCategory} onValueChange={(value: "offers" | "member_alerts" | "announcements") => setNewTemplateCategory(value)}>
                           <SelectTrigger id="template-category" className="h-9">
                             <SelectValue />
                           </SelectTrigger>
@@ -711,7 +712,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     </div>
                     <p className="text-sm mb-2">{item.bulkMessage?.message}</p>
                     <p className="text-xs text-muted-foreground">
-                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: any) => r.member?.name).join(", ").slice(0, 50)}...
+                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: { member?: { name: string } }) => r.member?.name).join(", ").slice(0, 50)}...
                     </p>
                   </div>
                 ))
@@ -797,7 +798,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     </div>
                     <p className="text-sm mb-2">{item.bulkMessage?.message}</p>
                     <p className="text-xs text-muted-foreground">
-                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: any) => r.member?.name).join(", ").slice(0, 50)}...
+                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: { member?: { name: string } }) => r.member?.name).join(", ").slice(0, 50)}...
                     </p>
                   </div>
                 ))

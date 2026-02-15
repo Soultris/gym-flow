@@ -27,17 +27,19 @@ export function GymProfileForm() {
     // Sync form state when gym data loads/changes
     useEffect(() => {
         if (gym) {
-            setFormData({
-                name: gym.name || "",
-                address: gym.address || "",
-                phone: gym.phone || "",
-                fingerprintUsername: gym.fingerprintUsername || "",
-                fingerprintPassword: gym.fingerprintPassword || "",
-                terminalSerial: gym.terminalSerial || "",
-            })
-            if (gym.logoUrl) {
-                setLogoFile(gym.logoUrl)
-            }
+            setTimeout(() => {
+                setFormData({
+                    name: gym.name || "",
+                    address: gym.address || "",
+                    phone: gym.phone || "",
+                    fingerprintUsername: gym.fingerprintUsername || "",
+                    fingerprintPassword: gym.fingerprintPassword || "",
+                    terminalSerial: gym.terminalSerial || "",
+                })
+                if (gym.logoUrl) {
+                    setLogoFile(gym.logoUrl)
+                }
+            }, 0)
         }
     }, [gym])
 

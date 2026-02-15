@@ -28,7 +28,7 @@ export default function LoginPage() {
       dispatch(setCredentials({ user: response.user, token: response.token }))
       toast.success("Login successful!")
       
-      if (response.user.role?.name === 'Superadmin' || response.user.roleId === 4) {
+      if (response.user.role?.name === 'Superadmin') {
         router.push("/admin/gyms")
       } else {
         router.push("/dashboard")
@@ -94,9 +94,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Demo credentials: admin@gym.com / admin123</p>
-        </div>
+
 
         <div className="mt-4 pt-4 border-t border-border text-center">
           <p className="text-sm text-muted-foreground mb-3">Want to join as a trainer?</p>

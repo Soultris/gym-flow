@@ -15,34 +15,33 @@ interface ImageUploadProps {
 
 export function ImageUpload({ value, onChange, onRemove, className, previewClassName }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(() => {
-    if (typeof value === 'string') return value
-    if (value instanceof File) return URL.createObjectURL(value)
-    return null
-  })
+  const [internalPreview, setInternalPreview] = useState<string | null>(null);
 
-  // Sync preview when value prop changes externally (e.g. after refetch)
+  // Derive preview URL: from props (string) or internal state (File/Blob)
+  const previewUrl = typeof value === 'string' ? value : internalPreview;
+
+  // Sync internal preview when value is File
   useEffect(() => {
-    if (typeof value === 'string') {
-      setPreviewUrl(value)
-    } else if (value instanceof File) {
-      setPreviewUrl(URL.createObjectURL(value))
+    if (value instanceof File) {
+      const url = URL.createObjectURL(value)
+      setTimeout(() => setInternalPreview(url), 0)
+      // Cleanup
+      return () => URL.revokeObjectURL(url)
     } else if (value === null || value === undefined) {
-      setPreviewUrl(null)
+      setTimeout(() => setInternalPreview(null), 0)
     }
   }, [value])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
+      // Allow parent to handle file change which triggers effect above
       onChange(file)
     }
   }
 
   const handleRemove = () => {
-    setPreviewUrl(null)
+    setInternalPreview(null)
     onRemove()
     if (fileInputRef.current) {
       fileInputRef.current.value = ""

@@ -19,9 +19,11 @@ export function DeviceSettingsForm() {
 
   useEffect(() => {
     if (gymProfile) {
-      setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
-      setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
-      setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      setTimeout(() => {
+        setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
+        setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
+        setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      }, 0)
     }
   }, [gymProfile])
 

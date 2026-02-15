@@ -1,6 +1,20 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '..';
 
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  roleId?: number;
+  gymId?: number;
+}
+
 export interface User {
   userId: number;
   email: string;
@@ -34,7 +48,7 @@ export const authApi = createApi({
       query: () => '/me',
       providesTags: ['User'],
     }),
-    login: builder.mutation<{ user: User; token: string }, any>({
+    login: builder.mutation<{ user: User; token: string }, LoginRequest>({
       query: (credentials) => ({
         url: '/login',
         method: 'POST',
@@ -42,7 +56,7 @@ export const authApi = createApi({
       }),
       invalidatesTags: ['User'],
     }),
-    register: builder.mutation<{ user: User; token: string }, any>({
+    register: builder.mutation<{ user: User; token: string }, RegisterRequest>({
       query: (userData) => ({
         url: '/register',
         method: 'POST',

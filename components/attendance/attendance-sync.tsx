@@ -35,7 +35,6 @@ export function AttendanceSync() {
       }
     } catch (error) {
        // Only show error for manual syncs to avoid annoyances
-      console.error("Failed to sync attendance", error)
       if (!silent) {
         toast.error(getErrorMessage(error, "Failed to sync attendance"))
       }

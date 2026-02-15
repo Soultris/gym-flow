@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2 } from "lucide-react"
-import { useGetPendingPaymentsQuery } from "@/store/api/transactionsApi"
+import { useGetPendingPaymentsQuery, type PendingPayment } from "@/store/api/transactionsApi"
 
 function getInitials(name: string): string {
   return name
@@ -83,7 +83,7 @@ export function PendingPaymentsTable() {
           </tr>
         </thead>
         <tbody>
-          {pendingPayments.map((payment: any, index: number) => (
+          {pendingPayments.map((payment: PendingPayment, index: number) => (
             <tr
               key={payment.memberId || index}
               className={`border-b border-[#2a2a2a] transition-colors ${

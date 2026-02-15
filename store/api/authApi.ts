@@ -64,7 +64,27 @@ export const authApi = createApi({
       }),
       invalidatesTags: ['User'],
     }),
+    forgotPassword: builder.mutation<{ message: string; phoneMasked?: string }, { email: string; subdomain: string }>({
+      query: (data) => ({
+        url: '/forgot-password',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    resetPassword: builder.mutation<{ message: string }, { email: string; otp: string; newPassword: string; subdomain: string }>({
+      query: (data) => ({
+        url: '/reset-password',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
-export const { useGetMeQuery, useLoginMutation, useRegisterMutation } = authApi;
+export const { 
+  useGetMeQuery, 
+  useLoginMutation, 
+  useRegisterMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation
+} = authApi;

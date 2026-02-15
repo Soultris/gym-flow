@@ -9,7 +9,7 @@ import toast from "react-hot-toast"
 
 interface PhoneOtpVerifyProps {
   phone: string
-  type: "member" | "trainer" | "user" | "gym"
+  type: "member" | "trainer"
   id: number | string
   phoneVerified?: boolean
   onVerificationComplete?: () => void
@@ -45,7 +45,7 @@ export function PhoneOtpVerify({
       return
     }
     try {
-      await sendOtp({ phone, type, id }).unwrap()
+      await sendOtp({ phone, type, id: Number(id) }).unwrap()
       toast.success("OTP sent to " + phone)
       setStep("verify")
       setCooldown(60)
@@ -63,7 +63,7 @@ export function PhoneOtpVerify({
       return
     }
     try {
-      const result = await verifyOtp({ phone, type, id, otp }).unwrap()
+      const result = await verifyOtp({ phone, type, id: Number(id), otp }).unwrap()
       if (result.verified) {
         toast.success("Phone number verified!")
         setIsOpen(false)

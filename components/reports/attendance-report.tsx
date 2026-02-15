@@ -16,7 +16,7 @@ export function AttendanceReport() {
     
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     
-    return data.dailyData.map((item: { date: string; checkIns: number }) => {
+    return (data?.dailyData || []).map((item: { date: string; checkIns: number }) => {
       const date = new Date(item.date)
       return {
         day: dayNames[date.getDay()],

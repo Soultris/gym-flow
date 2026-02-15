@@ -123,11 +123,11 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    approveMember: builder.mutation<Member, { id: number; packageId?: number }>({
-      query: ({ id, packageId }) => ({
+    approveMember: builder.mutation<Member, { id: number; packageId?: number; membershipFee?: number; paymentMethod?: 'cash' | 'card' }>({
+      query: ({ id, ...body }) => ({
         url: `/members/${id}/approve`,
         method: 'PUT',
-        body: { packageId },
+        body,
       }),
       invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),

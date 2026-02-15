@@ -10,6 +10,7 @@ export interface Gym {
   fingerprintPassword: string | null;
   terminalSerial: string | null;
   logoUrl: string | null;
+  membershipFee: number;
 }
 
 export const gymApi = baseApi.injectEndpoints({

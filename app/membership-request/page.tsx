@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select"
 import { Card } from "@/components/ui/card"
 import { CheckCircle2, Loader2 } from "lucide-react"
-import Link from "next/link"
 import toast from "react-hot-toast"
 
 import { SplitScreenLayout } from "@/components/auth/split-screen-layout"
@@ -87,9 +86,11 @@ export default function MembershipRequestPage() {
       await requestMembership(submitData).unwrap()
       setSuccess(true)
       toast.success("Membership request submitted successfully!")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      const errorMessage = error?.data?.message || "Failed to submit request"
+      const errorMessage = error && typeof error === 'object' && 'data' in error 
+        ? (error.data as { message?: string })?.message || "Failed to submit request"
+        : "Failed to submit request"
       toast.error(errorMessage)
     }
   }

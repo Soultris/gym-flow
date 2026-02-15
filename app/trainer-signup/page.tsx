@@ -86,7 +86,10 @@ export default function TrainerSignupPage() {
       submitData.append('name', formData.fullName)
       submitData.append('phone', formData.mobileNo)
       submitData.append('specialization', formData.specialization)
-      submitData.append('subdomain', window.location.hostname.split('.')[0])
+      const subdomain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'dev' 
+        : window.location.hostname.split('.')[0]
+      submitData.append('subdomain', subdomain)
       
       if (image) {
         submitData.append('image', image)

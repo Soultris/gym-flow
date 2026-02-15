@@ -16,18 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Check, Eye, Loader2 } from "lucide-react"
+import { Check, Eye, Loader2, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useGetMembersQuery, useApproveMemberMutation, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
+import { useGetMembersQuery, useApproveMemberMutation, useDeleteMemberMutation, useUpdateMemberMutation, Member } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
+import { useGetGymProfileQuery } from "@/store/api/gymApi"
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
 import { PhoneOtpVerify } from "@/components/phone-otp-verify"
 
-const MEMBERSHIP_FEE = 10
-const TAX_RATE = 0.04 // 4% tax
+
 
 function getInitials(name: string): string {
   return name
@@ -49,94 +49,18 @@ function formatDate(dateString: string): string {
 export default function PendingMembersPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [memberToReview, setMemberToReview] = useState<Member | null>(null)
-  const [selectedPlan, setSelectedPlan] = useState<string>("")
-  const [includeMembershipFee, setIncludeMembershipFee] = useState(true)
-  
   // API hooks
-  const { data: membersData, isLoading, isError } = useGetMembersQuery({ limit: 1000 })
-  const { data: packages = [] } = useGetPackagesQuery()
-  const [approveMember, { isLoading: isApproving }] = useApproveMemberMutation()
-  const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+  const { data: membersData, isLoading, isError, refetch } = useGetMembersQuery({ limit: 1000 })
   
   // Filter for pending members only
   const pendingMembers = (membersData?.members || []).filter(
     (member: Member) => member.status === 'pending' || member.isPending
   )
   
-  // Form state for editable fields
-  const [formData, setFormData] = useState({
-    memberNo: "",
-    name: "",
-    dob: "",
-    age: "",
-    phone: "",
-    email: "",
-    gender: "male",
-    nic: "",
-    height: "",
-    weight: "",
-    address: "",
-    joiningDate: "",
-  })
-
   const handleReview = (member: Member) => {
     setMemberToReview(member)
-    setSelectedPlan(member.packageId?.toString() || (packages[0]?.packageId?.toString() || ""))
-    setIncludeMembershipFee(true)
-    // Initialize form with member data
-    setFormData({
-      memberNo: String(member.memberId).padStart(4, '0'),
-      name: member.name,
-      dob: member.dob ? new Date(member.dob).toISOString().split('T')[0] : "",
-      age: String(member.age || ""),
-      phone: member.phone,
-      email: member.email,
-      gender: member.gender,
-      nic: member.nic,
-      height: String(member.height || ""),
-      weight: String(member.weight || ""),
-      address: member.address,
-      joiningDate: member.joiningDate ? new Date(member.joiningDate).toISOString().split('T')[0] : "",
-    })
     setReviewDialogOpen(true)
   }
-
-  const updateFormField = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleAccept = async () => {
-    if (!memberToReview) return
-    
-    try {
-      const packageId = selectedPlan ? parseInt(selectedPlan, 10) : undefined
-      await approveMember({ id: memberToReview.memberId, packageId }).unwrap()
-      toast.success(`${memberToReview.name} has been approved`)
-      setReviewDialogOpen(false)
-      setMemberToReview(null)
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to approve member"))
-    }
-  }
-
-  const handleReject = async () => {
-    if (!memberToReview) return
-    
-    try {
-      await deleteMember(memberToReview.memberId).unwrap()
-      toast.success(`${memberToReview.name} has been rejected`)
-      setReviewDialogOpen(false)
-      setMemberToReview(null)
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to reject member"))
-    }
-  }
-
-  const selectedPlanData = packages.find((p: Package) => p.packageId?.toString() === selectedPlan)
-  const planPrice = selectedPlanData?.price || 0
-  const membershipFee = includeMembershipFee ? MEMBERSHIP_FEE : 0
-  const taxes = planPrice * TAX_RATE
-  const total = planPrice + membershipFee + taxes
 
   if (isLoading) {
     return (
@@ -243,307 +167,334 @@ export default function PendingMembersPage() {
 
         {/* Review Dialog */}
         <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Review Membership Request</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-card border-border p-0 gap-0">
+            <div className="p-6 border-b border-border">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Review Membership Request</DialogTitle>
+              </DialogHeader>
+            </div>
 
             {memberToReview && (
-              <div className="space-y-8 py-4">
-                {/* Personal Information */}
-                <Card className="p-8">
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold">Personal Information</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Review and edit member&apos;s information
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="memberNo">Member No.</Label>
-                      <Input
-                        id="memberNo"
-                        value={formData.memberNo}
-                        onChange={(e) => updateFormField("memberNo", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                        disabled
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => updateFormField("name", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dob">Date of Birth</Label>
-                      <Input
-                        id="dob"
-                        type="date"
-                        value={formData.dob}
-                        onChange={(e) => updateFormField("dob", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        value={formData.age}
-                        onChange={(e) => updateFormField("age", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Mobile No.</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => updateFormField("phone", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                      <PhoneOtpVerify
-                        phone={formData.phone}
-                        type="member"
-                        id={memberToReview.memberId}
-                        phoneVerified={memberToReview.phoneVerified}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => updateFormField("email", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select value={formData.gender} onValueChange={(value) => updateFormField("gender", value)}>
-                        <SelectTrigger className="bg-secondary border-[#3a3a3a]">
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nic">NIC</Label>
-                      <Input
-                        id="nic"
-                        value={formData.nic}
-                        onChange={(e) => updateFormField("nic", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="height">Height (cm)</Label>
-                      <Input
-                        id="height"
-                        type="number"
-                        value={formData.height}
-                        onChange={(e) => updateFormField("height", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="weight">Weight (kg)</Label>
-                      <Input
-                        id="weight"
-                        type="number"
-                        value={formData.weight}
-                        onChange={(e) => updateFormField("weight", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => updateFormField("address", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="joiningDate">Joining Date</Label>
-                      <Input
-                        id="joiningDate"
-                        type="date"
-                        value={formData.joiningDate}
-                        onChange={(e) => updateFormField("joiningDate", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Membership Plan Selection & Cost Breakdown */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                  {/* Membership Plan Selection */}
-                  <div className="lg:col-span-3">
-                    <Card className="p-6 h-full">
-                      <div className="mb-4">
-                        <h2 className="text-lg font-semibold">Membership Plan</h2>
-                        <p className="text-sm text-muted-foreground">
-                          Select or confirm the membership plan
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {packages.map((plan: Package) => (
-                          <div
-                            key={plan.packageId}
-                            onClick={() => setSelectedPlan(plan.packageId.toString())}
-                            className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
-                              selectedPlan === plan.packageId.toString()
-                                ? "border-primary bg-primary/10"
-                                : "border-border"
-                            }`}
-                          >
-                            {/* Selection indicator */}
-                            <div className="absolute top-4 right-4">
-                              <div
-                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                  selectedPlan === plan.packageId.toString()
-                                    ? "border-primary bg-primary"
-                                    : "border-muted-foreground"
-                                }`}
-                              >
-                                {selectedPlan === plan.packageId.toString() && (
-                                  <Check className="w-3 h-3 text-primary-foreground" />
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Plan header */}
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold">{plan.name}</h3>
-                            </div>
-
-                            {/* Price */}
-                            <div className="mb-4">
-                              <span className="text-2xl font-bold text-primary">
-                                ${plan.price}
-                              </span>
-                              <span className="text-muted-foreground">/{plan.durationType}</span>
-                            </div>
-
-                            {/* Features */}
-                            <ul className="space-y-2">
-                              {(Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || '[]') as string[]).map((feature: string, index: number) => (
-                                <li
-                                  key={index}
-                                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                                >
-                                  <Check className="w-4 h-4 text-primary" />
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Cost Breakdown */}
-                  <div className="lg:col-span-1">
-                    <Card className="p-6 h-full">
-                      <div className="mb-4">
-                        <h2 className="text-lg font-semibold">Cost Breakdown</h2>
-                        <p className="text-sm text-muted-foreground">
-                          Review the fees
-                        </p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {selectedPlanData?.name || 'Selected'} Plan
-                          </span>
-                          <span>${planPrice.toFixed(2)}</span>
-                        </div>
-                        
-                        {/* Membership Fee Toggle */}
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              id="membership-fee"
-                              checked={includeMembershipFee}
-                              onCheckedChange={setIncludeMembershipFee}
-                            />
-                            <Label htmlFor="membership-fee" className="text-sm text-muted-foreground cursor-pointer">
-                              Membership Fee
-                            </Label>
-                          </div>
-                          <span className={`text-sm ${!includeMembershipFee ? "line-through text-muted-foreground" : ""}`}>
-                            ${MEMBERSHIP_FEE.toFixed(2)}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Taxes</span>
-                          <span>${taxes.toFixed(2)}</span>
-                        </div>
-                        <div className="border-t border-border pt-3 mt-3">
-                          <div className="flex justify-between font-semibold">
-                            <span>Total</span>
-                            <span>${total.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => setReviewDialogOpen(false)}
-                    className="bg-transparent border-[#3a3a3a]"
-                    disabled={isApproving || isDeleting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleReject}
-                    className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white"
-                    disabled={isApproving || isDeleting}
-                  >
-                    {isDeleting ? "Rejecting..." : "Reject"}
-                  </Button>
-                  <Button
-                    onClick={handleAccept}
-                    className="bg-green-600 text-white hover:bg-green-700"
-                    disabled={isApproving || isDeleting}
-                  >
-                    {isApproving ? "Accepting..." : "Accept Membership Request"}
-                  </Button>
-                </div>
-              </div>
+              <ReviewMemberContent 
+                member={memberToReview} 
+                onClose={() => setReviewDialogOpen(false)}
+                refetch={refetch}
+              />
             )}
           </DialogContent>
         </Dialog>
       </div>
     </DashboardLayout>
   )
+}
+
+function ReviewMemberContent({ member, onClose, refetch }: { member: Member, onClose: () => void, refetch: () => void }) {
+    const { data: packages = [] } = useGetPackagesQuery()
+    const { data: gym } = useGetGymProfileQuery()
+    const [approveMember, { isLoading: isApproving }] = useApproveMemberMutation()
+    const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
+    const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+
+    const [selectedPlan, setSelectedPlan] = useState<string>(member.packageId?.toString() || packages[0]?.packageId?.toString() || "")
+    const [membershipFee, setMembershipFee] = useState<string>("0")
+    const [includeMembershipFee, setIncludeMembershipFee] = useState(true)
+    const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash")
+
+    // Form data for editable fields
+    const [formData, setFormData] = useState({
+        name: member.name,
+        email: member.email,
+        phone: member.phone,
+        dob: member.dob ? new Date(member.dob).toISOString().split('T')[0] : "",
+        gender: member.gender,
+        nic: member.nic,
+        address: member.address,
+        height: member.height,
+        weight: member.weight
+    })
+
+    // Initialize membership fee from gym settings
+    useEffect(() => {
+        if (gym?.membershipFee) {
+            setTimeout(() => {
+                setMembershipFee(String(gym.membershipFee))
+            }, 0)
+        }
+    }, [gym])
+
+    const handleAccept = async () => {
+        try {
+            // First update the member details
+            await updateMember({
+                id: member.memberId,
+                data: {
+                    ...formData,
+                    height: Number(formData.height),
+                    weight: Number(formData.weight)
+                }
+            }).unwrap()
+
+            const packageId = selectedPlan ? parseInt(selectedPlan, 10) : undefined
+            const fee = includeMembershipFee ? parseFloat(membershipFee) : 0
+            
+            await approveMember({ 
+                id: member.memberId, 
+                packageId,
+                membershipFee: fee,
+                paymentMethod
+            }).unwrap()
+            
+            toast.success(`${formData.name} has been approved`)
+            onClose()
+            refetch()
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to approve member"))
+        }
+    }
+
+    const handleReject = async () => {
+        try {
+            await deleteMember(member.memberId).unwrap()
+            toast.success(`${member.name} has been rejected`)
+            onClose()
+            refetch()
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to reject member"))
+        }
+    }
+
+    const selectedPlanData = packages.find((p: Package) => p.packageId?.toString() === selectedPlan)
+    const planPrice = selectedPlanData?.price || 0
+    const total = planPrice + (includeMembershipFee ? parseFloat(membershipFee || "0") : 0)
+
+    const isProcessing = isApproving || isDeleting || isUpdating
+
+    return (
+        <div className="p-6 space-y-8">
+            {/* Avatar Section - Centered */}
+            <div className="flex justify-center mb-8">
+                <Avatar className="h-32 w-32 border-4 border-muted">
+                    <AvatarImage src={member.imageUrl || "/placeholder.svg"} className="object-cover" />
+                    <AvatarFallback className="text-4xl bg-secondary">{getInitials(member.name)}</AvatarFallback>
+                </Avatar>
+            </div>
+
+            {/* Info Grid - Matching AddMemberForm */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div className="space-y-2">
+                    <Label>Member No.</Label>
+                    <Input value="Pending" disabled className="bg-muted" />
+                 </div>
+                 
+                 <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input 
+                        id="dob"
+                        type="date"
+                        value={formData.dob}
+                        onChange={(e) => {
+                             const newDob = e.target.value;
+                             setFormData({...formData, dob: newDob});
+                        }}
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label>Age</Label>
+                    <Input 
+                        value={member.age} // Display original age or calculate from new DOB if needed
+                        disabled 
+                        className="bg-muted" 
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="phone">Mobile No.</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                            id="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        />
+                        <div className="shrink-0 pt-1">
+                             <PhoneOtpVerify 
+                                phone={formData.phone} 
+                                type="member" 
+                                id={member.memberId} 
+                                phoneVerified={formData.phone === member.phone ? member.phoneVerified : false} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                        id="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select 
+                        value={formData.gender} 
+                        onValueChange={(v: "male" | "female" | "other") => setFormData({...formData, gender: v})}
+                    >
+                        <SelectTrigger id="gender">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="nic">NIC</Label>
+                    <Input 
+                        id="nic"
+                        value={formData.nic}
+                        onChange={(e) => setFormData({...formData, nic: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="height">Height (cm)</Label>
+                    <Input 
+                        id="height"
+                        type="number"
+                        value={formData.height}
+                        onChange={(e) => setFormData({...formData, height: Number(e.target.value)})}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input 
+                        id="weight"
+                        type="number"
+                        value={formData.weight}
+                        onChange={(e) => setFormData({...formData, weight: Number(e.target.value)})}
+                    />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6 border-t border-border">
+                {/* Plan Selection */}
+                <div className="lg:col-span-2 space-y-4">
+                    <h3 className="font-semibold text-lg">Membership Plan</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {packages.map((plan: Package) => (
+                          <div
+                            key={plan.packageId}
+                            onClick={() => setSelectedPlan(plan.packageId.toString())}
+                            className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
+                              selectedPlan === plan.packageId.toString()
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold">{plan.name}</h4>
+                                {selectedPlan === plan.packageId.toString() && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                            </div>
+                            <div className="text-2xl font-bold text-primary mb-2">
+                                {plan.price.toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}
+                                <span className="text-sm text-muted-foreground font-normal">/{plan.durationType}</span>
+                            </div>
+                           <ul className="space-y-1">
+                              {(Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || '[]') as string[]).slice(0, 3).map((feature: string, index: number) => (
+                                <li key={index} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Payment Summary */}
+                <div className="space-y-4">
+                    <h3 className="font-semibold text-lg">Payment Summary</h3>
+                    <Card className="p-5 space-y-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Plan Fee</span>
+                            <span className="font-medium">{planPrice.toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between gap-2">
+                             <div className="flex items-center gap-2">
+                                <Switch checked={includeMembershipFee} onCheckedChange={setIncludeMembershipFee} id="fee-switch" />
+                                <Label htmlFor="fee-switch" className="text-sm text-muted-foreground font-normal">Membership Fee</Label>
+                             </div>
+                             {includeMembershipFee ? (
+                                 <Input 
+                                    type="number" 
+                                    value={membershipFee} 
+                                    onChange={(e) => setMembershipFee(e.target.value)}
+                                    className="w-24 h-8 text-right font-medium"
+                                 />
+                             ) : (
+                                 <span className="text-sm font-medium text-muted-foreground line-through">
+                                     {parseFloat(membershipFee).toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}
+                                 </span>
+                             )}
+                        </div>
+
+                        <div className="pt-3 mt-3 border-t border-border flex justify-between items-center">
+                            <span className="font-semibold">Total</span>
+                            <span className="text-xl font-bold text-primary">{total.toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</span>
+                        </div>
+
+                        <div className="pt-2">
+                            <Label className="text-xs mb-1.5 block text-muted-foreground">Payment Method</Label>
+                            <Select value={paymentMethod} onValueChange={(v: "cash" | "card") => setPaymentMethod(v)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="cash">Cash</SelectItem>
+                                    <SelectItem value="card">Card</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </Card>
+
+                    <div className="flex gap-3 justify-end pt-4">
+                        <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleReject} disabled={isProcessing}>
+                            {isDeleting ? "Rejecting..." : "Reject"}
+                        </Button>
+                        <Button onClick={handleAccept} disabled={isProcessing} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            {isProcessing ? "Processing..." : "Approve & Pay"}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
 }

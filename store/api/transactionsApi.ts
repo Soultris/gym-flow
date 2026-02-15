@@ -64,7 +64,23 @@ interface CreateTransactionRequest {
   quantity?: number;
   price: number;
   paymentMethod: 'cash' | 'card';
+  sendReceipt?: boolean;
   products?: Array<{ productId: number; quantity?: number }>;
+}
+
+export interface PendingPayment {
+  memberId: number;
+  name: string;
+  memberName?: string;
+  email?: string;
+  package?: {
+    name: string;
+    price: number;
+  };
+  packageName?: string;
+  expiryDate: string;
+  amountDue: number;
+  daysOverdue: number;
 }
 
 export const transactionsApi = baseApi.injectEndpoints({
@@ -88,7 +104,7 @@ export const transactionsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Transactions', 'Members'],
     }),
-    getPendingPayments: builder.query<any[], void>({
+    getPendingPayments: builder.query<PendingPayment[], void>({
       query: () => '/transactions/pending',
       providesTags: ['Transactions'],
     }),

@@ -83,10 +83,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary overflow-hidden">
+             {user?.gymLogoUrl ? (
+                <img src={user.gymLogoUrl} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Dumbbell className="h-5 w-5 text-primary-foreground" />
+              )}
             </div>
-            <span className="text-lg font-bold">GymFlow</span>
+            <span className="text-lg font-bold truncate">{user?.gymName || "GymFlow"}</span>
           </div>
 
           {/* New Transaction Button */}
@@ -98,7 +102,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 space-y-1 px-3">
             {navigation.map((item) => {
               // Hide standard items for Super Admin
-              if (user?.role?.name === 'Superadmin' || user?.roleId === 4) {
+              if (user?.role?.name === 'Superadmin') {
                 return null
               }
 
@@ -129,7 +133,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             })}
             
             {/* Super Admin Links */}
-            {(user?.role?.name === 'Superadmin' || user?.roleId === 4) && (
+            {(user?.role?.name === 'Superadmin') && (
               <Link
                 href="/admin/gyms"
                 className={cn(

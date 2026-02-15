@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useGetGymProfileQuery, useUpdateGymProfileMutation } from "@/store/api/gymApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function DeviceSettingsForm() {
   const { data: gymProfile, isLoading, isError } = useGetGymProfileQuery()
@@ -18,9 +19,11 @@ export function DeviceSettingsForm() {
 
   useEffect(() => {
     if (gymProfile) {
-      setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
-      setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
-      setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      setTimeout(() => {
+        setUsername(prev => gymProfile.fingerprintUsername !== null ? gymProfile.fingerprintUsername : prev)
+        setPassword(prev => gymProfile.fingerprintPassword !== null ? gymProfile.fingerprintPassword : prev)
+        setSerial(prev => gymProfile.terminalSerial !== null ? gymProfile.terminalSerial : prev)
+      }, 0)
     }
   }, [gymProfile])
 
@@ -33,20 +36,20 @@ export function DeviceSettingsForm() {
     }
 
     try {
-      await updateGym({
-        ...gymProfile, // Keep other fields
-        name: gymProfile.name || "", // Ensure required fields are present and not null
-        address: gymProfile.address || "",
-        phone: gymProfile.phone || "",
-        fingerprintUsername: username,
-        fingerprintPassword: password,
-        terminalSerial: serial,
-      }).unwrap()
+      const fd = new FormData()
+      fd.append("name", gymProfile.name || "")
+      fd.append("address", gymProfile.address || "")
+      fd.append("phone", gymProfile.phone || "")
+      fd.append("fingerprintUsername", username)
+      fd.append("fingerprintPassword", password)
+      fd.append("terminalSerial", serial)
+
+      await updateGym(fd).unwrap()
       
       toast.success("Device settings updated successfully")
     } catch (error) {
       console.error("Failed to update settings", error)
-      toast.error("Failed to update settings")
+      toast.error(getErrorMessage(error, "Failed to update settings"))
     }
   }
 

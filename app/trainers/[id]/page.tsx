@@ -42,7 +42,7 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
         <div className="flex items-center justify-center min-h-screen">
           <Card className="p-8 text-center">
             <h1 className="text-2xl font-bold mb-2">Trainer Not Found</h1>
-            <p className="text-muted-foreground mb-4">The trainer profile you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-4">The trainer profile you&apos;re looking for doesn&apos;t exist.</p>
             <Link href="/members/trainers">
               <Button>Back to Trainers</Button>
             </Link>
@@ -121,10 +121,6 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
               <Card className="p-6 text-center">
                 <p className="text-3xl font-bold text-primary">{trainer._count?.transactions || 0}</p>
                 <p className="text-sm text-muted-foreground mt-2">Training Sessions</p>
-              </Card>
-              <Card className="p-6 text-center">
-                <p className="text-3xl font-bold text-primary">{trainer._count?.users || 0}</p>
-                <p className="text-sm text-muted-foreground mt-2">Associated Members</p>
               </Card>
             </div>
 

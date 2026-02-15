@@ -4,12 +4,12 @@ export interface Trainer {
   trainerId: number;
   name: string;
   phone: string;
+  phoneVerified?: boolean;
   specialization: string;
   isPending: boolean;
   strikePoints: number;
   _count?: {
     transactions: number;
-    users: number;
   };
 }
 
@@ -29,7 +29,7 @@ export const trainersApi = baseApi.injectEndpoints({
       query: (id) => `/trainers/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Trainer', id }],
     }),
-    createTrainer: builder.mutation<Trainer, CreateTrainerRequest>({
+    createTrainer: builder.mutation<Trainer, CreateTrainerRequest | FormData>({
       query: (data) => ({
         url: '/trainers',
         method: 'POST',
@@ -37,7 +37,7 @@ export const trainersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Trainers'],
     }),
-    updateTrainer: builder.mutation<Trainer, { id: number; data: Partial<CreateTrainerRequest> }>({
+    updateTrainer: builder.mutation<Trainer, { id: number; data: Partial<CreateTrainerRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/trainers/${id}`,
         method: 'PUT',
@@ -66,7 +66,8 @@ export const trainersApi = baseApi.injectEndpoints({
       phone: string;
       specialization: string;
       subdomain: string;
-    }>({
+      imageUrl?: File | string;
+    } | FormData>({
       query: (data) => ({
         url: '/trainers/signup',
         method: 'POST',

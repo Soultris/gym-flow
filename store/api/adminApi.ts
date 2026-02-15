@@ -10,6 +10,7 @@ export interface Gym {
   features: GymFeature[];
   users?: User[]; // Admin users
   subdomain?: string;
+  logoUrl?: string | null;
   _count?: {
     members: number;
     trainers: number;
@@ -53,11 +54,11 @@ export const adminApi = createApi({
       query: (id) => `/gyms/${id}`,
       providesTags: (result, error, id) => [{ type: 'Gym', id }],
     }),
-    createGym: builder.mutation<Gym, Partial<Gym>>({
-      query: (body) => ({
+    createGym: builder.mutation<Gym, FormData>({
+      query: (formData) => ({
         url: '/gyms',
         method: 'POST',
-        body,
+        body: formData,
       }),
       invalidatesTags: ['Gyms'],
     }),
@@ -69,7 +70,7 @@ export const adminApi = createApi({
       }),
       invalidatesTags: (result, error, { gymId }) => [{ type: 'Gym', id: gymId }],
     }),
-    updateGym: builder.mutation<Gym, { id: number; data: Partial<Gym> }>({
+    updateGym: builder.mutation<Gym, { id: number; data: FormData }>({
       query: ({ id, data }) => ({
         url: `/gyms/${id}`,
         method: 'PUT',

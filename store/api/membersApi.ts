@@ -11,6 +11,7 @@ export interface Member {
   name: string;
   email: string;
   phone: string;
+  phoneVerified?: boolean;
   dob: string;
   age: number;
   gender: 'male' | 'female' | 'other';
@@ -93,7 +94,7 @@ export const membersApi = baseApi.injectEndpoints({
       query: (id) => `/members/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Member', id }],
     }),
-    createMember: builder.mutation<Member, CreateMemberRequest>({
+    createMember: builder.mutation<Member, CreateMemberRequest | FormData>({
       query: (data) => ({
         url: '/members',
         method: 'POST',
@@ -101,7 +102,14 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> }>({
+    requestMembership: builder.mutation<Member, FormData>({
+      query: (formData) => ({
+        url: '/members/request',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
+    updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/members/${id}`,
         method: 'PUT',
@@ -116,11 +124,11 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
-    approveMember: builder.mutation<Member, { id: number; packageId?: number }>({
-      query: ({ id, packageId }) => ({
+    approveMember: builder.mutation<Member, { id: number; packageId?: number; membershipFee?: number; paymentMethod?: 'cash' | 'card' }>({
+      query: ({ id, ...body }) => ({
         url: `/members/${id}/approve`,
         method: 'PUT',
-        body: { packageId },
+        body,
       }),
       invalidatesTags: (_result, _error, { id }) => ['Members', { type: 'Member', id }],
     }),
@@ -165,4 +173,5 @@ export const {
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,
+  useRequestMembershipMutation,
 } = membersApi;

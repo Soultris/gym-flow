@@ -6,6 +6,8 @@ interface User {
   name: string;
   roleId: number;
   gymId?: number;
+  gymName?: string;
+  gymLogoUrl?: string | null;
   features: string[];
   role?: {
     roleId: number;

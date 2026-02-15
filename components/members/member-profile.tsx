@@ -18,6 +18,7 @@ import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery, useDeactivateMemberMutation } from "@/store/api/membersApi"
 import { useGetAssignedWorkoutsQuery, AssignedWorkout } from "@/store/api/workoutsApi"
 import { Transaction } from "@/store/api/transactionsApi"
@@ -142,8 +143,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       }).unwrap()
       toast.success("Profile updated successfully")
       setIsEditing(false)
-    } catch {
-      toast.error("Failed to update profile")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update profile"))
     }
   }
 
@@ -182,8 +183,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       setDeactivateDialogOpen(false)
       // Optionally navigate back to members list
       router.push("/members?status=deactivated")
-    } catch {
-      toast.error("Failed to deactivate member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to deactivate member"))
     }
   }
 

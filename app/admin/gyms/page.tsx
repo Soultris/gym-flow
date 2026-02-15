@@ -15,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { DashboardLayout } from "@/components/dashboard-layout"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 export default function GymsPage() {
   const { data: gyms, isLoading } = useGetAllGymsQuery()
@@ -27,16 +29,26 @@ export default function GymsPage() {
     phone: "",
     subdomain: "",
   })
+  const [logoFile, setLogoFile] = useState<File | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await createGym(formData).unwrap()
+      const fd = new FormData()
+      fd.append("name", formData.name)
+      fd.append("address", formData.address)
+      fd.append("phone", formData.phone)
+      fd.append("subdomain", formData.subdomain)
+      if (logoFile) {
+        fd.append("logo", logoFile)
+      }
+      await createGym(fd).unwrap()
       toast.success("Gym created successfully")
       setOpen(false)
       setFormData({ name: "", address: "", phone: "", subdomain: "" })
+      setLogoFile(null)
     } catch (error) {
-      toast.error("Failed to create gym")
+      toast.error(getErrorMessage(error, "Failed to create gym"))
     }
   }
 
@@ -99,6 +111,16 @@ export default function GymsPage() {
                     onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground">Used for gym identification (e.g., gym1)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Gym Logo</Label>
+                  <div className="max-w-[200px]">
+                    <ImageUpload
+                      value={logoFile}
+                      onChange={(file) => setLogoFile(file)}
+                      onRemove={() => setLogoFile(null)}
+                    />
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isCreating}>
                   {isCreating ? "Creating..." : "Create Gym"}

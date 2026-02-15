@@ -1,4 +1,5 @@
 import { baseApi } from './baseApi';
+import { authApi } from './authApi';
 
 export interface Gym {
   gymId: number;
@@ -8,15 +9,8 @@ export interface Gym {
   fingerprintUsername: string | null;
   fingerprintPassword: string | null;
   terminalSerial: string | null;
-}
-
-export interface UpdateGymProfileRequest {
-  name: string;
-  address: string;
-  phone: string;
-  fingerprintUsername?: string;
-  fingerprintPassword?: string;
-  terminalSerial?: string;
+  logoUrl: string | null;
+  membershipFee: number;
 }
 
 export const gymApi = baseApi.injectEndpoints({
@@ -25,13 +19,25 @@ export const gymApi = baseApi.injectEndpoints({
       query: () => '/gym/profile',
       providesTags: ['GymProfile'],
     }),
-    updateGymProfile: builder.mutation<Gym, UpdateGymProfileRequest>({
-      query: (data) => ({
+    updateGymProfile: builder.mutation<Gym, FormData>({
+      query: (formData) => ({
         url: '/gym/profile',
         method: 'PUT',
-        body: data,
+        body: formData,
       }),
       invalidatesTags: ['GymProfile'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Cross-API invalidation: refetch getMe so sidebar updates
+          dispatch(authApi.util.invalidateTags(['User']));
+        } catch {
+          // ignore
+        }
+      },
+    }),
+    getGymBySubdomain: builder.query<Gym, string>({
+      query: (subdomain) => `/gym/public/${subdomain}`,
     }),
   }),
 });
@@ -39,4 +45,5 @@ export const gymApi = baseApi.injectEndpoints({
 export const {
   useGetGymProfileQuery,
   useUpdateGymProfileMutation,
+  useGetGymBySubdomainQuery,
 } = gymApi;

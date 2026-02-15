@@ -15,6 +15,7 @@ import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutatio
 import { MembersFilter } from "@/components/members/members-filter"
 import { MembersTable } from "@/components/members/members-table"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function MembersList() {
   const searchParams = useSearchParams()
@@ -108,8 +109,8 @@ export function MembersList() {
       toast.success(`${memberToDelete.name} has been deleted`)
       setDeleteDialogOpen(false)
       setMemberToDelete(null)
-    } catch {
-      toast.error("Failed to delete member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete member"))
     }
   }
 
@@ -142,12 +143,12 @@ export function MembersList() {
   if (members.length === 0 && !isLoading && searchValue.trim()) {
     return (
       <div className="flex flex-col gap-4">
-        <MembersFilter
+        {/* <MembersFilter
           onSearchChange={setSearchValue}
           onStatusFilterChange={setSelectedStatus}
           searchValue={searchValue}
           selectedStatus={selectedStatus}
-        />
+        /> */}
         <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
           <p className="text-muted-foreground">No members found matching your search</p>
         </div>
@@ -157,12 +158,13 @@ export function MembersList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <MembersFilter
+      {/* <MembersFilter
         onSearchChange={setSearchValue}
         onStatusFilterChange={setSelectedStatus}
         searchValue={searchValue}
         selectedStatus={selectedStatus}
       />
+      */}
       <MembersTable
         members={members}
         isLoading={isLoading}

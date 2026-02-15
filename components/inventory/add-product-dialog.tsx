@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Upload, X, Package, Loader2 } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
 import { useCreateProductMutation } from "@/store/api/productsApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface AddProductDialogProps {
   onAddProduct?: () => void
@@ -35,8 +37,7 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
   const [category, setCategory] = useState("")
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [image, setImage] = useState<File | null>(null)
 
   const [createProduct, { isLoading }] = useCreateProductMutation()
 
@@ -44,28 +45,7 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
     setName("")
     setPrice("")
     setCategory("")
-    setImagePreview(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoveImage = () => {
-    setImagePreview(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
+    setImage(null)
   }
 
   const handleSubmit = async () => {
@@ -74,12 +54,16 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
     }
 
     try {
-      await createProduct({
-        name,
-        price: parseFloat(price),
-        category,
-        imageUrl: imagePreview || undefined,
-      }).unwrap()
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('price', price)
+      formData.append('category', category)
+      
+      if (image) {
+        formData.append('image', image)
+      }
+
+      await createProduct(formData).unwrap()
 
       toast.success(`${name} added to inventory`)
       resetForm()
@@ -88,7 +72,7 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
       // Notify parent to refetch
       onAddProduct?.()
     } catch (error) {
-      toast.error("Failed to add product")
+      toast.error(getErrorMessage(error, "Failed to add product"))
     }
   }
 
@@ -114,54 +98,14 @@ export function AddProductDialog({ onAddProduct }: AddProductDialogProps) {
           {/* Product Image Upload */}
           <div className="flex flex-col gap-2">
             <Label>Product Image</Label>
-            <div className="flex flex-col items-center gap-3">
-              {imagePreview ? (
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-lg overflow-hidden border border-border">
-                    <img 
-                      src={imagePreview} 
-                      alt="Product preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                    onClick={handleRemoveImage}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div 
-                  className="w-32 h-32 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Package className="h-8 w-8 text-muted-foreground mb-2" />
-                  <span className="text-xs text-muted-foreground">Click to upload</span>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
+            <div className="flex justify-center">
+              <ImageUpload
+                value={image}
+                onChange={setImage}
+                onRemove={() => setImage(null)}
+                className="w-full max-w-[200px]"
+                previewClassName="aspect-square object-cover"
               />
-              {!imagePreview && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload Image
-                </Button>
-              )}
             </div>
           </div>
 

@@ -10,7 +10,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-balance">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's your gym overview.</p>
+          <p className="text-muted-foreground mt-1">Welcome back! Here&apos;s your gym overview.</p>
         </div>
 
         <StatsCards />

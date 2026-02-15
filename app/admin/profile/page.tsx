@@ -44,7 +44,7 @@ export default function AdminProfilePage() {
   // Calculate stats from real data
   const stats = useMemo(() => {
     const totalMembers = membersData?.members?.length || 0
-    const activeTrainers = trainersData?.filter((t: any) => !t.isPending).length || 0
+    const activeTrainers = trainersData?.filter((t) => !t.isPending).length || 0
     const packagesManaged = packagesData?.length || 0
     const totalTransactions = transactionsData?.transactions?.length || 0
 

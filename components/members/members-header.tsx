@@ -71,14 +71,6 @@ export function MembersHeader() {
         
         {/* Actions - Wraps on mobile */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="relative flex-1 sm:flex-initial min-w-30">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search" className="pl-9 bg-[#1a1a1a] border-[#2a2a2a] w-full" />
-          </div>
-          <Button variant="outline" size="sm" className="gap-2 border-[#2a2a2a] bg-transparent">
-            <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
           <Link href="/members/new">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <Plus className="h-4 w-4" />

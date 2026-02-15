@@ -26,7 +26,7 @@ export function AttendanceReport() {
   }, [data])
   
   // Calculate stats
-  const totalCheckIns = data?.summary?.totalCheckIns || 0
+  const totalCheckIns = data?.summary?.totalCheckins || 0
   const dailyAverage = chartData.length > 0 
     ? Math.round(totalCheckIns / chartData.length) 
     : 0

@@ -77,6 +77,10 @@ interface AttendanceReportResponse {
     uniqueMembers: number;
     averageTime: string;
   };
+  dailyData: Array<{
+    date: string;
+    checkIns: number;
+  }>;
   attendance: Array<{
     attendanceId: number;
     checkInTime: string;
@@ -86,13 +90,15 @@ interface AttendanceReportResponse {
 }
 
 interface MembershipReportResponse {
-  stats: {
-    totalActive: number;
-    newThisMonth: number;
-    expiredThisMonth: number;
-  };
-  growth: Array<{
-    date: string;
+  totalMembers: number;
+  activePackages: number;
+  expiredPackages: number;
+  pendingMembers: number;
+  packageBreakdown: Array<{
+    package?: {
+      name: string;
+      [key: string]: unknown;
+    };
     count: number;
   }>;
 }

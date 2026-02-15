@@ -101,6 +101,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
+    requestMembership: builder.mutation<Member, FormData>({
+      query: (formData) => ({
+        url: '/members/request',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
     updateMember: builder.mutation<Member, { id: number; data: Partial<CreateMemberRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/members/${id}`,
@@ -157,4 +164,5 @@ export const {
   useGetMemberAttendanceQuery,
   useGetMemberTransactionsQuery,
   useGetMemberWorkoutsQuery,
+  useRequestMembershipMutation,
 } = membersApi;

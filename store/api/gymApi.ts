@@ -35,10 +35,14 @@ export const gymApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getGymBySubdomain: builder.query<Gym, string>({
+      query: (subdomain) => `/gym/public/${subdomain}`,
+    }),
   }),
 });
 
 export const {
   useGetGymProfileQuery,
   useUpdateGymProfileMutation,
+  useGetGymBySubdomainQuery,
 } = gymApi;

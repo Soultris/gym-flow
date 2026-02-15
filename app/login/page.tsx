@@ -1,16 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dumbbell } from "lucide-react"
+import { Lock, Mail, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLoginMutation } from "@/store/api/authApi"
 import { useAppDispatch } from "@/store/hooks"
 import { setCredentials } from "@/store/slices/authSlice"
 import toast from "react-hot-toast"
+import { SplitScreenLayout } from "@/components/auth/split-screen-layout"
+import Link from "next/link"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,71 +41,79 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary mb-4">
-            <Dumbbell className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold">Welcome to GymFlow</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to manage your gym</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <SplitScreenLayout
+      title="Access Dashboard"
+      subtitle="Sign in to manage your gym operations, members, and trainers efficiently."
+      image="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop"
+      backLink={null}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email or Username</Label>
-            <Input 
-              id="email" 
-              type="text" 
-              placeholder="admin@gym.com" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-            />
+            <div className="relative">
+              <Input 
+                id="email" 
+                type="text" 
+                placeholder="admin@gym.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10"
+                required 
+              />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="••••••••" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-            />
+            <div className="relative">
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10"
+                required 
+              />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="rounded border-border" />
-              <span className="text-muted-foreground">Remember me</span>
-            </label>
-            <a href="/forgot-password" className="text-primary">
-              Forgot password?
-            </a>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={isLoading}
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-
-
-
-        <div className="mt-4 pt-4 border-t border-border text-center">
-          <p className="text-sm text-muted-foreground mb-3">Want to join as a trainer?</p>
-          <a href="/trainer-signup">
-            <Button variant="outline" className="w-full bg-transparent border-primary text-primary hover:bg-primary/10">
-              Signup as Trainer
-            </Button>
-          </a>
         </div>
-      </Card>
-    </div>
+
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign In"
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-8 pt-6 border-t border-border">
+        <p className="text-center text-sm text-muted-foreground mb-4">
+          Want to join as a trainer?
+        </p>
+        <Link href="/trainer-signup">
+          <Button variant="outline" className="w-full h-11">
+            Signup as Trainer
+          </Button>
+        </Link>
+      </div>
+    </SplitScreenLayout>
   )
 }

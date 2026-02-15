@@ -23,6 +23,7 @@ import {
   useDeletePackageMutation,
 } from "@/store/api/packagesApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 
 
@@ -75,7 +76,7 @@ export function PackagesList() {
         await deletePackage(packageId).unwrap()
         toast.success("Package deleted successfully")
       } catch (error) {
-        toast.error("Failed to delete package")
+        toast.error(getErrorMessage(error, "Failed to delete package"))
         console.error(error)
       }
     }
@@ -120,7 +121,7 @@ export function PackagesList() {
       }
       closeDialog()
     } catch (error) {
-      toast.error(dialogType === "edit-package" ? "Failed to update package" : "Failed to create package")
+      toast.error(getErrorMessage(error, dialogType === "edit-package" ? "Failed to update package" : "Failed to create package"))
       console.error(error)
     }
   }

@@ -17,6 +17,7 @@ import { Check, Loader2 } from "lucide-react"
 import { useCreateMemberMutation } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { ImageUpload } from "@/components/ui/image-upload"
 
 const MEMBERSHIP_FEE = 10
@@ -94,7 +95,7 @@ export function AddMemberForm() {
       toast.success("Member added successfully!")
       router.push("/members")
     } catch (error) {
-      toast.error("Failed to add member")
+      toast.error(getErrorMessage(error, "Failed to add member"))
     }
   }
 

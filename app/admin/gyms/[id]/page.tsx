@@ -13,6 +13,7 @@ import Link from "next/link"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
@@ -74,7 +75,7 @@ export default function GymDetailsPage() {
       toast.success("Gym updated successfully")
       setIsEditing(false)
     } catch (error) {
-      toast.error("Failed to update gym")
+      toast.error(getErrorMessage(error, "Failed to update gym"))
     }
   }
 
@@ -86,14 +87,7 @@ export default function GymDetailsPage() {
       setIsAdminDialogOpen(false)
       setAdminForm({ name: "", email: "", password: "" })
     } catch (error) {
-        // Error handling could be improved to show specific validation errors
-        // but for now generic error is fine as per requirements
-        if (error && typeof error === 'object' && 'data' in error) {
-             const apiError = error as any;
-             toast.error(apiError.data?.message || "Failed to create admin");
-        } else {
-            toast.error("Failed to create admin")
-        }
+        toast.error(getErrorMessage(error, "Failed to create admin"))
     }
   }
 
@@ -102,7 +96,7 @@ export default function GymDetailsPage() {
       await toggleFeature({ gymId, featureCode, enabled }).unwrap()
       toast.success(`Feature ${enabled ? 'enabled' : 'disabled'} successfully`)
     } catch (error) {
-      toast.error("Failed to update feature")
+      toast.error(getErrorMessage(error, "Failed to update feature"))
     }
   }
 

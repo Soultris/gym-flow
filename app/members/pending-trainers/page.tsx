@@ -21,6 +21,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { PhoneOtpVerify } from "@/components/phone-otp-verify"
 
 function getInitials(name: string): string {
@@ -78,8 +79,8 @@ export default function PendingTrainersPage() {
       toast.success(`${trainerToReview.name} has been approved`)
       setReviewDialogOpen(false)
       setTrainerToReview(null)
-    } catch {
-      toast.error("Failed to approve trainer")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to approve trainer"))
     }
   }
 
@@ -91,8 +92,8 @@ export default function PendingTrainersPage() {
       toast.success(`${trainerToReview.name} has been rejected`)
       setReviewDialogOpen(false)
       setTrainerToReview(null)
-    } catch {
-      toast.error("Failed to reject trainer")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to reject trainer"))
     }
   }
 

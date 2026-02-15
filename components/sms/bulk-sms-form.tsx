@@ -27,6 +27,7 @@ import {
 } from "@/store/api/messagesApi"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 interface BulkSmsFormProps {
   initialMemberId?: string
@@ -157,7 +158,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       toast.success("Template created successfully")
     } catch (error) {
       console.error("Failed to create template", error)
-      toast.error("Failed to create template")
+      toast.error(getErrorMessage(error, "Failed to create template"))
     }
   }
 
@@ -169,7 +170,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
         toast.success("Template deleted successfully")
       } catch (error) {
         console.error("Failed to delete template", error)
-        toast.error("Failed to delete template")
+        toast.error(getErrorMessage(error, "Failed to delete template"))
       }
     }
   }
@@ -221,7 +222,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       
     } catch (error) {
       console.error("Failed to send message", error)
-      toast.error("Failed to send message")
+      toast.error(getErrorMessage(error, "Failed to send message"))
     }
   }
 
@@ -233,7 +234,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
          toast.success("Message cancelled successfully")
        } catch (error) {
          console.error("Failed to cancel message", error)
-         toast.error("Failed to cancel message")
+         toast.error(getErrorMessage(error, "Failed to cancel message"))
        }
     }
   }

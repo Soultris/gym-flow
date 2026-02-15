@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useGetMembersQuery, useApproveMemberMutation, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { PhoneOtpVerify } from "@/components/phone-otp-verify"
 
 const MEMBERSHIP_FEE = 10
@@ -113,8 +114,8 @@ export default function PendingMembersPage() {
       toast.success(`${memberToReview.name} has been approved`)
       setReviewDialogOpen(false)
       setMemberToReview(null)
-    } catch {
-      toast.error("Failed to approve member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to approve member"))
     }
   }
 
@@ -126,8 +127,8 @@ export default function PendingMembersPage() {
       toast.success(`${memberToReview.name} has been rejected`)
       setReviewDialogOpen(false)
       setMemberToReview(null)
-    } catch {
-      toast.error("Failed to reject member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to reject member"))
     }
   }
 

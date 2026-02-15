@@ -29,6 +29,7 @@ import { useGetPackagesQuery } from "@/store/api/packagesApi"
 import { useGetTrainersQuery } from "@/store/api/trainersApi"
 import { useCreateTransactionMutation } from "@/store/api/transactionsApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 const transactionTypes = [
   { id: "membership", name: "Membership" },
@@ -85,7 +86,6 @@ export function NewTransactionDialog({
   
   // Receipt settings
   const [sendReceipt, setSendReceipt] = useState(false)
-  const [receiptMethod, setReceiptMethod] = useState<"sms" | "email">("sms")
 
   // API hooks
   const { data: membersData } = useGetMembersQuery({ limit: 1000 })
@@ -133,7 +133,6 @@ export function NewTransactionDialog({
       setGuestEmail("")
       setGuestPhone("")
       setSendReceipt(false)
-      setReceiptMethod("sms")
       setSelectedPackageId("")
       setSelectedTrainerId("")
     }
@@ -173,6 +172,7 @@ export function NewTransactionDialog({
         trainerId: transactionType === "personal_training" && selectedTrainerId ? parseInt(selectedTrainerId, 10) : undefined,
         price: parseFloat(amount),
         paymentMethod,
+        sendReceipt,
         products: transactionType === "merchandise" && cartItems.length > 0 
           ? cartItems.map(item => ({ 
               productId: parseInt(item.product.id, 10), 
@@ -184,7 +184,7 @@ export function NewTransactionDialog({
       toast.success("Transaction created successfully")
       handleOpenChange(false)
     } catch (error) {
-      toast.error("Failed to create transaction")
+      toast.error(getErrorMessage(error, "Failed to create transaction"))
       console.error("Transaction error:", error)
     }
   }
@@ -460,43 +460,16 @@ export function NewTransactionDialog({
           </div>
 
           {/* Send Receipt Toggle */}
-          <div className="flex flex-col gap-3 pt-2 border-t border-border">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="flex flex-col">
               <Label htmlFor="sendReceipt">Send Receipt</Label>
-              <Switch
-                id="sendReceipt"
-                checked={sendReceipt}
-                onCheckedChange={setSendReceipt}
-              />
+              <span className="text-xs text-muted-foreground">Send receipt via SMS</span>
             </div>
-
-            {/* Receipt Method - shown when Send Receipt is enabled */}
-            {sendReceipt && (
-              <div className="flex gap-4 pl-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="receiptMethod"
-                    value="sms"
-                    checked={receiptMethod === "sms"}
-                    onChange={() => setReceiptMethod("sms")}
-                    className="w-4 h-4 text-primary border-border focus:ring-primary"
-                  />
-                  <span className="text-sm">SMS</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="receiptMethod"
-                    value="email"
-                    checked={receiptMethod === "email"}
-                    onChange={() => setReceiptMethod("email")}
-                    className="w-4 h-4 text-primary border-border focus:ring-primary"
-                  />
-                  <span className="text-sm">Email</span>
-                </label>
-              </div>
-            )}
+            <Switch
+              id="sendReceipt"
+              checked={sendReceipt}
+              onCheckedChange={setSendReceipt}
+            />
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-2">

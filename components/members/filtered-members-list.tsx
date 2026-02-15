@@ -20,6 +20,7 @@ import Link from "next/link"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useGetMembersQuery, useDeleteMemberMutation, Member } from "@/store/api/membersApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -84,7 +85,7 @@ export function FilteredMembersList({ status }: FilteredMembersListProps) {
       setDeleteDialogOpen(false)
       setMemberToDelete(null)
     } catch (error) {
-      toast.error("Failed to delete member")
+      toast.error(getErrorMessage(error, "Failed to delete member"))
     }
   }
 

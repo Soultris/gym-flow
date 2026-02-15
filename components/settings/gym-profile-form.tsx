@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ImageUpload } from "@/components/ui/image-upload"
 import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function GymProfileForm() {
     const { data: gym, isLoading } = useGetGymProfileQuery()
@@ -59,8 +60,8 @@ export function GymProfileForm() {
 
             await updateGym(fd).unwrap()
             toast.success("Gym profile updated successfully")
-        } catch {
-            toast.error("Failed to update gym profile")
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to update gym profile"))
         }
     }
 

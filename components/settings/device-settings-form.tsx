@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useGetGymProfileQuery, useUpdateGymProfileMutation } from "@/store/api/gymApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export function DeviceSettingsForm() {
   const { data: gymProfile, isLoading, isError } = useGetGymProfileQuery()
@@ -46,7 +47,7 @@ export function DeviceSettingsForm() {
       toast.success("Device settings updated successfully")
     } catch (error) {
       console.error("Failed to update settings", error)
-      toast.error("Failed to update settings")
+      toast.error(getErrorMessage(error, "Failed to update settings"))
     }
   }
 

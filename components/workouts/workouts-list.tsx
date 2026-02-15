@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import {
   useGetWorkoutTemplatesQuery,
@@ -223,8 +224,8 @@ export function WorkoutsList() {
       try {
         await deleteTemplate(selectedTemplateId).unwrap()
         toast.success("Template deleted successfully")
-      } catch {
-        toast.error("Failed to delete template")
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to delete template"))
       }
     }
     setDeleteDialogOpen(false)
@@ -275,8 +276,8 @@ export function WorkoutsList() {
         toast.success("Template updated successfully")
       }
       closeDialog()
-    } catch {
-      toast.error("Failed to save template")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to save template"))
     }
   }
 
@@ -368,8 +369,8 @@ export function WorkoutsList() {
       setCustomWorkoutForm({ name: "", description: "" })
       setCustomExercises([{ name: "", reps: "" }])
       setNotificationType("both")
-    } catch {
-      toast.error("Failed to assign workouts")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to assign workouts"))
     }
   }
 

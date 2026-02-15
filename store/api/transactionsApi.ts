@@ -64,6 +64,7 @@ interface CreateTransactionRequest {
   quantity?: number;
   price: number;
   paymentMethod: 'cash' | 'card';
+  sendReceipt?: boolean;
   products?: Array<{ productId: number; quantity?: number }>;
 }
 

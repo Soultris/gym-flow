@@ -80,7 +80,7 @@ export function MembersTable({
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Package</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Enrolled</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Started Date</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Expiry Date</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Renew</th>
               <th className="w-12 px-4 py-3"></th>

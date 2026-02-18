@@ -40,6 +40,8 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', action.payload.token);
+        // Set cookie for middleware access (expires in 7 days)
+        document.cookie = `auth_token=${action.payload.token}; path=/; max-age=604800; SameSite=Lax`;
       }
     },
     setUser: (state, action: PayloadAction<User>) => {
@@ -52,6 +54,8 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
+        // Remove cookie
+        document.cookie = `auth_token=; path=/; max-age=0; SameSite=Lax`;
       }
     },
   },

@@ -3,13 +3,13 @@ import { baseApi } from './baseApi';
 interface SendOtpRequest {
   phone: string;
   type: 'member' | 'trainer';
-  id: number;
+  id?: number;
 }
 
 interface VerifyOtpRequest {
   phone: string;
   type: 'member' | 'trainer';
-  id: number;
+  id?: number;
   otp: string;
 }
 

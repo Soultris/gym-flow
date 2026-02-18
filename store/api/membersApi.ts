@@ -62,6 +62,8 @@ interface CreateMemberRequest {
   joiningDate?: string;
   packageId?: number;
   imageUrl?: string;
+  membershipFee?: number;
+  paymentMethod?: 'cash' | 'card';
 }
 
 interface MembersQueryParams {

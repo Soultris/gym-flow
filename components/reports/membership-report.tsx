@@ -6,11 +6,13 @@ import { Download, Loader2 } from "lucide-react"
 import { Pie, PieChart, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 import { useGetMembershipReportQuery } from "@/store/api/dashboardApi"
 import { useMemo } from "react"
+import { useAppSelector } from "@/store/hooks"
 
 const COLORS = ["#F4F933", "#22c55e", "#FFFFFF", "#A0A0A0", "#FF6B6B", "#4ECDC4"]
 
 export function MembershipReport() {
   const { data, isLoading, error } = useGetMembershipReportQuery()
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   
   // Transform API data to chart format
   const chartData = useMemo(() => {
@@ -54,7 +56,8 @@ export function MembershipReport() {
         <head>
           <title>Membership Distribution Report</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
+            .logo-header { display: flex; align-items: center; margin-bottom: 20px; }
+            .logo-header img { width: 60px; height: 60px; object-fit: contain; margin-right: 15px; }
             h1 { color: #333; margin-bottom: 5px; }
             .date { color: #666; margin-bottom: 20px; font-size: 14px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -65,13 +68,19 @@ export function MembershipReport() {
             .total-box { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9; }
             .total-label { font-size: 12px; color: #666; }
             .total-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+            .title-section { display: flex; align-items: center; gap: 15px; }
           </style>
         </head>
         <body>
-          <h1>Membership Distribution Report</h1>
-          <div class="date">
-            Data Analysis by Package Type<br/>
-            Generated on: ${new Date().toLocaleString()}
+          <div class="logo-header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+            <div>
+              <h1>Membership Distribution Report</h1>
+              <div class="date">
+                Data Analysis by Package Type<br/>
+                Generated on: ${new Date().toLocaleString()}
+              </div>
+            </div>
           </div>
 
           <div class="total-box">

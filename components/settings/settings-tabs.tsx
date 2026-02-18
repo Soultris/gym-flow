@@ -1,15 +1,15 @@
 "use client"
 
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+// import { Card } from "@/components/ui/card"
+// import { Button } from "@/components/ui/button"
+// import { Input } from "@/components/ui/input"
+// import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
-import { DeviceSettingsForm } from "./device-settings-form"
+// import { DeviceSettingsForm } from "./device-settings-form"
 import { GymProfileForm } from "./gym-profile-form"
-import { SmsConfigForm } from "./sms-config-form"
+// import { SmsConfigForm } from "./sms-config-form"
 
 export function SettingsTabs() {
   const searchParams = useSearchParams()
@@ -17,9 +17,9 @@ export function SettingsTabs() {
 
   const tabs = [
     { name: "Gym Profile", value: "profile" },
-    { name: "Security", value: "security" },
-    { name: "Device Configuration", value: "device" },
-    { name: "SMS Configuration", value: "sms" },
+    // { name: "Security", value: "security" },
+    // { name: "Device Configuration", value: "device" },
+    // { name: "SMS Configuration", value: "sms" },
   ]
 
   return (
@@ -50,7 +50,7 @@ export function SettingsTabs() {
       )}
 
       {/* Security Tab Content */}
-      {currentTab === "security" && (
+      {/* {currentTab === "security" && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Security Settings</h3>
           <form className="space-y-6">
@@ -72,17 +72,17 @@ export function SettingsTabs() {
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Update Security</Button>
           </form>
         </Card>
-      )}
+      )} */}
 
       {/* Device Config Tab Content */}
-      {currentTab === "device" && (
+      {/* {currentTab === "device" && (
         <DeviceSettingsForm />
-      )}
+      )} */}
 
       {/* SMS Config Tab Content */}
-      {currentTab === "sms" && (
+      {/* {currentTab === "sms" && (
         <SmsConfigForm />
-      )}
+      )} */}
     </div>
   )
 }

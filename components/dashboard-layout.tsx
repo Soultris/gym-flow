@@ -94,9 +94,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* New Transaction Button */}
-          <div className="px-3 py-4">
-            <NewTransactionDialog />
-          </div>
+          {user?.role?.name !== "Superadmin" && (
+            <div className="px-3 py-4">
+              <NewTransactionDialog />
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3">
@@ -157,11 +159,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="/placeholder.svg?height=36&width=36" />
-                    <AvatarFallback className="bg-primary text-primary-foreground">AD</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {user?.name?.substring(0, 2).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-sm">
-                    <span className="font-medium">Admin User</span>
-                    <span className="text-xs text-muted-foreground">admin@gym.com</span>
+                    <span className="font-medium">{user?.name || "User"}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -205,17 +209,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <ActivitySquare className="h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/membership-plans" title="Pricing">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
-                <Crown className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/membership-request" target="_blank">
-              <Button variant="outline" size="sm" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Membership Registration Form</span>
-              </Button>
-            </Link>
+            {user?.role?.name !== "Superadmin" && (
+              <>
+                <Link href="/membership-plans" title="Pricing">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                  >
+                    <Crown className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/membership-request" target="_blank">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Membership Registration Form</span>
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </header>
 

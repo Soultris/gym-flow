@@ -68,7 +68,6 @@ export function PhoneOtpVerify({
         toast.success("Phone number verified!")
         setIsOpen(false)
         if (onVerificationComplete) onVerificationComplete()
-        else window.location.reload()
       }
     } catch (err: unknown) {
        const error = err as { data?: { error?: string }; message?: string }
@@ -89,6 +88,7 @@ export function PhoneOtpVerify({
   return (
     <>
       <Button
+        type="button"
         variant="outline"
         size="sm"
         onClick={() => {

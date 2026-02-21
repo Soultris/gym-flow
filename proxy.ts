@@ -12,6 +12,7 @@ export function proxy(request: NextRequest) {
     '/forgot-password',
     '/reset-password',
     '/trainer-signup',
+    '/receipts',
   ]
 
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))

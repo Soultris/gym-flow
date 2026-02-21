@@ -7,9 +7,11 @@ import { usePathname } from "next/navigation"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
 import { Input } from "../ui/input"
+import { useAppSelector } from "@/store/hooks"
 
 export function MembersHeader() {
   const pathname = usePathname()
+  const user = useAppSelector((state) => state.auth.user)
 
   // Fetch members to get real counts
   const { data: membersData } = useGetMembersQuery({ limit: 1000 })
@@ -71,12 +73,14 @@ export function MembersHeader() {
         
         {/* Actions - Wraps on mobile */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <Link href="/members/new">
-            <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Member</span>
-            </Button>
-          </Link>
+          {user?.features?.includes('DIRECT_MEMBER_CREATION') && (
+            <Link href="/members/new">
+              <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Member</span>
+              </Button>
+            </Link>
+          )}
           <Link href="/bulk-sms">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <MessageSquare className="h-4 w-4" />

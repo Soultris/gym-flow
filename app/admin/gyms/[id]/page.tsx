@@ -46,6 +46,7 @@ import {
 const AVAILABLE_FEATURES = [
   { code: 'BULK_SMS', name: 'Bulk SMS', description: 'Enable SMS marketing and notifications' },
   { code: 'INVENTORY', name: 'Inventory Management', description: 'Track products and stock levels' },
+  { code: 'DIRECT_MEMBER_CREATION', name: 'Direct Member Creation', description: 'Allow adding members directly without QR scan.' },
 ]
 
 export default function GymDetailsPage() {

@@ -9,6 +9,11 @@ export interface Trainer {
   isPending: boolean;
   strikePoints: number;
   imageUrl?: string;
+  dob?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  nic?: string | null;
+  address?: string | null;
   _count?: {
     transactions: number;
   };

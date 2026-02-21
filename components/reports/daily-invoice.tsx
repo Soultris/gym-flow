@@ -104,22 +104,22 @@ export function DailyInvoice() {
           <h3 className="text-lg font-semibold">Daily Invoice Report</h3>
           <p className="text-sm text-muted-foreground">View and export daily transactions</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Label htmlFor="report-date" className="sr-only">
               Select Date
             </Label>
             <Input 
               id="report-date" 
               type="date" 
-              className="w-40" 
+              className="w-full sm:w-40 flex-1" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
           <Button 
             size="sm" 
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
             onClick={handleExportPDF}
           >
             <Download className="h-4 w-4 mr-2" />

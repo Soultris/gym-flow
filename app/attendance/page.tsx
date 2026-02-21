@@ -30,12 +30,11 @@ export default function AttendanceLogPage() {
     startDate || endDate ? { from: startDate || undefined, to: endDate || undefined } : undefined
   )
 
-  const attendanceRecords = data?.attendance || []
-
   // Filter records based on search
   const filteredRecords = useMemo(() => {
-    if (!searchTerm) return attendanceRecords
-    return attendanceRecords.filter((record) => {
+    const records = data?.attendance || []
+    if (!searchTerm) return records
+    return records.filter((record) => {
       const name = record.member?.name || ""
       const email = record.member?.email || ""
       return (
@@ -43,7 +42,7 @@ export default function AttendanceLogPage() {
         email.toLowerCase().includes(searchTerm.toLowerCase())
       )
     })
-  }, [attendanceRecords, searchTerm])
+  }, [data?.attendance, searchTerm])
 
   // Export PDF function
   const handleExportPDF = () => {
@@ -151,8 +150,8 @@ export default function AttendanceLogPage() {
             </div>
 
             {/* Date Range */}
-            <div className="flex items-end gap-3">
-              <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 w-full sm:w-auto">
+              <div className="w-full sm:w-auto">
                 <Label htmlFor="startDate" className="mb-2 block text-sm">From Date</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -161,11 +160,11 @@ export default function AttendanceLogPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="pl-9 bg-secondary border-[#3a3a3a] w-[180px]"
+                    className="pl-9 bg-secondary border-[#3a3a3a] w-full sm:w-[180px]"
                   />
                 </div>
               </div>
-              <div>
+              <div className="w-full sm:w-auto">
                 <Label htmlFor="endDate" className="mb-2 block text-sm">To Date</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -174,7 +173,7 @@ export default function AttendanceLogPage() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="pl-9 bg-secondary border-[#3a3a3a] w-[180px]"
+                    className="pl-9 bg-secondary border-[#3a3a3a] w-full sm:w-[180px]"
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -80,6 +81,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
     address: "",
     joiningDate: "",
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   // Populate form when member data loads
   useEffect(() => {
@@ -105,6 +107,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
       })
+      setImageFile(null)
     }
   }, [member])
 
@@ -126,20 +129,25 @@ export function MemberProfile({ memberId }: { memberId: string }) {
 
   const handleSave = async () => {
     try {
+      const updateData = new FormData()
+      updateData.append("name", formData.fullName)
+      updateData.append("email", formData.email)
+      updateData.append("phone", formData.phone)
+      updateData.append("dob", formData.dob)
+      updateData.append("gender", formData.gender.toLowerCase())
+      updateData.append("nic", formData.nic)
+      updateData.append("height", formData.height)
+      updateData.append("weight", formData.weight)
+      updateData.append("address", formData.address)
+      updateData.append("joiningDate", formData.joiningDate)
+      
+      if (imageFile) {
+        updateData.append("image", imageFile)
+      }
+
       await updateMember({
         id: numericMemberId,
-        data: {
-          name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          dob: formData.dob,
-          gender: formData.gender.toLowerCase() as 'male' | 'female' | 'other',
-          nic: formData.nic,
-          height: parseFloat(formData.height) || 0,
-          weight: parseFloat(formData.weight) || 0,
-          address: formData.address,
-          joiningDate: formData.joiningDate,
-        }
+        data: updateData
       }).unwrap()
       toast.success("Profile updated successfully")
       setIsEditing(false)
@@ -172,6 +180,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
       })
+      setImageFile(null)
     }
     setIsEditing(false)
   }
@@ -264,12 +273,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header with Edit/Save buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{formData.fullName}</h1>
           <p className="text-sm text-muted-foreground">Member ID: {memberId}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isEditing ? (
             <>
               <Button variant="outline" onClick={handleCancel} className="gap-2 bg-transparent">
@@ -295,12 +304,20 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div className="lg:col-span-1">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={member.imageUrl || undefined} />
-                <AvatarFallback className="bg-secondary text-foreground text-2xl font-bold">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+              {isEditing ? (
+                <AvatarUpload
+                  value={imageFile || member.imageUrl || undefined}
+                  onChange={(file: File | null) => setImageFile(file)}
+                  className="mb-4"
+                />
+              ) : (
+                <Avatar className="h-24 w-24 mb-4">
+                  <AvatarImage src={member.imageUrl || undefined} />
+                  <AvatarFallback className="bg-secondary text-foreground text-2xl font-bold">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               <h2 className="text-xl font-bold mt-4">{formData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
               <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-green-500 text-green-500" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
@@ -363,7 +380,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div className="lg:col-span-2">
           <Card className="p-6">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="flex flex-wrap w-full h-auto gap-1 sm:grid sm:grid-cols-3 lg:grid-cols-5">
                 <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="membership">Membership</TabsTrigger>
                 <TabsTrigger value="workout">Workouts</TabsTrigger>

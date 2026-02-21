@@ -85,7 +85,7 @@ export function NewTransactionDialog({
   const [guestPhone, setGuestPhone] = useState("")
   
   // Receipt settings
-  const [sendReceipt, setSendReceipt] = useState(false)
+  const [sendReceipt, setSendReceipt] = useState(true)
 
   // API hooks
   const { data: membersData } = useGetMembersQuery({ limit: 1000 })
@@ -132,7 +132,7 @@ export function NewTransactionDialog({
       setGuestName("")
       setGuestEmail("")
       setGuestPhone("")
-      setSendReceipt(false)
+      setSendReceipt(true)
       setSelectedPackageId("")
       setSelectedTrainerId("")
     }

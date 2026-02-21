@@ -8,8 +8,8 @@ export function proxy(request: NextRequest) {
   // List of public paths that don't require authentication
   const publicPaths = [
     '/login',
-    '/register',
-    '/forgot-password',
+    '/membership-request',
+    // '/forgot-password',
     '/reset-password',
     '/trainer-signup',
     '/receipts',

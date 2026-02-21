@@ -80,6 +80,7 @@ export function MembersTable({
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Package</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Device Sync</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Started Date</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Expiry Date</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Renew</th>
@@ -89,14 +90,14 @@ export function MembersTable({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center">
+                <td colSpan={9} className="px-4 py-8 text-center bg-[#1a1a1a]/50">
                   <Loader2 className="h-8 w-8 animate-spin text-primary inline-block" />
                   <span className="ml-2 text-muted-foreground">Loading members...</span>
                 </td>
               </tr>
             ) : members.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                   No members found
                 </td>
               </tr>
@@ -148,6 +149,24 @@ export function MembersTable({
                       >
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </Badge>
+                    </td>
+                    <td className="px-4 py-4">
+                      {member.deviceSyncState ? (
+                        <Badge
+                          variant="outline"
+                          className={
+                            member.deviceSyncState === 'SYNCED'
+                              ? "border-green-500 text-green-500 bg-green-500/10 whitespace-nowrap"
+                              : member.deviceSyncState === 'FAILED'
+                                ? "border-destructive text-destructive bg-destructive/10 whitespace-nowrap"
+                                : "border-yellow-500 text-yellow-500 bg-yellow-500/10 whitespace-nowrap"
+                          }
+                        >
+                          {member.deviceSyncState}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-muted-foreground">
                       {formatDate(member.joiningDate)}

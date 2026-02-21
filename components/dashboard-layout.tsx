@@ -34,11 +34,14 @@ import {
   ActivitySquare,
   Crown,
   Building2,
+  RefreshCcw,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { logout } from "@/store/slices/authSlice"
+import { useGetSyncStatusQuery, useSyncAllPendingOrFailedMutation } from "@/store/api/syncApi"
 import toast from "react-hot-toast"
 
 const navigation = [
@@ -59,6 +62,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.auth.user)
+  
+  const isEligibleForSync = user && user?.role?.name !== "Superadmin"
+  const { data: syncStatus } = useGetSyncStatusQuery(undefined, {
+    skip: !isEligibleForSync,
+    refetchOnMountOrArgChange: true,
+  })
+  const hasSyncErrors = syncStatus?.hasPendingSyncs || false
+  const [syncAll, { isLoading: isSyncingAll }] = useSyncAllPendingOrFailedMutation()
 
   const handleLogout = () => {
     dispatch(logout())
@@ -211,6 +222,27 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
             {user?.role?.name !== "Superadmin" && (
               <>
+                {hasSyncErrors && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-destructive text-destructive hover:bg-destructive/10"
+                    disabled={isSyncingAll}
+                    onClick={async () => {
+                      try {
+                        const toastId = toast.loading("Syncing all pending devices...");
+                        await syncAll().unwrap();
+                        toast.success("Global sync process completed", { id: toastId });
+                      } catch (err) {
+                        console.error("Global sync failed:", err);
+                        toast.error("Global sync failed");
+                      }
+                    }}
+                  >
+                    {isSyncingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                    <span className="hidden sm:inline">Sync Device</span>
+                  </Button>
+                )}
                 <Link href="/membership-plans" title="Pricing">
                   <Button
                     variant="ghost"

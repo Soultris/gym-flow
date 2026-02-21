@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { MembersHeader } from "@/components/members/members-header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -113,6 +114,7 @@ export default function TrainersPage() {
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Phone Number</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Device Sync</th>
                 <th className="w-12 px-4 py-3"></th>
               </tr>
             </thead>
@@ -146,6 +148,24 @@ export default function TrainersPage() {
                   </td>
                   <td className="px-4 py-4 text-sm">{trainer.phone}</td>
                   <td className="px-4 py-4 text-sm">{trainer.specialization}</td>
+                  <td className="px-4 py-4">
+                    {trainer.deviceSyncState ? (
+                      <Badge
+                        variant="outline"
+                        className={
+                          trainer.deviceSyncState === 'SYNCED'
+                            ? "border-green-500 text-green-500 bg-green-500/10 whitespace-nowrap"
+                            : trainer.deviceSyncState === 'FAILED'
+                              ? "border-destructive text-destructive bg-destructive/10 whitespace-nowrap"
+                              : "border-yellow-500 text-yellow-500 bg-yellow-500/10 whitespace-nowrap"
+                        }
+                      >
+                        {trainer.deviceSyncState}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-4">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

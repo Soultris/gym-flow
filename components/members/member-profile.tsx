@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Loader2 } from "lucide-react"
+import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Loader2, RefreshCcw } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
@@ -23,6 +23,7 @@ import { getErrorMessage } from "@/lib/errorUtils"
 import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery, useDeactivateMemberMutation } from "@/store/api/membersApi"
 import { useGetAssignedWorkoutsQuery, AssignedWorkout } from "@/store/api/workoutsApi"
 import { Transaction } from "@/store/api/transactionsApi"
+import { useSyncMemberMutation } from "@/store/api/syncApi"
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   const numericMemberId = parseInt(memberId, 10)
   
   // API Queries
+  // API Queries
   const { data: member, isLoading: memberLoading, error: memberError } = useGetMemberByIdQuery(numericMemberId)
   const { data: attendanceData } = useGetMemberAttendanceQuery({ id: numericMemberId })
   const { data: transactionsData } = useGetMemberTransactionsQuery(numericMemberId)
@@ -59,6 +61,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   
   // API Mutations
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+  const [syncMemberToDevice, { isLoading: isSyncing }] = useSyncMemberMutation()
   const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
   
   // UI State
@@ -323,6 +326,14 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-green-500 text-green-500" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
                 {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
               </Badge>
+              {member?.deviceSyncState && (
+                <div className="flex flex-col items-center mt-2 space-y-1">
+                  <Badge variant="outline" className={`${member.deviceSyncState === 'SYNCED' ? 'border-green-500 text-green-500' : member.deviceSyncState === 'FAILED' ? 'border-destructive text-destructive' : 'border-yellow-500 text-yellow-500'}`}>
+                    Device: {member.deviceSyncState}
+                  </Badge>
+                  {member.lastSyncedAt && <span className="text-xs text-muted-foreground">Last synced: {formatDate(member.lastSyncedAt)}</span>}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mt-6">
@@ -371,6 +382,23 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                 onClick={() => setDeactivateDialogOpen(true)}
               >
                 Deactivate
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent flex items-center justify-center gap-2"
+                disabled={isSyncing}
+                onClick={async () => {
+                  try {
+                    const toastId = toast.loading("Syncing member to device...");
+                    await syncMemberToDevice(memberId).unwrap();
+                    toast.success("Member synced successfully", { id: toastId });
+                  } catch (_error) {
+                    toast.error("Error syncing to device");
+                  }
+                }}
+              >
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                Sync to Device
               </Button>
             </div>
           </Card>

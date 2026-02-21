@@ -11,6 +11,13 @@ import { Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, useUpdateTrainerMutation, Trainer } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
@@ -175,6 +182,11 @@ function ReviewTrainerContent({ trainer, onClose, refetch }: { trainer: Trainer,
         name: trainer.name,
         phone: trainer.phone,
         specialization: trainer.specialization,
+        dob: trainer.dob ? new Date(trainer.dob).toISOString().split('T')[0] : "",
+        age: trainer.age?.toString() || "",
+        gender: trainer.gender || "",
+        nic: trainer.nic || "",
+        address: trainer.address || "",
     })
 
     const handleAccept = async () => {
@@ -260,6 +272,74 @@ function ReviewTrainerContent({ trainer, onClose, refetch }: { trainer: Trainer,
                         id="specialization"
                         value={formData.specialization}
                         onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input 
+                        id="dob"
+                        type="date"
+                        value={formData.dob}
+                        onChange={(e) => {
+                            const newDob = e.target.value;
+                            let newAge = formData.age;
+                            if (newDob) {
+                                const birthDate = new Date(newDob);
+                                const today = new Date();
+                                let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                                const m = today.getMonth() - birthDate.getMonth();
+                                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                    calculatedAge--;
+                                }
+                                newAge = calculatedAge.toString();
+                            } else {
+                                newAge = "";
+                            }
+                            setFormData({...formData, dob: newDob, age: newAge});
+                        }}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input 
+                        id="age"
+                        value={formData.age}
+                        disabled
+                        className="bg-muted"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="nic">NIC</Label>
+                    <Input 
+                        id="nic"
+                        value={formData.nic}
+                        onChange={(e) => setFormData({...formData, nic: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
                     />
                 </div>
             </div>

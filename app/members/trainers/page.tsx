@@ -133,7 +133,7 @@ export default function TrainersPage() {
                       className="flex items-center gap-3 transition-opacity"
                     >
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
                         <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
                           {getInitials(trainer.name)}
                         </AvatarFallback>

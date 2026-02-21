@@ -8,6 +8,7 @@ export interface Trainer {
   specialization: string;
   isPending: boolean;
   strikePoints: number;
+  imageUrl?: string;
   _count?: {
     transactions: number;
   };

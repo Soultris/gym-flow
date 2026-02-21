@@ -111,7 +111,7 @@ export default function PendingTrainersPage() {
                         className="flex items-center gap-3 transition-opacity"
                       >
                         <Avatar className="h-9 w-9">
-                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
                           <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
                             {getInitials(trainer.name)}
                           </AvatarFallback>
@@ -214,7 +214,7 @@ function ReviewTrainerContent({ trainer, onClose, refetch }: { trainer: Trainer,
             {/* Avatar Section - Centered */}
             <div className="flex justify-center mb-8">
                 <Avatar className="h-32 w-32 border-4 border-muted">
-                    <AvatarImage src="/placeholder.svg" className="object-cover" />
+                    <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
                     <AvatarFallback className="text-4xl bg-secondary">{getInitials(trainer.name)}</AvatarFallback>
                 </Avatar>
             </div>

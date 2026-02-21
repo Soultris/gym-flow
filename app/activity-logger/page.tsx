@@ -139,7 +139,7 @@ export default function ActivityLoggerPage() {
   const formatActionText = (action: string, type: string) => {
     // Replace $ with Rs. for transaction type activities
     if (type === "transaction") {
-      return action.replace(/\$/g, "Rs.")
+      return action.replace(/\$/g, "LKR ")
     }
     return action
   }

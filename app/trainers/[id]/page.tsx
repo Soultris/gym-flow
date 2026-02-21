@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { StrikePointsManager } from "@/components/trainers/strike-points-manager"
-import { ArrowLeft, Mail, Phone, Calendar, Loader2 } from "lucide-react"
+import { ArrowLeft, Phone, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { use } from "react"
 import { useGetTrainerByIdQuery } from "@/store/api/trainersApi"
@@ -72,7 +72,7 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
             <Card className="p-6 space-y-6">
               <div className="flex flex-col items-center text-center">
                 <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src="/placeholder.svg?height=96&width=96" />
+                  <AvatarImage src={trainer.imageUrl || "/placeholder.svg?height=96&width=96"} className="object-cover" />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
                     {getInitials(trainer.name)}
                   </AvatarFallback>

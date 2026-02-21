@@ -38,6 +38,7 @@ export const baseApi = createApi({
     'Users',
     'User',
     'GymProfile',
+    'SyncStatus',
   ],
   endpoints: () => ({}),
 });

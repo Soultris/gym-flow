@@ -14,6 +14,8 @@ export interface Trainer {
   gender?: string | null;
   nic?: string | null;
   address?: string | null;
+  deviceSyncState?: 'PENDING' | 'SYNCED' | 'FAILED';
+  lastSyncedAt?: string | null;
   _count?: {
     transactions: number;
   };

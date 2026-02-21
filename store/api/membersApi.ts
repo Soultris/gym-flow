@@ -22,6 +22,8 @@ export interface Member {
   joiningDate: string;
   imageUrl: string | null;
   status?: 'active' | 'expired' | 'pending' | 'deactivated';
+  deviceSyncState?: 'PENDING' | 'SYNCED' | 'FAILED';
+  lastSyncedAt?: string | null;
   package?: {
     packageId: number;
     name: string;

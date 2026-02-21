@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { StrikePointsManager } from "@/components/trainers/strike-points-manager"
-import { ArrowLeft, Phone, Loader2, Edit, X, Save } from "lucide-react"
+import { ArrowLeft, Phone, Loader2, Edit, X, Save, RefreshCcw } from "lucide-react"
 import Link from "next/link"
 import { use, useState } from "react"
 import { useGetTrainerByIdQuery, useUpdateTrainerMutation } from "@/store/api/trainersApi"
+import { useSyncTrainerMutation } from "@/store/api/syncApi"
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
 import { Input } from "@/components/ui/input"
@@ -33,6 +34,7 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
   const { data: trainer, isLoading, isError } = useGetTrainerByIdQuery(trainerId)
   
   const [updateTrainer, { isLoading: isUpdating }] = useUpdateTrainerMutation()
+  const [syncTrainerToDevice, { isLoading: isSyncing }] = useSyncTrainerMutation()
   const [isEditing, setIsEditing] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   
@@ -192,6 +194,14 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                 <Badge className="mt-3" variant="outline">
                   {trainer.isPending ? "Pending" : "Active"}
                 </Badge>
+                {trainer?.deviceSyncState && (
+                  <div className="flex flex-col items-center mt-2 space-y-1">
+                    <Badge variant="outline" className={`${trainer.deviceSyncState === 'SYNCED' ? 'border-green-500 text-green-500' : trainer.deviceSyncState === 'FAILED' ? 'border-destructive text-destructive' : 'border-yellow-500 text-yellow-500'}`}>
+                      Device: {trainer.deviceSyncState}
+                    </Badge>
+                    {trainer.lastSyncedAt && <span className="text-xs text-muted-foreground">Last synced: {formatDate(trainer.lastSyncedAt)}</span>}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -199,6 +209,26 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{formData.phone}</span>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mt-6">
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-transparent flex items-center justify-center gap-2"
+                  disabled={isSyncing}
+                  onClick={async () => {
+                    try {
+                      const toastId = toast.loading("Syncing trainer to device...");
+                      await syncTrainerToDevice(trainerId).unwrap();
+                      toast.success("Trainer synced successfully", { id: toastId });
+                    } catch (_error) {
+                      toast.error("Error syncing to device");
+                    }
+                  }}
+                >
+                  {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                  Sync to Device
+                </Button>
               </div>
             </Card>
           </div>

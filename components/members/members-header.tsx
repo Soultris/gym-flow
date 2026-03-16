@@ -81,6 +81,12 @@ export function MembersHeader() {
               </Button>
             </Link>
           )}
+          <Link href="/trainer-signup">
+            <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Trainer</span>
+            </Button>
+          </Link>
           <Link href="/bulk-sms">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <MessageSquare className="h-4 w-4" />

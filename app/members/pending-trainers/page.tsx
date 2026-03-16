@@ -160,7 +160,7 @@ export default function PendingTrainersPage() {
             </div>
 
             {trainerToReview && (
-              <ReviewTrainerContent 
+              <ReviewTrainerContent  
                 trainer={trainerToReview} 
                 onClose={() => setReviewDialogOpen(false)}
                 refetch={refetch}

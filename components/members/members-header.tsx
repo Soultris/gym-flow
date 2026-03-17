@@ -100,6 +100,11 @@ export function MembersHeader() {
       <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <div className="flex items-center gap-1 sm:gap-2 border-b border-[#2a2a2a] min-w-max">
           {tabs.map((tab) => {
+            // Hide Trainers and Pending Trainers tabs for Trainer role
+            if (user?.role?.name === 'Trainer' && (tab.name === 'Trainers' || tab.name === 'Pending Trainers')) {
+              return null;
+            }
+
             const isActive = currentTab === "" ? tab.href === "/members" : tab.href === pathname
             return (
               <Link key={tab.href} href={tab.href}>

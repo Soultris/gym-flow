@@ -76,7 +76,9 @@ export function RecentActivity() {
                   {activity.type}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground truncate">{activity.action}</p>
+              <p className="text-sm text-muted-foreground truncate">
+                {activity.type === 'transaction' ? activity.action.replace(/\$/g, 'LKR ') : activity.action}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {formatTimeAgo(activity.timestamp)}
               </p>

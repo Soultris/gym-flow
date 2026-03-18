@@ -124,6 +124,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 return null
               }
 
+              // Hide specific tabs for Trainer
+              if (user?.role?.name === 'Trainer' && ['Settings', 'Reports', 'Finance'].includes(item.name)) {
+                return null
+              }
+
               const isActive = item.href === "/" 
                 ? pathname === "/" 
                 : pathname === item.href || pathname.startsWith(item.href + "/")
@@ -189,12 +194,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     Profile
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/settings">
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                </Link>
+                {user?.role?.name !== 'Trainer' && (
+                  <Link href="/settings">
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -215,11 +222,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Button>
 
           <div className="flex flex-1 items-center justify-end gap-2">
-            <Link href="/activity-logger" title="Activity Logger">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
-                <ActivitySquare className="h-5 w-5" />
-              </Button>
-            </Link>
+            {user?.role?.name !== 'Trainer' && (
+              <Link href="/activity-logger" title="Activity Logger">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
+                  <ActivitySquare className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
             {user?.role?.name !== "Superadmin" && (
               <>
                 {hasSyncErrors && (

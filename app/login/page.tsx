@@ -105,14 +105,14 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 pt-6 border-t border-border">
-        <p className="text-center text-sm text-muted-foreground mb-4">
+        {/* <p className="text-center text-sm text-muted-foreground mb-4">
           Want to join as a trainer?
-        </p>
-        <Link href="/trainer-signup">
+        </p> */}
+        {/* <Link href="/trainer-signup">
           <Button variant="outline" className="w-full h-11">
             Signup as Trainer
           </Button>
-        </Link>
+        </Link> */}
       </div>
     </SplitScreenLayout>
   )

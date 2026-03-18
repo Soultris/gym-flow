@@ -105,8 +105,8 @@ export default function TrainerSignupPage() {
       setSuccess(true)
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'data' in error 
-        ? (error.data as { message?: string })?.message || "Failed to submit application"
-        : "Failed to submit application"
+        ? (error.data as { message?: string })?.message || "Failed to add trainer"
+        : "Failed to add trainer"
       toast.error(errorMessage)
     }
   }
@@ -120,13 +120,13 @@ export default function TrainerSignupPage() {
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold mb-2">Application Submitted!</h1>
+          <h1 className="text-2xl font-bold mb-2">Trainer Added!</h1>
           <p className="text-muted-foreground mb-6">
-            Your trainer application has been submitted successfully. Please wait for admin approval before you can sign in.
+            The trainer has been successfully added and moved to the pending trainers list for approval.
           </p>
-          <Link href="/login">
+          <Link href="/dashboard">
             <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Return to Login
+              Return to Dashboard
             </Button>
           </Link>
         </Card>
@@ -136,8 +136,8 @@ export default function TrainerSignupPage() {
 
   return (
     <SplitScreenLayout
-      title="Become a Trainer"
-      subtitle="Join our team of professional fitness trainers and help transform lives."
+      title="Add New Trainer"
+      subtitle="Fill in the details to register a new trainer to your fitness center."
       image="https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=1974&auto=format&fit=crop"
     >
       <div className="flex justify-center mb-8">
@@ -315,20 +315,15 @@ export default function TrainerSignupPage() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Submitting Application...
+              Adding Trainer...
             </>
           ) : (
-            "Submit Application"
+            "Add Trainer"
           )}
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground mt-6">
-        Already have an account?{" "}
-        <Link href="/login" className="text-primary hover:underline font-medium">
-          Sign in
-        </Link>
-      </p>
+
     </SplitScreenLayout>
   )
 }

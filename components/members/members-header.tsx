@@ -81,6 +81,12 @@ export function MembersHeader() {
               </Button>
             </Link>
           )}
+          <Link href="/trainer-signup">
+            <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Trainer</span>
+            </Button>
+          </Link>
           <Link href="/bulk-sms">
             <Button size="sm" className="gap-2 bg-primary text-secondary hover:bg-primary/50 font-semibold">
               <MessageSquare className="h-4 w-4" />
@@ -94,6 +100,11 @@ export function MembersHeader() {
       <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <div className="flex items-center gap-1 sm:gap-2 border-b border-[#2a2a2a] min-w-max">
           {tabs.map((tab) => {
+            // Hide Trainers and Pending Trainers tabs for Trainer role
+            if (user?.role?.name === 'Trainer' && (tab.name === 'Trainers' || tab.name === 'Pending Trainers')) {
+              return null;
+            }
+
             const isActive = currentTab === "" ? tab.href === "/members" : tab.href === pathname
             return (
               <Link key={tab.href} href={tab.href}>

@@ -210,7 +210,11 @@ function ReviewMemberContent({ member, onClose, refetch }: { member: Member, onC
         nic: member.nic,
         address: member.address,
         height: member.height,
-        weight: member.weight
+        weight: member.weight,
+        emergencyContactName: member.emergencyContactName || "",
+        emergencyContactRelation: member.emergencyContactRelation || "",
+        emergencyContactPhone: member.emergencyContactPhone || "",
+        medicalIssues: member.medicalIssues || ""
     })
 
     // Initialize membership fee from gym settings
@@ -401,7 +405,48 @@ function ReviewMemberContent({ member, onClose, refetch }: { member: Member, onC
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6 border-t border-border">
+            {/* Emergency Contact & Medical Info */}
+            <div className="pt-6 border-t border-border mt-6">
+                 <div className="mb-4">
+                     <h3 className="font-semibold text-lg">Emergency Contact & Medical Details</h3>
+                 </div>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="emergencyContactName">Contact Person Name</Label>
+                        <Input 
+                            id="emergencyContactName"
+                            value={formData.emergencyContactName}
+                            onChange={(e) => setFormData({...formData, emergencyContactName: e.target.value})}
+                        />
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="emergencyContactRelation">Relation</Label>
+                        <Input 
+                            id="emergencyContactRelation"
+                            value={formData.emergencyContactRelation}
+                            onChange={(e) => setFormData({...formData, emergencyContactRelation: e.target.value})}
+                        />
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="emergencyContactPhone">Contact Phone No.</Label>
+                        <Input 
+                            id="emergencyContactPhone"
+                            value={formData.emergencyContactPhone}
+                            onChange={(e) => setFormData({...formData, emergencyContactPhone: e.target.value})}
+                        />
+                     </div>
+                     <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="medicalIssues">Medical Issues / Conditions</Label>
+                        <Input 
+                            id="medicalIssues"
+                            value={formData.medicalIssues}
+                            onChange={(e) => setFormData({...formData, medicalIssues: e.target.value})}
+                        />
+                     </div>
+                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6 border-t border-border mt-6">
                 {/* Plan Selection */}
                 <div className="lg:col-span-2 space-y-4">
                     <h3 className="font-semibold text-lg">Membership Plan</h3>

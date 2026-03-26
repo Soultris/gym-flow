@@ -45,6 +45,10 @@ interface MemberFormData {
   weight: string
   address: string
   joiningDate: string
+  emergencyContactName: string
+  emergencyContactRelation: string
+  emergencyContactPhone: string
+  medicalIssues: string
 }
 
 export function MemberProfile({ memberId }: { memberId: string }) {
@@ -83,6 +87,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
     weight: "",
     address: "",
     joiningDate: "",
+    emergencyContactName: "",
+    emergencyContactRelation: "",
+    emergencyContactPhone: "",
+    medicalIssues: "",
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
 
@@ -109,6 +117,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         weight: member.weight?.toString() || "",
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
+        emergencyContactName: member.emergencyContactName || "",
+        emergencyContactRelation: member.emergencyContactRelation || "",
+        emergencyContactPhone: member.emergencyContactPhone || "",
+        medicalIssues: member.medicalIssues || "",
       })
       setImageFile(null)
     }
@@ -143,6 +155,11 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       updateData.append("weight", formData.weight)
       updateData.append("address", formData.address)
       updateData.append("joiningDate", formData.joiningDate)
+      
+      if (formData.emergencyContactName) updateData.append("emergencyContactName", formData.emergencyContactName)
+      if (formData.emergencyContactRelation) updateData.append("emergencyContactRelation", formData.emergencyContactRelation)
+      if (formData.emergencyContactPhone) updateData.append("emergencyContactPhone", formData.emergencyContactPhone)
+      if (formData.medicalIssues) updateData.append("medicalIssues", formData.medicalIssues)
       
       if (imageFile) {
         updateData.append("image", imageFile)
@@ -182,6 +199,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         weight: member.weight?.toString() || "",
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
+        emergencyContactName: member.emergencyContactName || "",
+        emergencyContactRelation: member.emergencyContactRelation || "",
+        emergencyContactPhone: member.emergencyContactPhone || "",
+        medicalIssues: member.medicalIssues || "",
       })
       setImageFile(null)
     }
@@ -559,6 +580,66 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       )}
                     </div>
                   </div>
+
+                  {/* Emergency Contact & Medical Info */}
+                  <div className="mt-8 border-t border-border pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Emergency Contact & Medical Details</h3>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Contact Person Name</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactName}
+                            onChange={(e) => updateField("emergencyContactName", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Jane Doe"
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactName || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Relation</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactRelation}
+                            onChange={(e) => updateField("emergencyContactRelation", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Mother, Spouse, etc."
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactRelation || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Contact Phone No.</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactPhone}
+                            onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="071 234 5678"
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactPhone || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                        <Label>Medical Issues / Conditions</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.medicalIssues}
+                            onChange={(e) => updateField("medicalIssues", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Any allergies, previous injuries, operations etc."
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.medicalIssues || "None"}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </TabsContent>
 

@@ -24,6 +24,10 @@ export interface Member {
   status?: 'active' | 'expired' | 'pending' | 'deactivated';
   deviceSyncState?: 'PENDING' | 'SYNCED' | 'FAILED';
   lastSyncedAt?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactRelation?: string | null;
+  emergencyContactPhone?: string | null;
+  medicalIssues?: string | null;
   package?: {
     packageId: number;
     name: string;
@@ -66,6 +70,10 @@ interface CreateMemberRequest {
   imageUrl?: string;
   membershipFee?: number;
   paymentMethod?: 'cash' | 'card';
+  emergencyContactName?: string;
+  emergencyContactRelation?: string;
+  emergencyContactPhone?: string;
+  medicalIssues?: string;
 }
 
 interface MembersQueryParams {

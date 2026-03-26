@@ -32,6 +32,10 @@ export default function MembershipRequestPage() {
     weight: "",
     address: "",
     joiningDate: new Date().toISOString().split("T")[0],
+    emergencyContactName: "",
+    emergencyContactRelation: "",
+    emergencyContactPhone: "",
+    medicalIssues: "",
   })
   
   const [image, setImage] = useState<File | null>(null)
@@ -82,6 +86,11 @@ export default function MembershipRequestPage() {
       if (image) {
         submitData.append('image', image)
       }
+
+      if (formData.emergencyContactName) submitData.append('emergencyContactName', formData.emergencyContactName)
+      if (formData.emergencyContactRelation) submitData.append('emergencyContactRelation', formData.emergencyContactRelation)
+      if (formData.emergencyContactPhone) submitData.append('emergencyContactPhone', formData.emergencyContactPhone)
+      if (formData.medicalIssues) submitData.append('medicalIssues', formData.medicalIssues)
 
       await requestMembership(submitData).unwrap()
       setSuccess(true)
@@ -266,6 +275,53 @@ export default function MembershipRequestPage() {
               />
             </div>
           </div>
+
+          {/* Emergency Contact & Medical Info */}
+          <div className="pt-6 border-t border-border">
+            <div className="mb-4">
+              <h3 className="font-semibold text-lg">Emergency Contact & Medical Details</h3>
+              <p className="text-sm text-muted-foreground">Optional contact and health information</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="emergencyContactName">Contact Person Name</Label>
+                <Input 
+                  id="emergencyContactName" 
+                  placeholder="Jane Doe" 
+                  value={formData.emergencyContactName}
+                  onChange={(e) => updateField("emergencyContactName", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergencyContactRelation">Relation</Label>
+                <Input 
+                  id="emergencyContactRelation" 
+                  placeholder="Mother, Spouse, Sibling etc." 
+                  value={formData.emergencyContactRelation}
+                  onChange={(e) => updateField("emergencyContactRelation", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergencyContactPhone">Contact Phone No.</Label>
+                <Input 
+                  id="emergencyContactPhone" 
+                  placeholder="071 234 5678" 
+                  value={formData.emergencyContactPhone}
+                  onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="medicalIssues">Medical Issues / Conditions</Label>
+                <Input 
+                  id="medicalIssues" 
+                  placeholder="Any allergies, previous injuries, operations etc." 
+                  value={formData.medicalIssues}
+                  onChange={(e) => updateField("medicalIssues", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Submit Button */}

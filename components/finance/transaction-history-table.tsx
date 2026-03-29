@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Printer } from "lucide-react"
 import { useGetTransactionsQuery, Transaction } from "@/store/api/transactionsApi"
+import { useAppSelector } from "@/store/hooks"
 import toast from "react-hot-toast"
 
 function getInitials(name: string): string {
@@ -25,7 +26,7 @@ function formatDate(dateString: string): string {
   })
 }
 
-function generateReceiptHTML(transaction: Transaction): string {
+function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null): string {
   const memberName = transaction.member?.name || transaction.guestName || "Guest"
   const memberEmail = transaction.member?.email || transaction.guestEmail || ""
   
@@ -56,10 +57,21 @@ function generateReceiptHTML(transaction: Transaction): string {
           background: #fff;
         }
         .receipt-header {
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           margin-bottom: 30px;
           border-bottom: 2px solid #000;
           padding-bottom: 15px;
+          gap: 15px;
+        }
+        .receipt-header img {
+          width: 50px;
+          height: 50px;
+          object-fit: contain;
+        }
+        .receipt-header-text {
+          text-align: left;
         }
         .receipt-title {
           font-size: 24px;
@@ -140,8 +152,11 @@ function generateReceiptHTML(transaction: Transaction): string {
     <body>
       <div class="receipt-container">
         <div class="receipt-header">
-          <div class="receipt-title">RECEIPT</div>
-          <div class="receipt-subtitle">Transaction Receipt</div>
+          ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+          <div class="receipt-header-text">
+            <div class="receipt-title">RECEIPT</div>
+            <div class="receipt-subtitle">Transaction Receipt</div>
+          </div>
         </div>
 
         <div class="receipt-body">
@@ -223,9 +238,9 @@ const getPackageBadgeClass = (pkg: string) => {
   }
 }
 
-const handlePrintReceipt = (transaction: Transaction) => {
+const handlePrintReceipt = (transaction: Transaction, logoUrl?: string | null) => {
   try {
-    const receiptHTML = generateReceiptHTML(transaction)
+    const receiptHTML = generateReceiptHTML(transaction, logoUrl)
     const printWindow = window.open("", "_blank")
     
     if (!printWindow) {
@@ -243,6 +258,7 @@ const handlePrintReceipt = (transaction: Transaction) => {
 
 export function TransactionHistoryTable() {
   const { data, isLoading, isError } = useGetTransactionsQuery()
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   const transactions = data?.transactions || []
 
   if (isLoading) {
@@ -332,7 +348,7 @@ export function TransactionHistoryTable() {
               <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(transaction.paidAt)}</td>
               <td className="px-4 py-4">
                 <Button
-                  onClick={() => handlePrintReceipt(transaction)}
+                  onClick={() => handlePrintReceipt(transaction, logoUrl)}
                   variant="outline"
                   size="sm"
                   className="h-7 px-3 text-xs border-primary text-primary hover:bg-primary/10 gap-1"

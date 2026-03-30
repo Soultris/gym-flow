@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Search, Download, Calendar, Loader2 } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useGetAttendanceQuery, Attendance } from "@/store/api/attendanceApi"
+import { useAppSelector } from "@/store/hooks"
 
 import { AttendanceSync } from "@/components/attendance/attendance-sync"
 
@@ -25,6 +26,7 @@ export default function AttendanceLogPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
 
   const { data, isLoading, isError } = useGetAttendanceQuery(
     startDate || endDate ? { from: startDate || undefined, to: endDate || undefined } : undefined
@@ -53,7 +55,9 @@ export default function AttendanceLogPage() {
           <title>Attendance Log Report</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { color: #333; margin-bottom: 10px; }
+            .logo-header { display: flex; align-items: center; margin-bottom: 20px; }
+            .logo-header img { width: 60px; height: 60px; object-fit: contain; margin-right: 15px; }
+            h1 { color: #333; margin: 0; }
             .date-range { color: #666; margin-bottom: 20px; font-size: 14px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
@@ -63,10 +67,15 @@ export default function AttendanceLogPage() {
           </style>
         </head>
         <body>
-          <h1>Attendance Log Report</h1>
-          <div class="date-range">
-            ${startDate || endDate ? `Date Range: ${startDate || 'Start'} to ${endDate || 'End'}` : 'All Records'}
-            <br/>Generated on: ${new Date().toLocaleString()}
+          <div class="logo-header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+            <div>
+              <h1>Attendance Log Report</h1>
+              <div class="date-range">
+                ${startDate || endDate ? `Date Range: ${startDate || 'Start'} to ${endDate || 'End'}` : 'All Records'}
+                <br/>Generated on: ${new Date().toLocaleString()}
+              </div>
+            </div>
           </div>
           <table>
             <thead>

@@ -7,17 +7,19 @@ export interface Package {
   duration: number;
   durationType: 'days' | 'weeks' | 'months';
   features: string[];
+  maxMembers: number;
   _count?: {
     members: number;
   };
 }
 
-interface CreatePackageRequest {
+export interface CreatePackageRequest {
   name: string;
   price: number;
   duration: number;
   durationType: 'days' | 'weeks' | 'months';
   features?: string[];
+  maxMembers: number;
 }
 
 export const packagesApi = baseApi.injectEndpoints({

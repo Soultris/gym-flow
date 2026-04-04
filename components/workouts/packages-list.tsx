@@ -21,6 +21,7 @@ import {
   useCreatePackageMutation,
   useUpdatePackageMutation,
   useDeletePackageMutation,
+  CreatePackageRequest,
 } from "@/store/api/packagesApi"
 import { toast } from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
@@ -38,6 +39,7 @@ export function PackagesList() {
     duration: "1",
     durationType: "months",
     features: "",
+    maxMembers: "1",
   })
 
   const { data: packages = [], isLoading } = useGetPackagesQuery()
@@ -65,6 +67,7 @@ export function PackagesList() {
         duration: pkg.duration.toString(),
         durationType: pkg.durationType,
         features: pkg.features.join("\n"),
+        maxMembers: (pkg.maxMembers || 1).toString(),
       })
       setDialogType("edit-package")
     }
@@ -91,6 +94,7 @@ export function PackagesList() {
       duration: "1",
       durationType: "months", // Default
       features: "",
+      maxMembers: "1",
     })
   }
 
@@ -103,12 +107,13 @@ export function PackagesList() {
       .map(f => f.trim())
       .filter(f => f.length > 0)
 
-    const payload = {
+    const payload: CreatePackageRequest = {
       name: formData.name,
       price: parseFloat(formData.price),
       duration: parseInt(formData.duration),
       durationType: formData.durationType as 'days' | 'weeks' | 'months',
       features: featuresList,
+      maxMembers: parseInt(formData.maxMembers),
     }
 
     try {
@@ -170,6 +175,17 @@ export function PackagesList() {
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxMembers">Max Members *</Label>
+                  <Input 
+                    id="maxMembers" 
+                    type="number" 
+                    min="1"
+                    required
+                    value={formData.maxMembers}
+                    onChange={(e) => setFormData({...formData, maxMembers: e.target.value})}
                   />
                 </div>
               </div>
@@ -252,6 +268,17 @@ export function PackagesList() {
                   onChange={(e) => setFormData({...formData, price: e.target.value})}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="editMaxMembers">Max Members *</Label>
+                <Input 
+                  id="editMaxMembers" 
+                  type="number" 
+                  min="1"
+                  required
+                  value={formData.maxMembers}
+                  onChange={(e) => setFormData({...formData, maxMembers: e.target.value})}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="editDuration">Duration</Label>
@@ -306,8 +333,10 @@ export function PackagesList() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold">{pkg.name}</h3>
               <div className="mt-2">
-                <span className="text-4xl font-bold text-[#E8FF00]">LKR {pkg.price}</span>
                 <span className="text-muted-foreground">/{formatDuration(pkg.duration, pkg.durationType)}</span>
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Up to {pkg.maxMembers} members
               </div>
             </div>
 

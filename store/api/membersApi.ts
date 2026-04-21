@@ -5,6 +5,7 @@ import { AssignedWorkout } from './workoutsApi';
 
 export interface Member {
   memberId: number;
+  deviceMemberId?: number | null;
   packageId: number | null;
   isPending: boolean;
   isActive?: boolean;

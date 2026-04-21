@@ -301,6 +301,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div>
           <h1 className="text-2xl font-semibold">{formData.fullName}</h1>
           <p className="text-sm text-muted-foreground">Member ID: {memberId}</p>
+          {member?.deviceMemberId && <p className="text-sm text-muted-foreground">Device ID: {member.deviceMemberId}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isEditing ? (
@@ -344,6 +345,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               )}
               <h2 className="text-xl font-bold mt-4">{formData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
+              {member?.deviceMemberId && <p className="text-sm text-muted-foreground">Device ID: {member.deviceMemberId}</p>}
               <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-green-500 text-green-500" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
                 {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
               </Badge>

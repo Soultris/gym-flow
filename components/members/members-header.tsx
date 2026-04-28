@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus, MessageSquare, Search, SlidersHorizontal } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
 import { Input } from "../ui/input"
@@ -11,7 +12,10 @@ import { useAppSelector } from "@/store/hooks"
 
 export function MembersHeader() {
   const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const user = useAppSelector((state) => state.auth.user)
+  const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
 
   // Fetch members to get real counts
   const { data: membersData } = useGetMembersQuery({ limit: 1000 })
@@ -64,6 +68,23 @@ export function MembersHeader() {
         return `All members (${totalCount})`
     }
   }
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchValue(value)
+    const params = new URLSearchParams(searchParams.toString())
+    if (value) {
+      params.set("search", value)
+    } else {
+      params.delete("search")
+    }
+    // Update the URL with the new search parameter
+    router.push(`${pathname}?${params.toString()}`)
+  }, [pathname, router, searchParams])
+
+  // Sync state with URL params
+  useEffect(() => {
+    setSearchValue(searchParams.get("search") || "")
+  }, [searchParams])
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,6 +142,22 @@ export function MembersHeader() {
             )
           })}
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by ID, name, email or phone..."
+            value={searchValue}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10 bg-[#1a1a1a] border-[#2a2a2a] focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200"
+          />
+        </div>
+        <Button variant="outline" size="icon" className="border-[#2a2a2a] hover:bg-[#1a1a1a]">
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

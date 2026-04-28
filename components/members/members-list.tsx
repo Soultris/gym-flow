@@ -35,7 +35,7 @@ export function MembersList() {
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
   const [memberToDeactivate, setMemberToDeactivate] = useState<{ id: number; name: string } | null>(null)
   const [memberToReactivate, setMemberToReactivate] = useState<{ id: number; name: string } | null>(null)
-  const [searchValue, setSearchValue] = useState("")
+  const searchValue = searchParams.get("search") || ""
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending' | 'deactivated'>('all')
 
   // Set status filter based on URL pathname
@@ -51,10 +51,11 @@ export function MembersList() {
 
   // Memoize query params to ensure RTK Query cache key changes properly
   const queryParams = useMemo(() => {
-    return selectedStatus !== 'all'
-      ? { status: selectedStatus, limit: 1000 }
-      : { limit: 1000 }
-  }, [selectedStatus])
+    const params: any = { limit: 1000 }
+    if (selectedStatus !== 'all') params.status = selectedStatus
+    if (searchValue) params.search = searchValue
+    return params
+  }, [selectedStatus, searchValue])
 
   // API hooks
   const { data, isLoading, isError, refetch } = useGetMembersQuery(queryParams)
@@ -82,7 +83,8 @@ export function MembersList() {
     members = members.filter((m: Member) =>
       m.name.toLowerCase().includes(searchLower) ||
       m.email.toLowerCase().includes(searchLower) ||
-      m.phone.includes(searchValue)
+      m.phone.includes(searchValue) ||
+      m.memberId.toString().includes(searchValue)
     )
   }
 

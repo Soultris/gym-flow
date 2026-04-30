@@ -10,7 +10,7 @@ import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
 import { Input } from "../ui/input"
 import { useAppSelector } from "@/store/hooks"
 
-export function MembersHeader() {
+function MembersHeaderContent() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -162,3 +162,14 @@ export function MembersHeader() {
     </div>
   )
 }
+
+import { Suspense } from "react"
+
+export function MembersHeader() {
+  return (
+    <Suspense fallback={<div className="h-48 animate-pulse bg-muted/20 rounded-lg" />}>
+      <MembersHeaderContent />
+    </Suspense>
+  )
+}
+

@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Eye, Loader2 } from "lucide-react"
+import { Eye, Loader2, Search } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   Select,
@@ -22,6 +22,9 @@ import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutatio
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
 import { PhoneOtpVerify } from "@/components/phone-otp-verify"
+import { PaginationControls } from "@/components/ui/pagination-controls"
+
+const PAGE_SIZE = 20
 
 function getInitials(name: string): string {
   return name
@@ -35,12 +38,29 @@ function getInitials(name: string): string {
 export default function PendingTrainersPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [trainerToReview, setTrainerToReview] = useState<Trainer | null>(null)
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput)
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
   
-  // API hooks
-  const { data: trainersData, isLoading, isError, refetch } = useGetTrainersQuery()
+  // API hooks — pending trainers only
+  const { data: trainersData, isLoading, isError, refetch } = useGetTrainersQuery({
+    pending: true,
+    page,
+    limit: PAGE_SIZE,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  })
   
-  // Filter for pending trainers only
-  const pendingTrainers = (trainersData || []).filter((trainer: Trainer) => trainer.isPending)
+  const pendingTrainers = trainersData?.trainers || []
+  const pagination = trainersData?.pagination
 
   const handleReview = (trainer: Trainer) => {
     setTrainerToReview(trainer)
@@ -82,9 +102,22 @@ export default function PendingTrainersPage() {
       <div className="space-y-6">
         <MembersHeader />
 
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by name, phone or specialization..."
+            className="pl-9 bg-transparent border-[#2a2a2a] focus-visible:ring-primary"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+
         {pendingTrainers.length === 0 ? (
           <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">No pending trainers found</p>
+            <p className="text-muted-foreground">
+              {debouncedSearch ? `No pending trainers matching "${debouncedSearch}"` : 'No pending trainers found'}
+            </p>
           </div>
         ) : (
           <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
@@ -147,6 +180,17 @@ export default function PendingTrainersPage() {
               </tbody>
               </table>
             </div>
+
+            {pagination && (
+              <PaginationControls
+                page={page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={PAGE_SIZE}
+                onPageChange={setPage}
+                itemLabel="pending trainers"
+              />
+            )}
           </div>
         )}
 

@@ -16,16 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Check, Eye, Loader2, CheckCircle2 } from "lucide-react"
+import { Check, Eye, Loader2, CheckCircle2, Search } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useGetMembersQuery, useApproveMemberMutation, useDeleteMemberMutation, useUpdateMemberMutation, Member } from "@/store/api/membersApi"
 import { useGetPackagesQuery, Package } from "@/store/api/packagesApi"
 import { useGetGymProfileQuery } from "@/store/api/gymApi"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
 import { PhoneOtpVerify } from "@/components/phone-otp-verify"
+
+const PAGE_SIZE = 20
 
 
 
@@ -49,13 +52,29 @@ function formatDate(dateString: string): string {
 export default function PendingMembersPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [memberToReview, setMemberToReview] = useState<Member | null>(null)
-  // API hooks
-  const { data: membersData, isLoading, isError, refetch } = useGetMembersQuery({ limit: 1000 })
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput)
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  // API hooks — use status filter directly
+  const { data: membersData, isLoading, isError, refetch } = useGetMembersQuery({
+    status: 'pending',
+    page,
+    limit: PAGE_SIZE,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  })
   
-  // Filter for pending members only
-  const pendingMembers = (membersData?.members || []).filter(
-    (member: Member) => member.status === 'pending' || member.isPending
-  )
+  const pendingMembers = membersData?.members || []
+  const pagination = membersData?.pagination
   
   const handleReview = (member: Member) => {
     setMemberToReview(member)
@@ -97,9 +116,22 @@ export default function PendingMembersPage() {
       <div className="space-y-6">
         <MembersHeader />
 
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by name, email or phone..."
+            className="pl-9 bg-transparent border-[#2a2a2a] focus-visible:ring-primary"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+
         {pendingMembers.length === 0 ? (
           <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">No pending members found</p>
+            <p className="text-muted-foreground">
+              {debouncedSearch ? `No pending members matching "${debouncedSearch}"` : 'No pending members found'}
+            </p>
           </div>
         ) : (
           <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
@@ -162,6 +194,17 @@ export default function PendingMembersPage() {
               </tbody>
               </table>
             </div>
+
+            {pagination && (
+              <PaginationControls
+                page={page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={PAGE_SIZE}
+                onPageChange={setPage}
+                itemLabel="pending members"
+              />
+            )}
           </div>
         )}
 

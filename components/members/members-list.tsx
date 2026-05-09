@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
@@ -11,22 +11,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutation, useReactivateMemberMutation, Member } from "@/store/api/membersApi"
-import { MembersFilter } from "@/components/members/members-filter"
+import { Input } from "@/components/ui/input"
+import { Search } from "lucide-react"
+import { useGetMembersQuery, useDeleteMemberMutation, useDeactivateMemberMutation, useReactivateMemberMutation } from "@/store/api/membersApi"
 import { MembersTable } from "@/components/members/members-table"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/errorUtils"
+
+const PAGE_SIZE = 20
 
 export function MembersList() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const pathname = usePathname()
 
   // Quick renewal params from URL
   const renewMemberId = searchParams.get("renewMemberId")
   const renewMemberName = searchParams.get("renewMemberName")
-
-  // Derive dialog open state from URL params
   const isRenewDialogOpen = Boolean(renewMemberId && renewMemberName)
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -35,58 +36,39 @@ export function MembersList() {
   const [memberToDelete, setMemberToDelete] = useState<{ id: number; name: string } | null>(null)
   const [memberToDeactivate, setMemberToDeactivate] = useState<{ id: number; name: string } | null>(null)
   const [memberToReactivate, setMemberToReactivate] = useState<{ id: number; name: string } | null>(null)
-  const searchValue = searchParams.get("search") || ""
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'pending' | 'deactivated'>('all')
 
-  // Set status filter based on URL pathname
+
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
+
+  // Debounce search input
   useEffect(() => {
-    const pathSegment = pathname.split("/")[2]
-    if (pathSegment && ['active', 'expired', 'pending', 'deactivated'].includes(pathSegment)) {
-      // eslint-disable-next-line
-      setSelectedStatus(pathSegment as 'active' | 'expired' | 'pending' | 'deactivated')
-    } else {
-      setSelectedStatus('all')
-    }
-  }, [pathname])
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput)
+      setPage(1) // Reset to page 1 on new search
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
-  // Memoize query params to ensure RTK Query cache key changes properly
-  const queryParams = useMemo(() => {
-    const params: any = { limit: 1000 }
-    if (selectedStatus !== 'all') params.status = selectedStatus
-    if (searchValue) params.search = searchValue
-    return params
-  }, [selectedStatus, searchValue])
+  const { data, isLoading, isError, refetch } = useGetMembersQuery({
+    page,
+    limit: PAGE_SIZE,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  })
 
-  // API hooks
-  const { data, isLoading, isError, refetch } = useGetMembersQuery(queryParams)
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
   const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
   const [reactivateMember, { isLoading: isReactivating }] = useReactivateMemberMutation()
 
-  // Refetch when selected status changes
-  useEffect(() => {
-    refetch()
-  }, [selectedStatus, refetch])
-
-  // Clear URL params when dialog is closed
   const handleRenewDialogClose = (open: boolean) => {
     if (!open && renewMemberId) {
       router.replace("/members")
     }
   }
 
-  let members = data?.members || []
-
-  // Apply search filter (API already handles status filtering)
-  if (searchValue.trim()) {
-    const searchLower = searchValue.toLowerCase()
-    members = members.filter((m: Member) =>
-      m.name.toLowerCase().includes(searchLower) ||
-      m.email.toLowerCase().includes(searchLower) ||
-      m.phone.includes(searchValue) ||
-      m.memberId.toString().includes(searchValue)
-    )
-  }
+  const members = data?.members || []
+  const pagination = data?.pagination
 
   const handleDeleteClick = (id: number, name: string) => {
     setMemberToDelete({ id, name })
@@ -105,7 +87,6 @@ export function MembersList() {
 
   const handleConfirmDelete = async () => {
     if (!memberToDelete) return
-
     try {
       await deleteMember(memberToDelete.id).unwrap()
       toast.success(`${memberToDelete.name} has been deleted`)
@@ -118,7 +99,6 @@ export function MembersList() {
 
   const handleConfirmDeactivate = async () => {
     if (!memberToDeactivate) return
-
     try {
       await deactivateMember(memberToDeactivate.id).unwrap()
       toast.success(`${memberToDeactivate.name} has been deactivated`)
@@ -131,7 +111,6 @@ export function MembersList() {
 
   const handleConfirmReactivate = async () => {
     if (!memberToReactivate) return
-
     try {
       await reactivateMember(memberToReactivate.id).unwrap()
       toast.success(`${memberToReactivate.name} has been reactivated`)
@@ -142,41 +121,38 @@ export function MembersList() {
     }
   }
 
-  if (members.length === 0 && !isLoading && searchValue.trim()) {
-    return (
-      <div className="flex flex-col gap-4">
-        {/* <MembersFilter
-          onSearchChange={setSearchValue}
-          onStatusFilterChange={setSelectedStatus}
-          searchValue={searchValue}
-          selectedStatus={selectedStatus}
-        /> */}
-        <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-          <p className="text-muted-foreground">No members found matching your search</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      {/* <MembersFilter
-        onSearchChange={setSearchValue}
-        onStatusFilterChange={setSelectedStatus}
-        searchValue={searchValue}
-        selectedStatus={selectedStatus}
-      />
-      */}
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Search by name, email or phone..."
+          className="pl-9 bg-transparent border-[#2a2a2a] focus-visible:ring-primary"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+      </div>
+
       <MembersTable
         members={members}
         isLoading={isLoading}
         isError={isError}
-        statusFilter={selectedStatus as any}
         onDeleteClick={handleDeleteClick}
         onDeactivateClick={handleDeactivateClick}
         onReactivateClick={handleReactivateClick}
         onRetry={() => refetch()}
       />
+
+      {pagination && (
+        <PaginationControls
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={PAGE_SIZE}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -188,19 +164,10 @@ export function MembersList() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              className="flex-1 bg-transparent border-[#3a3a3a]"
-              disabled={isDeleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="flex-1 bg-transparent border-[#3a3a3a]" disabled={isDeleting}>
               Cancel
             </Button>
-            <Button
-              onClick={handleConfirmDelete}
-              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
+            <Button onClick={handleConfirmDelete} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeleting}>
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
@@ -217,19 +184,10 @@ export function MembersList() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeactivateDialogOpen(false)}
-              className="flex-1 bg-transparent border-[#3a3a3a]"
-              disabled={isDeactivating}
-            >
+            <Button variant="outline" onClick={() => setDeactivateDialogOpen(false)} className="flex-1 bg-transparent border-[#3a3a3a]" disabled={isDeactivating}>
               Cancel
             </Button>
-            <Button
-              onClick={handleConfirmDeactivate}
-              className="flex-1 bg-orange-600 text-white hover:bg-orange-700"
-              disabled={isDeactivating}
-            >
+            <Button onClick={handleConfirmDeactivate} className="flex-1 bg-orange-600 text-white hover:bg-orange-700" disabled={isDeactivating}>
               {isDeactivating ? "Deactivating..." : "Deactivate"}
             </Button>
           </DialogFooter>
@@ -246,19 +204,10 @@ export function MembersList() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setReactivateDialogOpen(false)}
-              className="flex-1 bg-transparent border-[#3a3a3a]"
-              disabled={isReactivating}
-            >
+            <Button variant="outline" onClick={() => setReactivateDialogOpen(false)} className="flex-1 bg-transparent border-[#3a3a3a]" disabled={isReactivating}>
               Cancel
             </Button>
-            <Button
-              onClick={handleConfirmReactivate}
-              className="flex-1 bg-green-600 text-white hover:bg-green-700"
-              disabled={isReactivating}
-            >
+            <Button onClick={handleConfirmReactivate} className="flex-1 bg-green-600 text-white hover:bg-green-700" disabled={isReactivating}>
               {isReactivating ? "Reactivating..." : "Reactivate"}
             </Button>
           </DialogFooter>

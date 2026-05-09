@@ -84,6 +84,16 @@ export function AddMemberForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!/^\d{10}$/.test(formData.mobile)) {
+      toast.error("Mobile number must be exactly 10 digits");
+      return;
+    }
+
+    if (formData.emergencyContactPhone && !/^\d{10}$/.test(formData.emergencyContactPhone)) {
+      toast.error("Emergency contact phone must be exactly 10 digits");
+      return;
+    }
     
     try {
       const submitData = new FormData()
@@ -188,6 +198,8 @@ export function AddMemberForm() {
                     value={formData.mobile}
                     onChange={(e) => updateField("mobile", e.target.value)}
                     required
+                    pattern="^\d{10}$"
+                    title="Phone number must be exactly 10 digits"
                   />
                   <div className="shrink-0 pt-1">
                        <PhoneOtpVerify 
@@ -308,6 +320,8 @@ export function AddMemberForm() {
                   placeholder="071 234 5678" 
                   value={formData.emergencyContactPhone}
                   onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
+                  pattern="^\d{10}$"
+                  title="Phone number must be exactly 10 digits"
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">

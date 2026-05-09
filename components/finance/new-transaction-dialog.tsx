@@ -90,10 +90,11 @@ export function NewTransactionDialog({
   // API hooks
   const { data: membersData } = useGetMembersQuery({ limit: 1000 })
   const { data: packages = [] } = useGetPackagesQuery()
-  const { data: trainers = [] } = useGetTrainersQuery()
+  const { data: trainersData } = useGetTrainersQuery()
   const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation()
 
   const members = membersData?.members || []
+  const trainers = trainersData?.trainers || []
   const approvedTrainers = trainers.filter(t => !t.isPending)
 
   // Sync open state with openByDefault prop

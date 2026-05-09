@@ -56,6 +56,16 @@ interface MembersResponse {
   };
 }
 
+export interface MemberCounts {
+  total: number;
+  active: number;
+  expired: number;
+  pending: number;
+  deactivated: number;
+  trainerTotal: number;
+  trainerPending: number;
+}
+
 interface CreateMemberRequest {
   name: string;
   email: string;
@@ -101,6 +111,10 @@ export const membersApi = baseApi.injectEndpoints({
           params: queryParams,
         };
       },
+      providesTags: ['Members'],
+    }),
+    getMemberCounts: builder.query<MemberCounts, void>({
+      query: () => '/members/counts',
       providesTags: ['Members'],
     }),
     getMemberById: builder.query<Member, number>({
@@ -176,6 +190,7 @@ export const membersApi = baseApi.injectEndpoints({
 
 export const {
   useGetMembersQuery,
+  useGetMemberCountsQuery,
   useGetMemberByIdQuery,
   useCreateMemberMutation,
   useUpdateMemberMutation,

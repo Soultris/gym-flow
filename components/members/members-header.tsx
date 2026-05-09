@@ -1,33 +1,26 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plus, MessageSquare, Search, SlidersHorizontal } from "lucide-react"
+import { Plus, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useGetMembersQuery } from "@/store/api/membersApi"
-import { useGetTrainersQuery, Trainer } from "@/store/api/trainersApi"
-import { Input } from "../ui/input"
+import { useGetMemberCountsQuery } from "@/store/api/membersApi"
 import { useAppSelector } from "@/store/hooks"
 
 export function MembersHeader() {
   const pathname = usePathname()
   const user = useAppSelector((state) => state.auth.user)
 
-  // Fetch members to get real counts
-  const { data: membersData } = useGetMembersQuery({ limit: 1000 })
-  const { data: trainersData } = useGetTrainersQuery()
+  // Single lightweight count query — no member data fetched
+  const { data: counts } = useGetMemberCountsQuery()
 
-  const members = membersData?.members || []
-  const trainers = trainersData || []
-
-  // Calculate counts from actual data
-  const totalCount = members.length
-  const activeCount = members.filter(m => m.status === 'active').length
-  const expiredCount = members.filter(m => m.status === 'expired').length
-  const pendingCount = members.filter(m => m.status === 'pending' || m.isPending).length
-  const deactivatedCount = members.filter(m => m.status === 'deactivated').length
-  const pendingTrainersCount = trainers.filter((t: Trainer) => t.isPending).length
-  const trainersCount = trainers.filter((t: Trainer) => !t.isPending).length
+  const totalCount = counts?.total ?? 0
+  const activeCount = counts?.active ?? 0
+  const expiredCount = counts?.expired ?? 0
+  const pendingCount = counts?.pending ?? 0
+  const deactivatedCount = counts?.deactivated ?? 0
+  const pendingTrainersCount = counts?.trainerPending ?? 0
+  const trainersCount = counts?.trainerTotal ?? 0
 
   const getTabs = () => {
     const baseTab = pathname.split("/")[2] || ""
@@ -116,6 +109,13 @@ export function MembersHeader() {
                   }`}
                 >
                   {tab.name}
+                  {tab.count > 0 && (
+                    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                      isActive ? "bg-primary text-secondary" : "bg-secondary text-muted-foreground"
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               </Link>
             )

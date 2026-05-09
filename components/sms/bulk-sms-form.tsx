@@ -59,7 +59,10 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   // Initialize initial member selection
   useEffect(() => {
     if (initialMemberId) {
-      setTimeout(() => setSelectedMemberIds([parseInt(initialMemberId)]), 0)
+      setTimeout(() => {
+        setSelectedMemberIds([parseInt(initialMemberId)])
+        setSelectedRecipientType("individual")
+      }, 0)
     }
   }, [initialMemberId])
 
@@ -105,8 +108,9 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     : templates.filter(t => t.category === templateCategory)
 
   const handleSelectMember = (memberId: number, memberName: string) => {
-    setSelectedMemberName(`${memberName} (${memberId})`)
-    setSelectedMemberIds([memberId])
+    if (!selectedMemberIds.includes(memberId)) {
+      setSelectedMemberIds([...selectedMemberIds, memberId])
+    }
     setSelectedRecipientType("individual")
     setSearchQuery("")
     setShowSearchResults(false)
@@ -131,6 +135,9 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       else if (type === "female-members") ids = members.filter(m => m.gender === 'female').map(m => m.memberId)
       
       setSelectedMemberIds(ids)
+    } else {
+      setSelectedMemberIds([])
+      setSelectedMemberName("")
     }
   }
 
@@ -357,22 +364,48 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
             </div>
 
             {/* Selected Recipients Display */}
-            {selectedMemberName && (
+            {selectedMemberIds.length > 0 && selectedRecipientType !== "" && (
               <div className="pt-2 border-t border-border">
                 <Label className="text-sm text-muted-foreground mb-2 block">Selected Recipients ({selectedMemberIds.length})</Label>
-                <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
-                  <span className="text-sm font-medium">{selectedMemberName}</span>
-                  <button
-                    onClick={() => {
-                      setSelectedMemberName("")
-                      setSelectedMemberIds([])
-                      setSelectedRecipientType("")
-                      setSearchQuery("")
-                    }}
-                    className="hover:opacity-70"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRecipientType === "individual" ? (
+                    selectedMemberIds.map(id => {
+                      const member = members.find(m => m.memberId === id)
+                      const displayName = member ? `${member.name} (${id})` : `Member ${id}`
+                      return (
+                        <div key={id} className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                          <span className="text-sm font-medium">{displayName}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newIds = selectedMemberIds.filter(mId => mId !== id)
+                              setSelectedMemberIds(newIds)
+                              if (newIds.length === 0) setSelectedRecipientType("")
+                            }}
+                            className="hover:opacity-70"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                      <span className="text-sm font-medium">{selectedMemberName}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberName("")
+                          setSelectedMemberIds([])
+                          setSelectedRecipientType("")
+                          setSearchQuery("")
+                        }}
+                        className="hover:opacity-70"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

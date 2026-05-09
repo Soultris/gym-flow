@@ -21,6 +21,23 @@ export interface Trainer {
   };
 }
 
+export interface TrainersResponse {
+  trainers: Trainer[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface TrainersQueryParams {
+  search?: string;
+  pending?: boolean;
+  page?: number;
+  limit?: number;
+}
+
 interface CreateTrainerRequest {
   name: string;
   phone: string;
@@ -29,8 +46,17 @@ interface CreateTrainerRequest {
 
 export const trainersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getTrainers: builder.query<Trainer[], void>({
-      query: () => '/trainers',
+    getTrainers: builder.query<TrainersResponse, TrainersQueryParams | void>({
+      query: (params) => {
+        const queryParams: Record<string, string | number | boolean> = {};
+        if (params) {
+          if (params.search) queryParams.search = params.search;
+          if (params.pending !== undefined) queryParams.pending = params.pending;
+          if (params.page) queryParams.page = params.page;
+          if (params.limit) queryParams.limit = params.limit;
+        }
+        return { url: '/trainers', params: queryParams };
+      },
       providesTags: ['Trainers'],
     }),
     getTrainerById: builder.query<Trainer, number>({

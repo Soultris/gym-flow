@@ -143,6 +143,16 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   }
 
   const handleSave = async () => {
+    if (!/^\d{10}$/.test(formData.phone)) {
+      toast.error("Mobile number must be exactly 10 digits");
+      return;
+    }
+
+    if (formData.emergencyContactPhone && !/^\d{10}$/.test(formData.emergencyContactPhone)) {
+      toast.error("Emergency contact phone must be exactly 10 digits");
+      return;
+    }
+
     try {
       const updateData = new FormData()
       updateData.append("name", formData.fullName)
@@ -481,6 +491,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                           value={formData.phone}
                           onChange={(e) => updateField("phone", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
+                          pattern="^\d{10}$"
+                          title="Phone number must be exactly 10 digits"
                         />
                       ) : (
                         <p className="text-sm py-2">{formData.phone}</p>
@@ -621,6 +633,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                             onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
                             className="bg-secondary border-[#3a3a3a]"
                             placeholder="071 234 5678"
+                            pattern="^\d{10}$"
+                            title="Phone number must be exactly 10 digits"
                           />
                         ) : (
                           <p className="text-sm py-2">{formData.emergencyContactPhone || "N/A"}</p>

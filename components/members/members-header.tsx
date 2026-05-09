@@ -1,16 +1,15 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus, MessageSquare } from "lucide-react"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useGetMemberCountsQuery } from "@/store/api/membersApi"
 import { useAppSelector } from "@/store/hooks"
 
-export function MembersHeader() {
+function MembersHeaderContent() {
   const pathname = usePathname()
   const user = useAppSelector((state) => state.auth.user)
-
   // Single lightweight count query — no member data fetched
   const { data: counts } = useGetMemberCountsQuery()
 
@@ -122,6 +121,18 @@ export function MembersHeader() {
           })}
         </div>
       </div>
+
     </div>
   )
 }
+
+import { Suspense } from "react"
+
+export function MembersHeader() {
+  return (
+    <Suspense fallback={<div className="h-48 animate-pulse bg-muted/20 rounded-lg" />}>
+      <MembersHeaderContent />
+    </Suspense>
+  )
+}
+

@@ -115,7 +115,7 @@ export const membersApi = baseApi.injectEndpoints({
     }),
     getMemberCounts: builder.query<MemberCounts, void>({
       query: () => '/members/counts',
-      providesTags: ['Members'],
+      providesTags: ['Members', 'Trainers'],
     }),
     getMemberById: builder.query<Member, number>({
       query: (id) => `/members/${id}`,

@@ -101,6 +101,10 @@ interface MembershipReportResponse {
     };
     count: number;
   }>;
+  dateRange?: {
+    from: string | null;
+    to: string | null;
+  };
 }
 
 export const dashboardApi = baseApi.injectEndpoints({
@@ -128,8 +132,11 @@ export const dashboardApi = baseApi.injectEndpoints({
         params: params || {},
       }),
     }),
-    getMembershipReport: builder.query<MembershipReportResponse, void>({
-      query: () => '/reports/membership',
+    getMembershipReport: builder.query<MembershipReportResponse, { from?: string; to?: string } | void>({
+      query: (params) => ({
+        url: '/reports/membership',
+        params: params || {},
+      }),
     }),
     getRevenueChartData: builder.query<RevenueChartResponse, { view?: string; from?: string; to?: string } | void>({
       query: (params) => ({

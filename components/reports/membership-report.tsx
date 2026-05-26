@@ -2,16 +2,24 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Loader2 } from "lucide-react"
+import { Download, Loader2, X } from "lucide-react"
 import { Pie, PieChart, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 import { useGetMembershipReportQuery } from "@/store/api/dashboardApi"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useAppSelector } from "@/store/hooks"
 
 const COLORS = ["#F4F933", "#22c55e", "#FFFFFF", "#A0A0A0", "#FF6B6B", "#4ECDC4"]
 
 export function MembershipReport() {
-  const { data, isLoading, error } = useGetMembershipReportQuery()
+  const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null)
+  const [localFromDate, setLocalFromDate] = useState("")
+  const [localToDate, setLocalToDate] = useState("")
+  
+  // Build query parameters based on dateRange
+  const queryParams = dateRange ? { from: dateRange.from, to: dateRange.to } : {}
+  const { data, isLoading, error } = useGetMembershipReportQuery(
+    Object.keys(queryParams).length > 0 ? queryParams : undefined
+  )
   const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   
   // Transform API data to chart format
@@ -29,7 +37,44 @@ export function MembershipReport() {
     return chartData.reduce((sum: number, item: { value: number }) => sum + item.value, 0)
   }, [chartData])
 
-  if (isLoading) {
+  const handleApplyDateRange = () => {
+    if (!localFromDate && !localToDate) {
+      alert("Please select at least one date")
+      return
+    }
+    
+    if (localFromDate && localToDate) {
+      if (new Date(localFromDate) > new Date(localToDate)) {
+        alert("From date must be before To date")
+        return
+      }
+      setDateRange({ from: localFromDate, to: localToDate })
+    } else if (localFromDate) {
+      setDateRange({ from: localFromDate, to: new Date().toISOString().split('T')[0] })
+    } else if (localToDate) {
+      setDateRange({ from: "2020-01-01", to: localToDate })
+    }
+  }
+
+  const handleClearDateRange = () => {
+    setDateRange(null)
+    setLocalFromDate("")
+    setLocalToDate("")
+  }
+
+  const formatDateDisplay = (dateString: string | null) => {
+    if (!dateString) return ""
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
+  // Show loading state when loading and have a date range selected
+  const showLoading = isLoading && dateRange
+
+  if (showLoading && !data) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center py-12">
@@ -50,6 +95,10 @@ export function MembershipReport() {
   }
 
   const handleExportPDF = () => {
+    const dateRangeText = dateRange 
+      ? ` (${formatDateDisplay(dateRange.from)} to ${formatDateDisplay(dateRange.to)})`
+      : ""
+    
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -77,14 +126,14 @@ export function MembershipReport() {
             <div>
               <h1>Membership Distribution Report</h1>
               <div class="date">
-                Data Analysis by Package Type<br/>
+                Data Analysis by Package Type${dateRangeText}<br/>
                 Generated on: ${new Date().toLocaleString()}
               </div>
             </div>
           </div>
 
           <div class="total-box">
-            <div class="total-label">Total Active Members</div>
+            <div class="total-label">Total Members in Period</div>
             <div class="total-value">${totalMembers.toLocaleString()}</div>
           </div>
 
@@ -122,65 +171,137 @@ export function MembershipReport() {
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h3 className="text-lg font-semibold">Membership Distribution</h3>
-          <p className="text-sm text-muted-foreground">Active members by package type</p>
-        </div>
-        <Button 
-          size="sm" 
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={handleExportPDF}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
-      </div>
-
-      {chartData.length > 0 ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label>
-                {chartData.map((entry: { color: string }, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1A1A1A",
-                  border: "1px solid #2C2C2E",
-                  borderRadius: "8px",
-                  color: "#FFFFFF",
-                }}
+    <div className="space-y-6">
+      {/* Date Range Filter Card */}
+      <Card className="p-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Filter by Purchase Date</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">From Date</label>
+              <input
+                type="date"
+                value={localFromDate}
+                onChange={(e) => setLocalFromDate(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary/50 border border-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-
-          <div className="space-y-3">
-            {chartData.map((item: { name: string; value: number; color: string }) => (
-              <div key={item.name} className="p-4 rounded-lg bg-secondary/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-4 w-4 rounded" style={{ backgroundColor: item.color }} />
-                  <span className="font-medium">{item.name} Package</span>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg">{item.value}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {totalMembers > 0 ? ((item.value / totalMembers) * 100).toFixed(1) : 0}% of total
-                  </p>
-                </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">To Date</label>
+              <input
+                type="date"
+                value={localToDate}
+                onChange={(e) => setLocalToDate(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary/50 border border-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">&nbsp;</label>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleApplyDateRange}
+                  disabled={showLoading ? true : undefined}
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {showLoading ? "Loading..." : "Apply"}
+                </Button>
+                {dateRange && (
+                  <Button
+                    onClick={handleClearDateRange}
+                    variant="outline"
+                    className="px-3"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            ))}
+            </div>
           </div>
+          
+          {dateRange && (
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm text-primary">
+                Showing memberships purchased between <strong>{formatDateDisplay(dateRange.from)}</strong> and <strong>{formatDateDisplay(dateRange.to)}</strong>
+              </p>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-          No membership data available
+      </Card>
+
+      {/* Membership Report Card */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-lg font-semibold">Membership Distribution</h3>
+            <p className="text-sm text-muted-foreground">
+              {dateRange 
+                ? `Memberships purchased from ${formatDateDisplay(dateRange.from)} to ${formatDateDisplay(dateRange.to)}`
+                : "Active members by package type"
+              }
+            </p>
+          </div>
+          {data && (
+            <Button 
+              size="sm" 
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleExportPDF}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+          )}
         </div>
-      )}
-    </Card>
+
+        {chartData.length > 0 ? (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label>
+                  {chartData.map((entry: { color: string }, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1A1A1A",
+                    border: "1px solid #2C2C2E",
+                    borderRadius: "8px",
+                    color: "#FFFFFF",
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="space-y-3">
+              {chartData.map((item: { name: string; value: number; color: string }) => (
+                <div key={item.name} className="p-4 rounded-lg bg-secondary/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-4 w-4 rounded" style={{ backgroundColor: item.color }} />
+                    <span className="font-medium">{item.name} Package</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">{item.value}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {totalMembers > 0 ? ((item.value / totalMembers) * 100).toFixed(1) : 0}% of total
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center text-muted-foreground" style={{ height: '300px' }}>
+            {dateRange 
+              ? "No membership data available for the selected date range"
+              : "Select a date range to view membership data"
+            }
+          </div>
+        )}
+      </Card>
+    </div>
   )
 }

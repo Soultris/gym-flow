@@ -78,6 +78,7 @@ export function NewTransactionDialog({
   const [notes, setNotes] = useState("")
   const [selectedPackageId, setSelectedPackageId] = useState(defaultPackageId)
   const [selectedTrainerId, setSelectedTrainerId] = useState("")
+  const [additionalMemberIds, setAdditionalMemberIds] = useState<string[]>([])
   
   // Guest fields
   const [guestName, setGuestName] = useState("")
@@ -109,12 +110,13 @@ export function NewTransactionDialog({
     }
   }, [transactionType, cartTotal])
 
-  // Auto-set amount when package is selected
   useEffect(() => {
     if (transactionType === "membership" && selectedPackageId) {
       const pkg = packages.find(p => p.packageId.toString() === selectedPackageId)
       if (pkg) {
         setAmount(pkg.price.toString())
+        // Reset additional members if package changes
+        setAdditionalMemberIds([])
       }
     }
   }, [selectedPackageId, transactionType, packages])
@@ -136,6 +138,7 @@ export function NewTransactionDialog({
       setSendReceipt(true)
       setSelectedPackageId("")
       setSelectedTrainerId("")
+      setAdditionalMemberIds([])
     }
   }
 
@@ -161,6 +164,9 @@ export function NewTransactionDialog({
 
       const isGuest = member === "guest"
       const memberId = isGuest ? undefined : parseInt(member, 10)
+      const additionalIds = additionalMemberIds
+        .filter(id => id && id !== "none")
+        .map(id => parseInt(id, 10))
 
       await createTransaction({
         isGuest,
@@ -180,6 +186,7 @@ export function NewTransactionDialog({
               quantity: item.quantity 
             }))
           : undefined,
+        additionalMemberIds: additionalIds,
       }).unwrap()
 
       toast.success("Transaction created successfully")
@@ -312,6 +319,53 @@ export function NewTransactionDialog({
                 </SelectContent>
               </Select>
             </div>
+          )}
+
+          {/* Additional Members - for multi-member packages */}
+          {transactionType === "membership" && selectedPackageId && (
+            (() => {
+              const pkg = packages.find(p => p.packageId.toString() === selectedPackageId)
+              const maxExtra = pkg ? pkg.maxMembers - 1 : 0
+              
+              if (maxExtra <= 0) return null
+
+              return (
+                <div className="flex flex-col gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Plus className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-semibold">Additional Members ({maxExtra} max)</Label>
+                  </div>
+                  
+                  {Array.from({ length: maxExtra }).map((_, idx) => (
+                    <div key={idx} className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">Member {idx + 2}</Label>
+                      <Select 
+                        value={additionalMemberIds[idx] || ""} 
+                        onValueChange={(val) => {
+                          const newIds = [...additionalMemberIds]
+                          newIds[idx] = val
+                          setAdditionalMemberIds(newIds)
+                        }}
+                      >
+                        <SelectTrigger className="bg-secondary border-[#3a3a3a] h-9">
+                          <SelectValue placeholder="Select partner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {members
+                            .filter(m => m.memberId.toString() !== member && (!additionalMemberIds.includes(m.memberId.toString()) || additionalMemberIds[idx] === m.memberId.toString()))
+                            .map((m) => (
+                              <SelectItem key={m.memberId} value={m.memberId.toString()}>
+                                {m.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()
           )}
 
           {/* Trainer Selection - shown for personal training transactions */}

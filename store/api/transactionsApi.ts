@@ -14,6 +14,7 @@ export interface Transaction {
   price: number;
   paymentMethod: 'cash' | 'card';
   paidAt: string;
+  additionalMemberIds?: number[];
   member?: {
     memberId: number;
     name: string;
@@ -66,6 +67,7 @@ interface CreateTransactionRequest {
   paymentMethod: 'cash' | 'card';
   sendReceipt?: boolean;
   products?: Array<{ productId: number; quantity?: number }>;
+  additionalMemberIds?: number[];
 }
 
 export interface PendingPayment {

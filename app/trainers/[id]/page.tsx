@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { StrikePointsManager } from "@/components/trainers/strike-points-manager"
 import { ArrowLeft, Phone, Loader2, Edit, X, Save, RefreshCcw } from "lucide-react"
 import Link from "next/link"
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { useGetTrainerByIdQuery, useUpdateTrainerMutation } from "@/store/api/trainersApi"
 import { useSyncTrainerMutation } from "@/store/api/syncApi"
 import toast from "react-hot-toast"
@@ -37,6 +37,15 @@ export default function TrainerProfilePage({ params }: { params: Promise<{ id: s
   const [syncTrainerToDevice, { isLoading: isSyncing }] = useSyncTrainerMutation()
   const [isEditing, setIsEditing] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get("edit") === "true") {
+        setIsEditing(true)
+      }
+    }
+  }, [])
   
   const [formData, setFormData] = useState({
     name: "",

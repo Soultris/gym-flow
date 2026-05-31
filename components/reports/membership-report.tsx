@@ -2,16 +2,23 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Download, Loader2 } from "lucide-react"
 import { Pie, PieChart, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 import { useGetMembershipReportQuery } from "@/store/api/dashboardApi"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useAppSelector } from "@/store/hooks"
 
 const COLORS = ["#F4F933", "#22c55e", "#FFFFFF", "#A0A0A0", "#FF6B6B", "#4ECDC4"]
 
 export function MembershipReport() {
-  const { data, isLoading, error } = useGetMembershipReportQuery()
+  const [from, setFrom] = useState("")
+  const [to, setTo] = useState("")
+
+  const { data, isLoading, error } = useGetMembershipReportQuery(
+    from || to ? { from, to } : undefined
+  )
   const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   
   // Transform API data to chart format
@@ -50,6 +57,14 @@ export function MembershipReport() {
   }
 
   const handleExportPDF = () => {
+    const dateRangeStr = from && to 
+      ? `Range: ${from} to ${to}` 
+      : from 
+        ? `Since: ${from}` 
+        : to 
+          ? `Until: ${to}` 
+          : "All Time";
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -77,7 +92,7 @@ export function MembershipReport() {
             <div>
               <h1>Membership Distribution Report</h1>
               <div class="date">
-                Data Analysis by Package Type<br/>
+                ${dateRangeStr}<br/>
                 Generated on: ${new Date().toLocaleString()}
               </div>
             </div>
@@ -123,19 +138,53 @@ export function MembershipReport() {
 
   return (
     <Card className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[#2a2a2a] pb-4">
         <div>
           <h3 className="text-lg font-semibold">Membership Distribution</h3>
           <p className="text-sm text-muted-foreground">Active members by package type</p>
         </div>
-        <Button 
-          size="sm" 
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={handleExportPDF}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="from-date" className="text-xs text-muted-foreground whitespace-nowrap">From</Label>
+              <Input
+                id="from-date"
+                type="date"
+                className="h-9 w-[130px] sm:w-[140px] text-xs bg-background border-[#2a2a2a]"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="to-date" className="text-xs text-muted-foreground whitespace-nowrap">To</Label>
+              <Input
+                id="to-date"
+                type="date"
+                className="h-9 w-[130px] sm:w-[140px] text-xs bg-background border-[#2a2a2a]"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </div>
+            {(from || to) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => { setFrom(""); setTo(""); }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+          <Button 
+            size="sm" 
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 shrink-0"
+            onClick={handleExportPDF}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
+          </Button>
+        </div>
       </div>
 
       {chartData.length > 0 ? (

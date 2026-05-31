@@ -205,7 +205,7 @@ export default function TrainersPage() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/trainers/${trainer.trainerId}/edit`} className="cursor-pointer">
+                            <Link href={`/trainers/${trainer.trainerId}?edit=true`} className="cursor-pointer">
                               Edit Trainer
                             </Link>
                           </DropdownMenuItem>

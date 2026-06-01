@@ -389,6 +389,7 @@ export default function InventoryPage() {
             quantity: item.quantity
           }))}
           cartTotal={cartTotal}
+          onSuccess={() => setCart([])}
         />
       </div>
     </DashboardLayout>

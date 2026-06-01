@@ -24,6 +24,11 @@ export interface Transaction {
     name: string;
     price: number;
   };
+  trainer?: {
+    trainerId: number;
+    name: string;
+    specialization: string;
+  };
   products?: Array<{
     product: {
       productId: number;

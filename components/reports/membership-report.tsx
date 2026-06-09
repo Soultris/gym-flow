@@ -99,7 +99,7 @@ export function MembershipReport() {
           </div>
 
           <div class="total-box">
-            <div class="total-label">Total Active Members</div>
+            <div class="total-label">Total Memberships Purchased</div>
             <div class="total-value">${totalMembers.toLocaleString()}</div>
           </div>
 
@@ -141,7 +141,7 @@ export function MembershipReport() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[#2a2a2a] pb-4">
         <div>
           <h3 className="text-lg font-semibold">Membership Distribution</h3>
-          <p className="text-sm text-muted-foreground">Active members by package type</p>
+          <p className="text-sm text-muted-foreground">Memberships purchased by package type</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="flex items-center gap-2">

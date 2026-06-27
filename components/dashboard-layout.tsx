@@ -125,7 +125,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               }
 
               // Hide specific tabs for Trainer
-              if (user?.role?.name === 'Trainer' && ['Settings', 'Reports', 'Finance'].includes(item.name)) {
+              if (user?.role?.name === 'Trainer' && ['Settings', 'Reports'].includes(item.name)) {
                 return null
               }
 

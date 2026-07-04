@@ -37,6 +37,10 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
     <head>
       <title>Receipt - ${transaction.transactionId}</title>
       <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
         * {
           margin: 0;
           padding: 0;
@@ -45,14 +49,14 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
         body {
           font-family: 'Arial', sans-serif;
           line-height: 1.6;
-          color: #333;
+          color: #000;
           background: #fff;
         }
         .receipt-container {
           max-width: 400px;
           margin: 20px auto;
           padding: 30px;
-          border: 1px solid #ddd;
+          border: 1px solid #000;
           border-radius: 8px;
           background: #fff;
         }
@@ -80,7 +84,7 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
         }
         .receipt-subtitle {
           font-size: 12px;
-          color: #666;
+          color: #000;
         }
         .receipt-body {
           margin: 20px 0;
@@ -92,7 +96,7 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
           font-weight: bold;
           font-size: 12px;
           text-transform: uppercase;
-          color: #666;
+          color: #000;
           margin-bottom: 8px;
         }
         .receipt-row {
@@ -108,7 +112,7 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
           text-align: right;
         }
         .receipt-divider {
-          border-bottom: 1px dashed #ddd;
+          border-bottom: 1px dashed #000;
           margin: 15px 0;
         }
         .receipt-total {
@@ -124,21 +128,26 @@ function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null):
         .receipt-footer {
           text-align: center;
           font-size: 12px;
-          color: #666;
+          color: #000;
           margin-top: 20px;
           padding-top: 15px;
-          border-top: 1px solid #ddd;
+          border-top: 1px solid #000;
         }
         .receipt-id {
           font-family: 'Courier New', monospace;
           font-size: 12px;
-          color: #999;
+          color: #000;
           text-align: center;
           margin-top: 10px;
         }
         @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
           body {
             background: #fff;
+            color: #000;
           }
           .receipt-container {
             border: none;

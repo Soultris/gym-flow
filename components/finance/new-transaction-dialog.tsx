@@ -592,8 +592,8 @@ function POSReceiptPrint({ transaction, gymName, gymSubdomain, cashierName }: PO
       <style>{`
         @media print {
           @page {
-            size: auto;
-            margin: 0mm;
+            size: 80mm auto;
+            margin: 0;
           }
           body {
             background-color: white !important;

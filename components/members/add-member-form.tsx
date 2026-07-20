@@ -113,10 +113,10 @@ export function AddMemberForm() {
         submitData.append('image', image)
       }
 
-      if (formData.emergencyContactName) submitData.append('emergencyContactName', formData.emergencyContactName)
-      if (formData.emergencyContactRelation) submitData.append('emergencyContactRelation', formData.emergencyContactRelation)
-      if (formData.emergencyContactPhone) submitData.append('emergencyContactPhone', formData.emergencyContactPhone)
-      if (formData.medicalIssues) submitData.append('medicalIssues', formData.medicalIssues)
+      submitData.append('emergencyContactName', formData.emergencyContactName)
+      submitData.append('emergencyContactRelation', formData.emergencyContactRelation)
+      submitData.append('emergencyContactPhone', formData.emergencyContactPhone)
+      submitData.append('medicalIssues', formData.medicalIssues)
 
       // Add new fields
       if (selectedPlan) {

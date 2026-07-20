@@ -70,6 +70,7 @@ interface CreateTransactionRequest {
   price: number;
   paymentMethod: 'cash' | 'card';
   sendReceipt?: boolean;
+  paidAt?: string;
   products?: Array<{ productId: number; quantity?: number }>;
 }
 

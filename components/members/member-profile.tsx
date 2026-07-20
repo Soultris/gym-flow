@@ -166,10 +166,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
       updateData.append("address", formData.address)
       updateData.append("joiningDate", formData.joiningDate)
       
-      if (formData.emergencyContactName) updateData.append("emergencyContactName", formData.emergencyContactName)
-      if (formData.emergencyContactRelation) updateData.append("emergencyContactRelation", formData.emergencyContactRelation)
-      if (formData.emergencyContactPhone) updateData.append("emergencyContactPhone", formData.emergencyContactPhone)
-      if (formData.medicalIssues) updateData.append("medicalIssues", formData.medicalIssues)
+      updateData.append("emergencyContactName", formData.emergencyContactName)
+      updateData.append("emergencyContactRelation", formData.emergencyContactRelation)
+      updateData.append("emergencyContactPhone", formData.emergencyContactPhone)
+      updateData.append("medicalIssues", formData.medicalIssues)
       
       if (imageFile) {
         updateData.append("image", imageFile)

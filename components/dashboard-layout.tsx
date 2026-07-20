@@ -34,11 +34,14 @@ import {
   ActivitySquare,
   Crown,
   Building2,
+  RefreshCcw,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { logout } from "@/store/slices/authSlice"
+import { useGetSyncStatusQuery, useSyncAllPendingOrFailedMutation } from "@/store/api/syncApi"
 import toast from "react-hot-toast"
 
 const navigation = [
@@ -59,6 +62,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.auth.user)
+  
+  const isEligibleForSync = user && user?.role?.name !== "Superadmin"
+  const { data: syncStatus } = useGetSyncStatusQuery(undefined, {
+    skip: !isEligibleForSync,
+    refetchOnMountOrArgChange: true,
+  })
+  const hasSyncErrors = syncStatus?.hasPendingSyncs || false
+  const [syncAll, { isLoading: isSyncingAll }] = useSyncAllPendingOrFailedMutation()
 
   const handleLogout = () => {
     dispatch(logout())
@@ -83,27 +94,38 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary overflow-hidden">
+             {user?.gymLogoUrl ? (
+                <img src={user.gymLogoUrl} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <Dumbbell className="h-5 w-5 text-primary-foreground" />
+              )}
             </div>
-            <span className="text-lg font-bold">GymFlow</span>
+            <span className="text-lg font-bold truncate">{user?.gymName || "GymFlow"}</span>
           </div>
 
           {/* New Transaction Button */}
-          <div className="px-3 py-4">
-            <NewTransactionDialog />
-          </div>
+          {user?.role?.name !== "Superadmin" && (
+            <div className="px-3 py-4">
+              <NewTransactionDialog />
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3">
             {navigation.map((item) => {
               // Hide standard items for Super Admin
-              if (user?.roleId === 4) {
+              if (user?.role?.name === 'Superadmin') {
                 return null
               }
 
               // Check if feature is enabled for the gym
               if (item.feature && user && user.features && !user.features.includes(item.feature)) {
+                return null
+              }
+
+              // Hide specific tabs for Trainer
+              if (user?.role?.name === 'Trainer' && ['Settings', 'Reports'].includes(item.name)) {
                 return null
               }
 
@@ -129,7 +151,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             })}
             
             {/* Super Admin Links */}
-            {user?.roleId === 4 && (
+            {(user?.role?.name === 'Superadmin') && (
               <Link
                 href="/admin/gyms"
                 className={cn(
@@ -153,11 +175,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="/placeholder.svg?height=36&width=36" />
-                    <AvatarFallback className="bg-primary text-primary-foreground">AD</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {user?.name?.substring(0, 2).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-sm">
-                    <span className="font-medium">Admin User</span>
-                    <span className="text-xs text-muted-foreground">admin@gym.com</span>
+                    <span className="font-medium">{user?.name || "User"}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -170,12 +194,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     Profile
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/settings">
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                </Link>
+                {user?.role?.name !== 'Trainer' && (
+                  <Link href="/settings">
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -196,22 +222,53 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Button>
 
           <div className="flex flex-1 items-center justify-end gap-2">
-            <Link href="/activity-logger" title="Activity Logger">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
-                <ActivitySquare className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/membership-plans" title="Pricing">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
-                <Crown className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/membership-request" target="_blank">
-              <Button variant="outline" size="sm" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Membership Registration Form</span>
-              </Button>
-            </Link>
+            {user?.role?.name !== 'Trainer' && (
+              <Link href="/activity-logger" title="Activity Logger">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent">
+                  <ActivitySquare className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
+            {user?.role?.name !== "Superadmin" && (
+              <>
+                {hasSyncErrors && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-destructive text-destructive hover:bg-destructive/10"
+                    disabled={isSyncingAll}
+                    onClick={async () => {
+                      try {
+                        const toastId = toast.loading("Syncing all pending devices...");
+                        await syncAll().unwrap();
+                        toast.success("Global sync process completed", { id: toastId });
+                      } catch (err) {
+                        console.error("Global sync failed:", err);
+                        toast.error("Global sync failed");
+                      }
+                    }}
+                  >
+                    {isSyncingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                    <span className="hidden sm:inline">Sync Device</span>
+                  </Button>
+                )}
+                <Link href="/membership-plans" title="Pricing">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                  >
+                    <Crown className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/membership-request" target="_blank">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Membership Registration Form</span>
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </header>
 

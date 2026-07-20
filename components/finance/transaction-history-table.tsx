@@ -4,8 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2 } from "lucide-react"
+import { Loader2, Printer } from "lucide-react"
 import { useGetTransactionsQuery, Transaction } from "@/store/api/transactionsApi"
+import { useAppSelector } from "@/store/hooks"
+import toast from "react-hot-toast"
 
 function getInitials(name: string): string {
   return name
@@ -24,6 +26,212 @@ function formatDate(dateString: string): string {
   })
 }
 
+function generateReceiptHTML(transaction: Transaction, logoUrl?: string | null): string {
+  const memberName = transaction.member?.name || transaction.guestName || "Guest"
+  const memberEmail = transaction.member?.email || transaction.guestEmail || ""
+  
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Receipt - ${transaction.transactionId}</title>
+      <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.6;
+          color: #000;
+          background: #fff;
+        }
+        .receipt-container {
+          max-width: 400px;
+          margin: 20px auto;
+          padding: 30px;
+          border: 1px solid #000;
+          border-radius: 8px;
+          background: #fff;
+        }
+        .receipt-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 15px;
+          gap: 15px;
+        }
+        .receipt-header img {
+          width: 50px;
+          height: 50px;
+          object-fit: contain;
+        }
+        .receipt-header-text {
+          text-align: left;
+        }
+        .receipt-title {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .receipt-subtitle {
+          font-size: 12px;
+          color: #000;
+        }
+        .receipt-body {
+          margin: 20px 0;
+        }
+        .receipt-section {
+          margin-bottom: 20px;
+        }
+        .receipt-label {
+          font-weight: bold;
+          font-size: 12px;
+          text-transform: uppercase;
+          color: #000;
+          margin-bottom: 8px;
+        }
+        .receipt-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+        .receipt-row-label {
+          font-weight: 600;
+        }
+        .receipt-row-value {
+          text-align: right;
+        }
+        .receipt-divider {
+          border-bottom: 1px dashed #000;
+          margin: 15px 0;
+        }
+        .receipt-total {
+          display: flex;
+          justify-content: space-between;
+          font-size: 18px;
+          font-weight: bold;
+          margin: 15px 0;
+          padding: 10px 0;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
+        }
+        .receipt-footer {
+          text-align: center;
+          font-size: 12px;
+          color: #000;
+          margin-top: 20px;
+          padding-top: 15px;
+          border-top: 1px solid #000;
+        }
+        .receipt-id {
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          color: #000;
+          text-align: center;
+          margin-top: 10px;
+        }
+        @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+          body {
+            background: #fff;
+            color: #000;
+          }
+          .receipt-container {
+            border: none;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-container">
+        <div class="receipt-header">
+          ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+          <div class="receipt-header-text">
+            <div class="receipt-title">RECEIPT</div>
+            <div class="receipt-subtitle">Transaction Receipt</div>
+          </div>
+        </div>
+
+        <div class="receipt-body">
+          <div class="receipt-section">
+            <div class="receipt-label">Customer Details</div>
+            <div class="receipt-row">
+              <span class="receipt-row-label">Name:</span>
+              <span class="receipt-row-value">${memberName}</span>
+            </div>
+            ${memberEmail ? `<div class="receipt-row">
+              <span class="receipt-row-label">Email:</span>
+              <span class="receipt-row-value">${memberEmail}</span>
+            </div>` : ""}
+            
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-section">
+            <div class="receipt-label">Transaction Details</div>
+            <div class="receipt-row">
+              <span class="receipt-row-label">Type:</span>
+              <span class="receipt-row-value">${transaction.transactionType.replace(/_/g, " ")}</span>
+            </div>
+            ${transaction.package ? `<div class="receipt-row">
+              <span class="receipt-row-label">Package:</span>
+              <span class="receipt-row-value">${transaction.package.name}</span>
+            </div>` : ""}
+            <div class="receipt-row">
+              <span class="receipt-row-label">Payment Method:</span>
+              <span class="receipt-row-value">${transaction.paymentMethod.charAt(0).toUpperCase() + transaction.paymentMethod.slice(1)}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-row-label">Date:</span>
+              <span class="receipt-row-value">${formatDate(transaction.paidAt)}</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-total">
+            <span>Total Amount:</span>
+            <span>LKR ${transaction.price.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div class="receipt-footer">
+          <p>Thank you for your transaction!</p>
+          <p>Please keep this receipt for your records.</p>
+          <div class="receipt-id">Receipt #${transaction.transactionId}</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          window.print();
+          window.onafterprint = function() {
+            window.close();
+          };
+        };
+      </script>
+    </body>
+    </html>
+  `
+}
+
 const getPackageBadgeClass = (pkg: string) => {
   switch (pkg) {
     case "Premium":
@@ -39,8 +247,27 @@ const getPackageBadgeClass = (pkg: string) => {
   }
 }
 
+const handlePrintReceipt = (transaction: Transaction, logoUrl?: string | null) => {
+  try {
+    const receiptHTML = generateReceiptHTML(transaction, logoUrl)
+    const printWindow = window.open("", "_blank")
+    
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to print receipts")
+      return
+    }
+    
+    printWindow.document.write(receiptHTML)
+    printWindow.document.close()
+  } catch (error) {
+    console.error("Print error:", error)
+    toast.error("Failed to print receipt")
+  }
+}
+
 export function TransactionHistoryTable() {
   const { data, isLoading, isError } = useGetTransactionsQuery()
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   const transactions = data?.transactions || []
 
   if (isLoading) {
@@ -130,10 +357,12 @@ export function TransactionHistoryTable() {
               <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(transaction.paidAt)}</td>
               <td className="px-4 py-4">
                 <Button
+                  onClick={() => handlePrintReceipt(transaction, logoUrl)}
                   variant="outline"
                   size="sm"
-                  className="h-7 px-3 text-xs border-primary text-primary hover:bg-primary/10"
+                  className="h-7 px-3 text-xs border-primary text-primary hover:bg-primary/10 gap-1"
                 >
+                  <Printer className="w-3 h-3" />
                   Print
                 </Button>
               </td>

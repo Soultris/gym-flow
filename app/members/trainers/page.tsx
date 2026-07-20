@@ -3,16 +3,22 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { MembersHeader } from "@/components/members/members-header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MoreVertical, Loader2 } from "lucide-react"
+import { MoreVertical, Loader2, Search } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useGetTrainersQuery, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
+import { Input } from "@/components/ui/input"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
+
+const PAGE_SIZE = 20
 
 function getInitials(name: string): string {
   return name
@@ -26,13 +32,30 @@ function getInitials(name: string): string {
 export default function TrainersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [trainerToDelete, setTrainerToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
 
-  // API hooks
-  const { data: trainersData, isLoading, isError } = useGetTrainersQuery()
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput)
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  // API hooks — approved trainers only
+  const { data: trainersData, isLoading, isError } = useGetTrainersQuery({
+    pending: false,
+    page,
+    limit: PAGE_SIZE,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  })
   const [deleteTrainer, { isLoading: isDeleting }] = useDeleteTrainerMutation()
 
-  // Filter for approved trainers only (isPending = false)
-  const trainers = (trainersData || []).filter((trainer: Trainer) => !trainer.isPending)
+  const trainers = trainersData?.trainers || []
+  const pagination = trainersData?.pagination
 
   const handleDeleteClick = (id: number, name: string) => {
     setTrainerToDelete({ id, name })
@@ -47,8 +70,8 @@ export default function TrainersPage() {
       toast.success(`${trainerToDelete.name} has been deleted`)
       setDeleteDialogOpen(false)
       setTrainerToDelete(null)
-    } catch {
-      toast.error("Failed to delete trainer")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete trainer"))
     }
   }
 
@@ -82,107 +105,142 @@ export default function TrainersPage() {
     )
   }
 
-  if (trainers.length === 0) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <MembersHeader />
-          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">No trainers found</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <MembersHeader />
 
-        {/* Table */}
-        <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-                <th className="w-12 px-4 py-3">
-                  <Checkbox className="border-[#3a3a3a]" />
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Phone Number</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
-                <th className="w-12 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {trainers.map((trainer: Trainer, index: number) => (
-                <tr
-                  key={trainer.trainerId}
-                  className={`border-b border-[#2a2a2a] transition-colors ${
-                    index % 2 === 0 ? "bg-[#151515]" : "bg-background"
-                  }`}
-                >
-                  <td className="px-4 py-4">
-                    <Checkbox className="border-[#3a3a3a]" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link
-                      href={`/trainers/${trainer.trainerId}`}
-                      className="flex items-center gap-3 transition-opacity"
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src="/placeholder.svg" />
-                        <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
-                          {getInitials(trainer.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{trainer.name}</div>
-                        <div className="text-sm text-muted-foreground">{trainer.specialization}</div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-4 text-sm">{trainer.phone}</td>
-                  <td className="px-4 py-4 text-sm">{trainer.specialization}</td>
-                  <td className="px-4 py-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/trainers/${trainer.trainerId}`} className="cursor-pointer">
-                            View Profile
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/trainers/${trainer.trainerId}/edit`} className="cursor-pointer">
-                            Edit Trainer
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/bulk-sms?trainerId=${trainer.trainerId}&trainerName=${trainer.name}`} className="cursor-pointer">
-                            Send Message
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive cursor-pointer"
-                          onClick={() => handleDeleteClick(trainer.trainerId, trainer.name)}
-                        >
-                          Delete Trainer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            </table>
-          </div>
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by name, phone or specialization..."
+            className="pl-9 bg-transparent border-[#2a2a2a] focus-visible:ring-primary"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
         </div>
+
+        {trainers.length === 0 ? (
+          <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
+            <p className="text-muted-foreground">
+              {debouncedSearch ? `No trainers matching "${debouncedSearch}"` : 'No trainers found'}
+            </p>
+          </div>
+        ) : (
+          <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
+                  <th className="w-12 px-4 py-3">
+                    <Checkbox className="border-[#3a3a3a]" />
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Phone Number</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Specialization</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Device Sync</th>
+                  <th className="w-12 px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {trainers.map((trainer: Trainer, index: number) => (
+                  <tr
+                    key={trainer.trainerId}
+                    className={`border-b border-[#2a2a2a] transition-colors ${
+                      index % 2 === 0 ? "bg-[#151515]" : "bg-background"
+                    }`}
+                  >
+                    <td className="px-4 py-4">
+                      <Checkbox className="border-[#3a3a3a]" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link
+                        href={`/trainers/${trainer.trainerId}`}
+                        className="flex items-center gap-3 transition-opacity"
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
+                          <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
+                            {getInitials(trainer.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{trainer.name}</div>
+                          <div className="text-sm text-muted-foreground">{trainer.specialization}</div>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-sm">{trainer.phone}</td>
+                    <td className="px-4 py-4 text-sm">{trainer.specialization}</td>
+                    <td className="px-4 py-4">
+                      {trainer.deviceSyncState ? (
+                        <Badge
+                          variant="outline"
+                          className={
+                            trainer.deviceSyncState === 'SYNCED'
+                              ? "border-green-500 text-green-500 bg-green-500/10 whitespace-nowrap"
+                              : trainer.deviceSyncState === 'FAILED'
+                                ? "border-destructive text-destructive bg-destructive/10 whitespace-nowrap"
+                                : "border-yellow-500 text-yellow-500 bg-yellow-500/10 whitespace-nowrap"
+                          }
+                        >
+                          {trainer.deviceSyncState}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/trainers/${trainer.trainerId}`} className="cursor-pointer">
+                              View Profile
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/trainers/${trainer.trainerId}?edit=true`} className="cursor-pointer">
+                              Edit Trainer
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/bulk-sms?trainerId=${trainer.trainerId}&trainerName=${trainer.name}`} className="cursor-pointer">
+                              Send Message
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive cursor-pointer"
+                            onClick={() => handleDeleteClick(trainer.trainerId, trainer.name)}
+                          >
+                            Delete Trainer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              </table>
+            </div>
+
+            {pagination && (
+              <PaginationControls
+                page={page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={PAGE_SIZE}
+                onPageChange={setPage}
+                itemLabel="trainers"
+              />
+            )}
+          </div>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

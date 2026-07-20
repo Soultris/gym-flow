@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,11 +15,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Weight, Loader2 } from "lucide-react"
+import { Mail, Phone, Calendar, MapPin, User, CreditCard, Clock, Edit, X, Save, Ruler, Loader2, RefreshCcw } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery } from "@/store/api/membersApi"
-import { useGetAssignedWorkoutsQuery } from "@/store/api/workoutsApi"
+import { getErrorMessage } from "@/lib/errorUtils"
+import { useGetMemberByIdQuery, useUpdateMemberMutation, useGetMemberAttendanceQuery, useGetMemberTransactionsQuery, useDeactivateMemberMutation } from "@/store/api/membersApi"
+import { useGetAssignedWorkoutsQuery, AssignedWorkout } from "@/store/api/workoutsApi"
+import { Transaction } from "@/store/api/transactionsApi"
+import { useSyncMemberMutation } from "@/store/api/syncApi"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface MemberFormData {
   fullName: string
@@ -32,22 +45,32 @@ interface MemberFormData {
   weight: string
   address: string
   joiningDate: string
+  emergencyContactName: string
+  emergencyContactRelation: string
+  emergencyContactPhone: string
+  medicalIssues: string
 }
 
 export function MemberProfile({ memberId }: { memberId: string }) {
+  const router = useRouter()
   const numericMemberId = parseInt(memberId, 10)
   
+  // API Queries
   // API Queries
   const { data: member, isLoading: memberLoading, error: memberError } = useGetMemberByIdQuery(numericMemberId)
   const { data: attendanceData } = useGetMemberAttendanceQuery({ id: numericMemberId })
   const { data: transactionsData } = useGetMemberTransactionsQuery(numericMemberId)
-  const { data: assignedWorkoutsData } = useGetAssignedWorkoutsQuery({ memberId: numericMemberId })
+  const { data: assignedWorkoutsResponse } = useGetAssignedWorkoutsQuery({ memberId: numericMemberId })
+  const assignedWorkoutsData = assignedWorkoutsResponse?.workouts || []
   
   // API Mutations
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+  const [syncMemberToDevice, { isLoading: isSyncing }] = useSyncMemberMutation()
+  const [deactivateMember, { isLoading: isDeactivating }] = useDeactivateMemberMutation()
   
   // UI State
   const [isEditing, setIsEditing] = useState(false)
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
   const [attendanceFromDate, setAttendanceFromDate] = useState("")
   const [attendanceToDate, setAttendanceToDate] = useState("")
   
@@ -64,7 +87,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
     weight: "",
     address: "",
     joiningDate: "",
+    emergencyContactName: "",
+    emergencyContactRelation: "",
+    emergencyContactPhone: "",
+    medicalIssues: "",
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   // Populate form when member data loads
   useEffect(() => {
@@ -89,7 +117,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         weight: member.weight?.toString() || "",
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
+        emergencyContactName: member.emergencyContactName || "",
+        emergencyContactRelation: member.emergencyContactRelation || "",
+        emergencyContactPhone: member.emergencyContactPhone || "",
+        medicalIssues: member.medicalIssues || "",
       })
+      setImageFile(null)
     }
   }, [member])
 
@@ -110,26 +143,46 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   }
 
   const handleSave = async () => {
+    if (!/^\d{10}$/.test(formData.phone)) {
+      toast.error("Mobile number must be exactly 10 digits");
+      return;
+    }
+
+    if (formData.emergencyContactPhone && !/^\d{10}$/.test(formData.emergencyContactPhone)) {
+      toast.error("Emergency contact phone must be exactly 10 digits");
+      return;
+    }
+
     try {
+      const updateData = new FormData()
+      updateData.append("name", formData.fullName)
+      updateData.append("email", formData.email)
+      updateData.append("phone", formData.phone)
+      updateData.append("dob", formData.dob)
+      updateData.append("gender", formData.gender.toLowerCase())
+      updateData.append("nic", formData.nic)
+      updateData.append("height", formData.height)
+      updateData.append("weight", formData.weight)
+      updateData.append("address", formData.address)
+      updateData.append("joiningDate", formData.joiningDate)
+      
+      updateData.append("emergencyContactName", formData.emergencyContactName)
+      updateData.append("emergencyContactRelation", formData.emergencyContactRelation)
+      updateData.append("emergencyContactPhone", formData.emergencyContactPhone)
+      updateData.append("medicalIssues", formData.medicalIssues)
+      
+      if (imageFile) {
+        updateData.append("image", imageFile)
+      }
+
       await updateMember({
         id: numericMemberId,
-        data: {
-          name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          dob: formData.dob,
-          gender: formData.gender.toLowerCase() as 'male' | 'female' | 'other',
-          nic: formData.nic,
-          height: parseFloat(formData.height) || 0,
-          weight: parseFloat(formData.weight) || 0,
-          address: formData.address,
-          joiningDate: formData.joiningDate,
-        }
+        data: updateData
       }).unwrap()
       toast.success("Profile updated successfully")
       setIsEditing(false)
-    } catch {
-      toast.error("Failed to update profile")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update profile"))
     }
   }
 
@@ -156,9 +209,26 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         weight: member.weight?.toString() || "",
         address: member.address,
         joiningDate: member.joiningDate?.split('T')[0] || "",
+        emergencyContactName: member.emergencyContactName || "",
+        emergencyContactRelation: member.emergencyContactRelation || "",
+        emergencyContactPhone: member.emergencyContactPhone || "",
+        medicalIssues: member.medicalIssues || "",
       })
+      setImageFile(null)
     }
     setIsEditing(false)
+  }
+
+  const handleDeactivateClick = async () => {
+    try {
+      await deactivateMember(numericMemberId).unwrap()
+      toast.success("Member has been deactivated")
+      setDeactivateDialogOpen(false)
+      // Optionally navigate back to members list
+      router.push("/members?status=deactivated")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to deactivate member"))
+    }
   }
 
   const getInitials = () => {
@@ -185,10 +255,10 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   const filteredAttendance = useMemo(() => {
     if (!attendanceData) return []
     
-    return attendanceData.filter((record: { checkInTime: string }) => {
+    return attendanceData.filter((record: { timestamp: string }) => {
       if (!attendanceFromDate && !attendanceToDate) return true
       
-      const recordDate = new Date(record.checkInTime)
+      const recordDate = new Date(record.timestamp)
       
       if (attendanceFromDate && attendanceToDate) {
         const from = new Date(attendanceFromDate)
@@ -237,12 +307,13 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header with Edit/Save buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{formData.fullName}</h1>
           <p className="text-sm text-muted-foreground">Member ID: {memberId}</p>
+          {member?.deviceMemberId && <p className="text-sm text-muted-foreground">Device ID: {member.deviceMemberId}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isEditing ? (
             <>
               <Button variant="outline" onClick={handleCancel} className="gap-2 bg-transparent">
@@ -268,17 +339,34 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div className="lg:col-span-1">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={member.imageUrl || undefined} />
-                <AvatarFallback className="bg-secondary text-foreground text-2xl font-bold">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+              {isEditing ? (
+                <AvatarUpload
+                  value={imageFile || member.imageUrl || undefined}
+                  onChange={(file: File | null) => setImageFile(file)}
+                  className="mb-4"
+                />
+              ) : (
+                <Avatar className="h-24 w-24 mb-4">
+                  <AvatarImage src={member.imageUrl || undefined} />
+                  <AvatarFallback className="bg-secondary text-foreground text-2xl font-bold">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               <h2 className="text-xl font-bold mt-4">{formData.fullName}</h2>
               <p className="text-sm text-muted-foreground">ID: {memberId}</p>
-              <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-accent text-accent" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
+              {member?.deviceMemberId && <p className="text-sm text-muted-foreground">Device ID: {member.deviceMemberId}</p>}
+              <Badge variant="outline" className={`mt-2 ${memberStatus === "active" ? "border-green-500 text-green-500" : memberStatus === "pending" ? "border-yellow-500 text-yellow-500" : "border-destructive text-destructive"}`}>
                 {memberStatus.charAt(0).toUpperCase() + memberStatus.slice(1)}
               </Badge>
+              {member?.deviceSyncState && (
+                <div className="flex flex-col items-center mt-2 space-y-1">
+                  <Badge variant="outline" className={`${member.deviceSyncState === 'SYNCED' ? 'border-green-500 text-green-500' : member.deviceSyncState === 'FAILED' ? 'border-destructive text-destructive' : 'border-yellow-500 text-yellow-500'}`}>
+                    Device: {member.deviceSyncState}
+                  </Badge>
+                  {member.lastSyncedAt && <span className="text-xs text-muted-foreground">Last synced: {formatDate(member.lastSyncedAt)}</span>}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mt-6">
@@ -309,11 +397,41 @@ export function MemberProfile({ memberId }: { memberId: string }) {
             </div>
 
             <div className="flex flex-col gap-2 mt-6">
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent"
+                onClick={() => {
+                  const params = new URLSearchParams()
+                  params.set("memberId", member?.memberId?.toString() || "")
+                  params.set("memberName", member?.name || "")
+                  router.push(`/bulk-sms?${params.toString()}`)
+                }}
+              >
                 Send SMS
               </Button>
-              <Button variant="outline" className="w-full text-destructive hover:text-destructive bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full text-destructive hover:text-destructive bg-transparent"
+                onClick={() => setDeactivateDialogOpen(true)}
+              >
                 Deactivate
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent flex items-center justify-center gap-2"
+                disabled={isSyncing}
+                onClick={async () => {
+                  try {
+                    const toastId = toast.loading("Syncing member to device...");
+                    await syncMemberToDevice(memberId).unwrap();
+                    toast.success("Member synced successfully", { id: toastId });
+                  } catch (_error) {
+                    toast.error("Error syncing to device");
+                  }
+                }}
+              >
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+                Sync to Device
               </Button>
             </div>
           </Card>
@@ -323,7 +441,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
         <div className="lg:col-span-2">
           <Card className="p-6">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="flex flex-wrap w-full h-auto gap-1 sm:grid sm:grid-cols-3 lg:grid-cols-5">
                 <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="membership">Membership</TabsTrigger>
                 <TabsTrigger value="workout">Workouts</TabsTrigger>
@@ -373,6 +491,8 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                           value={formData.phone}
                           onChange={(e) => updateField("phone", e.target.value)}
                           className="bg-secondary border-[#3a3a3a]"
+                          pattern="^\d{10}$"
+                          title="Phone number must be exactly 10 digits"
                         />
                       ) : (
                         <p className="text-sm py-2">{formData.phone}</p>
@@ -474,6 +594,68 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                       )}
                     </div>
                   </div>
+
+                  {/* Emergency Contact & Medical Info */}
+                  <div className="mt-8 border-t border-border pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Emergency Contact & Medical Details</h3>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Contact Person Name</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactName}
+                            onChange={(e) => updateField("emergencyContactName", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Jane Doe"
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactName || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Relation</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactRelation}
+                            onChange={(e) => updateField("emergencyContactRelation", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Mother, Spouse, etc."
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactRelation || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Contact Phone No.</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.emergencyContactPhone}
+                            onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="071 234 5678"
+                            pattern="^\d{10}$"
+                            title="Phone number must be exactly 10 digits"
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.emergencyContactPhone || "N/A"}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                        <Label>Medical Issues / Conditions</Label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.medicalIssues}
+                            onChange={(e) => updateField("medicalIssues", e.target.value)}
+                            className="bg-secondary border-[#3a3a3a]"
+                            placeholder="Any allergies, previous injuries, operations etc."
+                          />
+                        ) : (
+                          <p className="text-sm py-2">{formData.medicalIssues || "None"}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </TabsContent>
 
@@ -518,7 +700,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                   <h3 className="text-lg font-semibold mb-4">Assigned Workout Plans</h3>
                   <div className="space-y-4">
                     {assignedWorkoutsData && assignedWorkoutsData.length > 0 ? (
-                      assignedWorkoutsData.map((workout) => {
+                      assignedWorkoutsData.map((workout: AssignedWorkout) => {
                         const isActive = new Date(workout.endDate) >= new Date()
                         return (
                           <Card key={workout.assignedWorkoutId} className="p-5 bg-secondary/30 border border-border">
@@ -606,7 +788,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
 
                 <div className="space-y-3">
                   {filteredAttendance.length > 0 ? (
-                    filteredAttendance.map((record: { attendanceId: number; checkInTime: string; checkOutTime?: string }, i: number) => (
+                    filteredAttendance.map((record: { attendanceId: number; timestamp: string }, i: number) => (
                       <Card key={record.attendanceId || i} className="p-4 bg-secondary/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -614,22 +796,12 @@ export function MemberProfile({ memberId }: { memberId: string }) {
                               <Clock className="h-4 w-4 text-accent" />
                             </div>
                             <div>
-                              <p className="font-medium">{formatDate(record.checkInTime)}</p>
+                              <p className="font-medium">{formatDate(record.timestamp)}</p>
                               <p className="text-sm text-muted-foreground">
-                                Check-in: {new Date(record.checkInTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                                Check-in: {new Date(record.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                               </p>
                             </div>
                           </div>
-                          {record.checkOutTime && (
-                            <Badge variant="outline" className="border-primary text-primary">
-                              {(() => {
-                                const checkIn = new Date(record.checkInTime)
-                                const checkOut = new Date(record.checkOutTime)
-                                const hours = ((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)).toFixed(1)
-                                return `${hours} hrs`
-                              })()}
-                            </Badge>
-                          )}
                         </div>
                       </Card>
                     ))
@@ -645,7 +817,7 @@ export function MemberProfile({ memberId }: { memberId: string }) {
               <TabsContent value="payments" className="space-y-4 mt-6">
                 <div className="space-y-3">
                   {transactionsData && transactionsData.length > 0 ? (
-                    transactionsData.map((payment: { transactionId: number; paidAt: string; price: number; paymentMethod?: string }, i: number) => (
+                    transactionsData.map((payment: Transaction, i: number) => (
                       <Card key={payment.transactionId || i} className="p-4 bg-secondary/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -676,6 +848,40 @@ export function MemberProfile({ memberId }: { memberId: string }) {
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate {formData.fullName}? This member will no longer be able to access their account and won&apos;t appear in active members list.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeactivateDialogOpen(false)}
+              disabled={isDeactivating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeactivateClick}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deactivating...
+                </>
+              ) : (
+                "Deactivate"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>    </div>
   )
 }

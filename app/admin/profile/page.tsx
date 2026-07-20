@@ -6,50 +6,49 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Mail, Phone, MapPin, Calendar } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { useState } from "react"
-
-type DialogType = "edit-profile" | "update-info" | null
+import { useMemo } from "react"
+import { useGetMembersQuery } from "@/store/api/membersApi"
+import { useGetTrainersQuery } from "@/store/api/trainersApi"
+import { useGetPackagesQuery } from "@/store/api/packagesApi"
+import { useGetTransactionsQuery } from "@/store/api/transactionsApi"
+import { useGetMeQuery } from "@/store/api/authApi"
+import { useGetGymProfileQuery } from "@/store/api/gymApi"
 
 export default function AdminProfilePage() {
-  const [dialogType, setDialogType] = useState<DialogType>(null)
-  const [formData, setFormData] = useState({
-    name: "Admin User",
-    email: "admin@gym.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, NY",
-    bio: "Gym management system administrator responsible for overall system operations and user management.",
-  })
+  // Fetch data from APIs
+  const { data: membersData } = useGetMembersQuery({ limit: 1000 })
+  const { data: trainersData } = useGetTrainersQuery()
+  const { data: packagesData } = useGetPackagesQuery()
+  const { data: transactionsData } = useGetTransactionsQuery({ limit: 1000 })
+  const { data: user } = useGetMeQuery()
+  const { data: gym } = useGetGymProfileQuery()
+
+  // Calculate stats from real data
+  const stats = useMemo(() => {
+    const totalMembers = membersData?.members?.length || 0
+    const activeTrainers = trainersData?.trainers?.filter((t) => !t.isPending).length || 0
+    const packagesManaged = packagesData?.length || 0
+    const totalTransactions = transactionsData?.transactions?.length || 0
+
+    return {
+      totalMembers,
+      activeTrainers,
+      packagesManaged,
+      totalTransactions,
+    }
+  }, [membersData, trainersData, packagesData, transactionsData])
 
   const adminData = {
-    name: "Admin User",
-    email: "admin@gym.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, NY",
+    name: user?.name || "Admin User",
+    email: user?.email || "admin@gym.com",
+    phone: gym?.phone || "+1 (555) 123-4567",
+    location: gym?.address || "New York, NY",
     joinDate: "January 2023",
-    role: "System Administrator",
-    avatar: "/placeholder.svg?height=200&width=200",
+    role: user?.role?.name || "System Administrator",
+    avatar: user?.gymLogoUrl || gym?.logoUrl || "/placeholder.svg?height=200&width=200",
     bio: "Gym management system administrator responsible for overall system operations and user management.",
-    stats: {
-      totalMembers: 892,
-      activeTrainers: 15,
-      packagesManaged: 4,
-      totalTransactions: 1250,
-    },
-  }
-
-  const closeDialog = () => {
-    setDialogType(null)
+    stats,
   }
 
   return (
@@ -99,13 +98,6 @@ export default function AdminProfilePage() {
                   Joined {adminData.joinDate}
                 </div>
               </div>
-
-              <Button 
-                onClick={() => setDialogType("edit-profile")}
-                className="w-full mt-6 bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80"
-              >
-                Edit Profile
-              </Button>
             </Card>
           </div>
 
@@ -157,130 +149,10 @@ export default function AdminProfilePage() {
                   </div>
                 </div>
               </div>
-              <Button 
-                onClick={() => setDialogType("update-info")}
-                variant="outline" 
-                className="w-full mt-4"
-              >
-                Update Information
-              </Button>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* Edit Profile Dialog */}
-      <Dialog open={dialogType === "edit-profile"} onOpenChange={(open) => {
-        if (!open) closeDialog()
-      }}>
-        <DialogContent className="max-w-2xl bg-card border-border">
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription>Update your profile information</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="editName">Full Name *</Label>
-              <Input 
-                id="editName"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editBio">Bio</Label>
-              <Textarea 
-                id="editBio"
-                placeholder="Tell us about yourself"
-                rows={4}
-                value={formData.bio}
-                onChange={(e) => setFormData({...formData, bio: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="editPhone">Phone Number</Label>
-                <Input 
-                  id="editPhone"
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editLocation">Location</Label>
-                <Input 
-                  id="editLocation"
-                  placeholder="Enter location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Update Information Dialog */}
-      <Dialog open={dialogType === "update-info"} onOpenChange={(open) => {
-        if (!open) closeDialog()
-      }}>
-        <DialogContent className="max-w-2xl bg-card border-border">
-          <DialogHeader>
-            <DialogTitle>Update Account Information</DialogTitle>
-            <DialogDescription>Modify your account contact details</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="updateEmail">Email Address *</Label>
-              <Input 
-                id="updateEmail"
-                type="email"
-                placeholder="Enter email address"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="updatePhone">Phone Number *</Label>
-                <Input 
-                  id="updatePhone"
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="updateLocation">Location *</Label>
-                <Input 
-                  id="updateLocation"
-                  placeholder="Enter location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-[#E8FF00] text-black font-semibold hover:bg-[#E8FF00]/80">
-                Update Information
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   )
 }

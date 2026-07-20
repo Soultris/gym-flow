@@ -11,15 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Dumbbell, ArrowLeft, User, Lock, Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react"
+import { User, Lock, Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react"
+import { SplitScreenLayout } from "@/components/auth/split-screen-layout"
 import Link from "next/link"
 import { useState } from "react"
 import { useSignupTrainerMutation } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
-import { useRouter } from "next/navigation"
+import { AvatarUpload } from "@/components/ui/avatar-upload"
 
 export default function TrainerSignupPage() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -39,6 +39,8 @@ export default function TrainerSignupPage() {
     address: "",
     specialization: "",
   })
+  
+  const [image, setImage] = useState<File | null>(null)
 
   const [signupTrainer, { isLoading }] = useSignupTrainerMutation()
 
@@ -78,20 +80,33 @@ export default function TrainerSignupPage() {
     }
 
     try {
-      await signupTrainer({
-        email: formData.email,
-        password: formData.password,
-        name: formData.fullName,
-        phone: formData.mobileNo,
-        specialization: formData.specialization,
-        subdomain: window.location.hostname.split('.')[0], // Derive subdomain from hostname
-      }).unwrap()
+      const submitData = new FormData()
+      submitData.append('email', formData.email)
+      submitData.append('password', formData.password)
+      submitData.append('name', formData.fullName)
+      submitData.append('phone', formData.mobileNo)
+      submitData.append('specialization', formData.specialization)
+      if (formData.dob) submitData.append('dob', formData.dob)
+      if (formData.age) submitData.append('age', formData.age)
+      if (formData.gender) submitData.append('gender', formData.gender)
+      if (formData.nic) submitData.append('nic', formData.nic)
+      if (formData.address) submitData.append('address', formData.address)
+      const subdomain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'dev' 
+        : window.location.hostname.split('.')[0]
+      submitData.append('subdomain', subdomain)
+      
+      if (image) {
+        submitData.append('image', image)
+      }
+
+      await signupTrainer(submitData).unwrap()
 
       setSuccess(true)
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'data' in error 
-        ? (error.data as { message?: string })?.message || "Failed to submit application"
-        : "Failed to submit application"
+        ? (error.data as { message?: string })?.message || "Failed to add trainer"
+        : "Failed to add trainer"
       toast.error(errorMessage)
     }
   }
@@ -105,13 +120,13 @@ export default function TrainerSignupPage() {
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold mb-2">Application Submitted!</h1>
+          <h1 className="text-2xl font-bold mb-2">Trainer Added!</h1>
           <p className="text-muted-foreground mb-6">
-            Your trainer application has been submitted successfully. Please wait for admin approval before you can sign in.
+            The trainer has been successfully added and moved to the pending trainers list for approval.
           </p>
-          <Link href="/login">
+          <Link href="/dashboard">
             <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Return to Login
+              Return to Dashboard
             </Button>
           </Link>
         </Card>
@@ -120,245 +135,195 @@ export default function TrainerSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-4xl p-8 border-border bg-card/80 backdrop-blur-sm">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/login" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Login
-          </Link>
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
-            <Dumbbell className="h-6 w-6 text-primary-foreground" />
+    <SplitScreenLayout
+      title="Add New Trainer"
+      subtitle="Fill in the details to register a new trainer to your fitness center."
+      image="https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=1974&auto=format&fit=crop"
+    >
+      <div className="flex justify-center mb-8">
+        <AvatarUpload
+          value={image}
+          onChange={setImage}
+          className="w-32 h-32"
+        />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Section 1: User Credentials */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Lock className="h-4 w-4 text-primary" />
+            <h2 className="text-lg font-semibold">User Credentials</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="trainer@example.com"
+                value={formData.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 6 characters"
+                  value={formData.password}
+                  onChange={(e) => updateField("password", e.target.value)}
+                  className="pr-10"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => updateField("confirmPassword", e.target.value)}
+                  className="pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-            Become a Trainer
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Join our team of professional fitness trainers
-          </p>
-        </div>
+        <div className="h-px bg-border my-6" />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section 1: User Credentials */}
-          <Card className="p-6 border-border bg-secondary/30">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold">User Credentials</h2>
-                <p className="text-sm text-muted-foreground">Login credentials for your account</p>
-              </div>
+        {/* Section 2: Personal Information */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="h-4 w-4 text-primary" />
+            <h2 className="text-lg font-semibold">Personal Information</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="fullName">Full Name *</Label>
+              <Input
+                id="fullName"
+                placeholder="Enter your full name"
+                value={formData.fullName}
+                onChange={(e) => updateField("fullName", e.target.value)}
+                required
+              />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="trainer@example.com"
-                  value={formData.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  className="bg-background border-border"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min. 6 characters"
-                    value={formData.password}
-                    onChange={(e) => updateField("password", e.target.value)}
-                    className="bg-background border-border pr-10"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => updateField("confirmPassword", e.target.value)}
-                    className="bg-background border-border pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Section 2: Personal Information */}
-          <Card className="p-6 border-border bg-secondary/30">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold">Personal Information</h2>
-                <p className="text-sm text-muted-foreground">Tell us about yourself</p>
-              </div>
-            </div>
-
-            {/* Row 1: Full Name, DOB, Age, Mobile */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
-                  onChange={(e) => updateField("fullName", e.target.value)}
-                  className="bg-background border-border"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth</Label>
-                <Input
-                  id="dob"
-                  type="date"
-                  value={formData.dob}
-                  onChange={(e) => updateField("dob", e.target.value)}
-                  className="bg-background border-border"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  placeholder="Auto-calculated"
-                  value={formData.age}
-                  className="bg-background border-border"
-                  disabled
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobileNo">Mobile No. *</Label>
-                <Input
-                  id="mobileNo"
-                  placeholder="+94 7X XXX XXXX"
-                  value={formData.mobileNo}
-                  onChange={(e) => updateField("mobileNo", e.target.value)}
-                  className="bg-background border-border"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Row 2: Gender, NIC, Specialization */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
-                  <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nic">NIC</Label>
-                <Input
-                  id="nic"
-                  placeholder="National ID number"
-                  value={formData.nic}
-                  onChange={(e) => updateField("nic", e.target.value)}
-                  className="bg-background border-border"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="specialization">Specialization *</Label>
-                <Input
-                  id="specialization"
-                  placeholder="e.g., Yoga, Strength Training, HIIT"
-                  value={formData.specialization}
-                  onChange={(e) => updateField("specialization", e.target.value)}
-                  className="bg-background border-border"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Row 3: Address */}
             <div className="space-y-2">
+              <Label htmlFor="dob">Date of Birth</Label>
+              <Input
+                id="dob"
+                type="date"
+                value={formData.dob}
+                onChange={(e) => updateField("dob", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                placeholder="Auto-calculated"
+                value={formData.age}
+                className="bg-muted"
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobileNo">Mobile No. *</Label>
+              <Input
+                id="mobileNo"
+                placeholder="+94 7X XXX XXXX"
+                value={formData.mobileNo}
+                onChange={(e) => updateField("mobileNo", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender</Label>
+              <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nic">NIC</Label>
+              <Input
+                id="nic"
+                placeholder="National ID"
+                value={formData.nic}
+                onChange={(e) => updateField("nic", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="specialization">Specialization *</Label>
+              <Input
+                id="specialization"
+                placeholder="e.g., Yoga, HIIT"
+                value={formData.specialization}
+                onChange={(e) => updateField("specialization", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="address">Address</Label>
               <Input
                 id="address"
-                placeholder="Street, City, State ZIP"
+                placeholder="Street address"
                 value={formData.address}
                 onChange={(e) => updateField("address", e.target.value)}
-                className="bg-background border-border"
               />
             </div>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-end pt-2">
-            <Link href="/login">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="bg-transparent border-border hover:bg-secondary"
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-            </Link>
-            <Button 
-              type="submit" 
-              className="bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 shadow-lg shadow-green-600/20 min-w-[180px]"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Application"
-              )}
-            </Button>
           </div>
-        </form>
+        </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Sign in
-          </Link>
-        </p>
-      </Card>
-    </div>
+        <Button 
+          type="submit" 
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-6"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Adding Trainer...
+            </>
+          ) : (
+            "Add Trainer"
+          )}
+        </Button>
+      </form>
+
+
+    </SplitScreenLayout>
   )
 }

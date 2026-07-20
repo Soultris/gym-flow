@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import {
   useGetWorkoutTemplatesQuery,
@@ -76,10 +77,25 @@ const transformTemplates = (templates: WorkoutTemplate[]): WorkoutTemplateUI[] =
 
 export function WorkoutsList() {
   const searchParams = useSearchParams()
+
+  const [memberSearch, setMemberSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [selectedMember, setSelectedMember] = useState<MemberUI | null>(null)
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(memberSearch)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [memberSearch])
   
   // API Queries
   const { data: templatesData, isLoading: templatesLoading } = useGetWorkoutTemplatesQuery()
-  const { data: membersData, isLoading: membersLoading } = useGetMembersQuery({ limit: 100 })
+  const { data: membersData, isLoading: membersLoading } = useGetMembersQuery({ 
+    limit: 100,
+    ...(debouncedSearch ? { search: debouncedSearch } : {})
+  })
   
   // API Mutations
   const [createTemplate, { isLoading: isCreating }] = useCreateWorkoutTemplateMutation()
@@ -120,7 +136,6 @@ export function WorkoutsList() {
   ])
 
   // Assignment Form State
-  const [memberSearch, setMemberSearch] = useState("")
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null)
   const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<Map<number, { startDate: string; endDate: string }>>(new Map())
 
@@ -170,7 +185,13 @@ export function WorkoutsList() {
       const memberId = parseInt(assignMemberId, 10)
       if (!isNaN(memberId) && selectedMemberId !== memberId) {
         setSelectedMemberId(memberId)
-        setMemberSearch(decodeURIComponent(assignMemberName))
+        setSelectedMember({
+          id: memberId,
+          name: decodeURIComponent(assignMemberName),
+          email: "",
+          phone: ""
+        })
+        setMemberSearch("")
         if (tab === "assign") {
           setActiveTab("assign")
         }
@@ -223,8 +244,8 @@ export function WorkoutsList() {
       try {
         await deleteTemplate(selectedTemplateId).unwrap()
         toast.success("Template deleted successfully")
-      } catch {
-        toast.error("Failed to delete template")
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to delete template"))
       }
     }
     setDeleteDialogOpen(false)
@@ -275,8 +296,8 @@ export function WorkoutsList() {
         toast.success("Template updated successfully")
       }
       closeDialog()
-    } catch {
-      toast.error("Failed to save template")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to save template"))
     }
   }
 
@@ -336,10 +357,7 @@ export function WorkoutsList() {
   }
 
   const handleFinishAndAssignAll = async () => {
-    if (!selectedMemberId || dayWorkoutAssignments.length === 0) return
-
-    const selectedMember = members.find(m => m.id === selectedMemberId)
-    if (!selectedMember) return
+    if (!selectedMemberId || !selectedMember || dayWorkoutAssignments.length === 0) return
 
     try {
       // Assign each day's workout to the backend
@@ -359,6 +377,7 @@ export function WorkoutsList() {
       // Reset all forms
       setMemberSearch("")
       setSelectedMemberId(null)
+      setSelectedMember(null)
       setCurrentDay(null)
       setDayWorkoutAssignments([])
       setCurrentWorkoutMode(null)
@@ -368,8 +387,8 @@ export function WorkoutsList() {
       setCustomWorkoutForm({ name: "", description: "" })
       setCustomExercises([{ name: "", reps: "" }])
       setNotificationType("both")
-    } catch {
-      toast.error("Failed to assign workouts")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to assign workouts"))
     }
   }
 
@@ -447,6 +466,7 @@ export function WorkoutsList() {
     setExercises([{ name: "", reps: "" }])
     setMemberSearch("")
     setSelectedMemberId(null)
+    setSelectedMember(null)
     setSelectedWorkoutIds(new Map())
     setNotificationType("both")
   }
@@ -464,6 +484,7 @@ export function WorkoutsList() {
               setActiveTab("templates")
               setMemberSearch("")
               setSelectedMemberId(null)
+              setSelectedMember(null)
               setSelectedWorkoutIds(new Map())
             }}
             className={`pb-3 font-medium transition-colors ${
@@ -801,6 +822,7 @@ export function WorkoutsList() {
                       key={member.id}
                       onClick={() => {
                         setSelectedMemberId(member.id)
+                        setSelectedMember(member)
                         setMemberSearch("")
                         setCurrentDay(null)
                         setDayWorkoutAssignments([])
@@ -822,11 +844,12 @@ export function WorkoutsList() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Selected Member</p>
-                      <p className="text-lg font-semibold">{members.find(m => m.id === selectedMemberId)?.name}</p>
+                      <p className="text-lg font-semibold">{selectedMember?.name}</p>
                     </div>
                     <button
                       onClick={() => {
                         setSelectedMemberId(null)
+                        setSelectedMember(null)
                         setCurrentDay(null)
                         setDayWorkoutAssignments([])
                       }}

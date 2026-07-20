@@ -24,6 +24,7 @@ import { AddProductDialog } from "@/components/inventory/add-product-dialog"
 import { NewTransactionDialog } from "@/components/finance/new-transaction-dialog"
 import { useGetProductsQuery, useDeleteProductMutation, Product } from "@/store/api/productsApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 export interface CartItem {
   product: Product
@@ -39,9 +40,10 @@ export default function InventoryPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [showTransactionDialog, setShowTransactionDialog] = useState(false)
 
-  const { data: products = [], isLoading, refetch } = useGetProductsQuery(
+  const { data: productsData, isLoading, refetch } = useGetProductsQuery(
     categoryFilter !== "All" ? { category: categoryFilter, search: searchTerm || undefined } : { search: searchTerm || undefined }
   )
+  const products = productsData?.data || []
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation()
 
   // Filter and sort products
@@ -131,7 +133,7 @@ export default function InventoryPage() {
       setCart((prev) => prev.filter((item) => item.product.productId !== productId))
       toast.success(`${productName} deleted`)
     } catch (error) {
-      toast.error("Failed to delete product")
+      toast.error(getErrorMessage(error, "Failed to delete product"))
     }
   }
 
@@ -243,8 +245,16 @@ export default function InventoryPage() {
                   </DropdownMenu>
 
                   {/* Product Image */}
-                  <div className="aspect-square bg-secondary/50 flex items-center justify-center p-4">
-                    <Package className="h-16 w-16 text-muted-foreground" />
+                  <div className="aspect-square bg-secondary/50 flex items-center justify-center p-4 relative overflow-hidden">
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <Package className="h-16 w-16 text-muted-foreground" />
+                    )}
                   </div>
 
                   {/* Product Info */}
@@ -379,6 +389,7 @@ export default function InventoryPage() {
             quantity: item.quantity
           }))}
           cartTotal={cartTotal}
+          onSuccess={() => setCart([])}
         />
       </div>
     </DashboardLayout>

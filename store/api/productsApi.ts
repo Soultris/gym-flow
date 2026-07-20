@@ -17,14 +17,26 @@ interface CreateProductRequest {
   imageUrl?: string;
 }
 
+interface ProductsResponse {
+  data: Product[];
+  meta: {
+    total: number;
+    page: number;
+    last_page: number;
+    limit: number;
+  };
+}
+
 interface ProductsQueryParams {
   category?: string;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const productsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getProducts: builder.query<Product[], ProductsQueryParams | void>({
+    getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
         url: '/products',
         params: params || {},
@@ -35,7 +47,7 @@ export const productsApi = baseApi.injectEndpoints({
       query: (id) => `/products/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Product', id }],
     }),
-    createProduct: builder.mutation<Product, CreateProductRequest>({
+    createProduct: builder.mutation<Product, CreateProductRequest | FormData>({
       query: (data) => ({
         url: '/products',
         method: 'POST',
@@ -43,7 +55,7 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
-    updateProduct: builder.mutation<Product, { id: number; data: Partial<CreateProductRequest> }>({
+    updateProduct: builder.mutation<Product, { id: number; data: Partial<CreateProductRequest> | FormData }>({
       query: ({ id, data }) => ({
         url: `/products/${id}`,
         method: 'PUT',

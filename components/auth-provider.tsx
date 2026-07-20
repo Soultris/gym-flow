@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useGetMeQuery } from "@/store/api/authApi"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setUser, logout } from "@/store/slices/authSlice"
@@ -8,11 +8,17 @@ import { setUser, logout } from "@/store/slices/authSlice"
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((state) => state.auth.token)
   const dispatch = useAppDispatch()
+  const [isHydrated, setIsHydrated] = useState(false)
   
   // Skip query if no token
   const { data: user, error, isLoading } = useGetMeQuery(undefined, {
     skip: !token,
   })
+
+  // Ensure hydration is complete before showing loading state
+  useEffect(() => {
+    setTimeout(() => setIsHydrated(true), 0)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -27,10 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [error, dispatch])
 
-  // Optional: Show loading state only if we have a token but no user yet
-  // preventing flash of unauthenticated content
-  if (token && isLoading) {
-      return <div className="flex h-screen items-center justify-center">Loading...</div>
+  // Only show loading after hydration to avoid hydration mismatch
+  if (isHydrated && token && isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>
   }
 
   return <>{children}</>

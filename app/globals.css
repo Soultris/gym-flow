@@ -3,39 +3,53 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #121212;
+  /* Base colors - slightly lighter dark theme */
+  --background: #1a1a1a;           /* from #121212 */
   --foreground: #ffffff;
-  --card: #1a1a1a;
+  
+  /* Widget/card colors - lighter surfaces */
+  --card: #242424;                 /* from #1a1a1a */
   --card-foreground: #ffffff;
-  --popover: #1a1a1a;
+  --popover: #242424;              /* from #1a1a1a */
   --popover-foreground: #ffffff;
+  
+  /* Sidebar - lighter */
+  --sidebar: #242424;              /* from #1a1a1a */
+  --sidebar-foreground: #ffffff;
+  --sidebar-border: #3a3a3a;       /* from #2c2c2e */
+  
+  /* Secondary/muted elements - less dark */
+  --secondary: #3a3a3a;            /* from #2c2c2e */
+  --muted: #3a3a3a;                /* from #2c2c2e */
+  --accent: #3a3a3a;               /* from #2c2c2e */
+  --sidebar-accent: #3a3a3a;       /* from #2c2c2e */
+  
+  /* Borders and inputs - lighter */
+  --border: #3a3a3a;               /* from #2c2c2e */
+  --input: #3a3a3a;                /* from #2c2c2e */
+  
+  /* Keep accent colors the same */
   --primary: #f4f933;
   --primary-foreground: #121212;
-  --secondary: #2c2c2e;
   --secondary-foreground: #ffffff;
-  --muted: #2c2c2e;
   --muted-foreground: #a0a0a0;
-  --accent: #2c2c2e;
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2c2c2e;
-  --input: #2c2c2e;
   --ring: #f4f933;
+  --sidebar-primary: #f4f933;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-ring: #f4f933;
+  
+  /* Charts */
   --chart-1: #f4f933;
   --chart-2: #ffffff;
   --chart-3: #ffffff;
   --chart-4: #a0a0a0;
-  --chart-5: #2c2c2e;
+  --chart-5: #3a3a3a;
+  
   --radius: 0.5rem;
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #f4f933;
-  --sidebar-primary-foreground: #121212;
-  --sidebar-accent: #2c2c2e;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2c2c2e;
-  --sidebar-ring: #f4f933;
 }
 
 @theme inline {
@@ -120,5 +134,14 @@
 
   *::-webkit-scrollbar-corner {
     background: var(--background);
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
   }
 }

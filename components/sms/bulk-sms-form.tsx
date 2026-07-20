@@ -24,9 +24,11 @@ import {
   useGetMessageHistoryQuery,
   useGetScheduledMessagesQuery,
   useCancelBulkMessageMutation,
+  type CreateBulkMessageRequest,
 } from "@/store/api/messagesApi"
 import { useGetMembersQuery } from "@/store/api/membersApi"
 import { toast } from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
 
 interface BulkSmsFormProps {
   initialMemberId?: string
@@ -57,7 +59,10 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   // Initialize initial member selection
   useEffect(() => {
     if (initialMemberId) {
-      setSelectedMemberIds([parseInt(initialMemberId)])
+      setTimeout(() => {
+        setSelectedMemberIds([parseInt(initialMemberId)])
+        setSelectedRecipientType("individual")
+      }, 0)
     }
   }, [initialMemberId])
 
@@ -80,7 +85,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
   const [schedulingType, setSchedulingType] = useState<"once" | "weekly" | "monthly" | "yearly" | "immediate">("immediate")
   const [scheduleDate, setScheduleDate] = useState("")
   const [scheduleTime, setScheduleTime] = useState("09:00")
-  const [recurringFrequency, setRecurringFrequency] = useState<number>(1)
+  // const [recurringFrequency, setRecurringFrequency] = useState<number>(1)
   const [recurringEndDate, setRecurringEndDate] = useState("")
 
   const members = membersData?.members || []
@@ -103,8 +108,9 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     : templates.filter(t => t.category === templateCategory)
 
   const handleSelectMember = (memberId: number, memberName: string) => {
-    setSelectedMemberName(`${memberName} (${memberId})`)
-    setSelectedMemberIds([memberId])
+    if (!selectedMemberIds.includes(memberId)) {
+      setSelectedMemberIds([...selectedMemberIds, memberId])
+    }
     setSelectedRecipientType("individual")
     setSearchQuery("")
     setShowSearchResults(false)
@@ -129,6 +135,9 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       else if (type === "female-members") ids = members.filter(m => m.gender === 'female').map(m => m.memberId)
       
       setSelectedMemberIds(ids)
+    } else {
+      setSelectedMemberIds([])
+      setSelectedMemberName("")
     }
   }
 
@@ -157,7 +166,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       toast.success("Template created successfully")
     } catch (error) {
       console.error("Failed to create template", error)
-      toast.error("Failed to create template")
+      toast.error(getErrorMessage(error, "Failed to create template"))
     }
   }
 
@@ -169,7 +178,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
         toast.success("Template deleted successfully")
       } catch (error) {
         console.error("Failed to delete template", error)
-        toast.error("Failed to delete template")
+        toast.error(getErrorMessage(error, "Failed to delete template"))
       }
     }
   }
@@ -187,10 +196,10 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     }
 
     try {
-      const payload: any = {
+      const payload: CreateBulkMessageRequest = {
         message,
         memberIds: selectedMemberIds,
-        schedulingType: schedulingType === "immediate" ? "once" : schedulingType,
+        schedulingType: (schedulingType === "immediate" ? "once" : schedulingType) as CreateBulkMessageRequest['schedulingType'],
       }
 
       if (schedulingType !== "immediate") {
@@ -203,7 +212,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
            if (recurringEndDate) {
              payload.endDate = new Date(recurringEndDate).toISOString()
            }
-           payload.recurringFrequency = recurringFrequency
+           payload.recurringFrequency = 1
            // basic mapping for day of week/month could be added here
         }
       }
@@ -221,7 +230,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
       
     } catch (error) {
       console.error("Failed to send message", error)
-      toast.error("Failed to send message")
+      toast.error(getErrorMessage(error, "Failed to send message"))
     }
   }
 
@@ -233,7 +242,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
          toast.success("Message cancelled successfully")
        } catch (error) {
          console.error("Failed to cancel message", error)
-         toast.error("Failed to cancel message")
+         toast.error(getErrorMessage(error, "Failed to cancel message"))
        }
     }
   }
@@ -262,28 +271,28 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
     <div className="space-y-6">
       <Card className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 inline-flex mb-6">
+          <TabsList className="bg-transparent border-b border-[#2a2a2a] rounded-none h-auto p-0 gap-6 flex w-full overflow-x-auto scrollbar-none mb-6 justify-start scroll-smooth snap-x">
             <TabsTrigger 
               value="compose"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground shrink-0 snap-align-start"
             >
               Compose Message
             </TabsTrigger>
             <TabsTrigger 
               value="templates"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground shrink-0 snap-align-start"
             >
               SMS Templates
             </TabsTrigger>
             <TabsTrigger 
               value="history"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground shrink-0 snap-align-start"
             >
               Message History
             </TabsTrigger>
             <TabsTrigger 
               value="scheduled"
-              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground"
+              className="bg-transparent border-0 border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-1 pb-3 pt-0 text-muted-foreground data-[state=active]:text-foreground shrink-0 snap-align-start"
             >
               Scheduled Messages
             </TabsTrigger>
@@ -355,22 +364,48 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
             </div>
 
             {/* Selected Recipients Display */}
-            {selectedMemberName && (
+            {selectedMemberIds.length > 0 && selectedRecipientType !== "" && (
               <div className="pt-2 border-t border-border">
                 <Label className="text-sm text-muted-foreground mb-2 block">Selected Recipients ({selectedMemberIds.length})</Label>
-                <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
-                  <span className="text-sm font-medium">{selectedMemberName}</span>
-                  <button
-                    onClick={() => {
-                      setSelectedMemberName("")
-                      setSelectedMemberIds([])
-                      setSelectedRecipientType("")
-                      setSearchQuery("")
-                    }}
-                    className="hover:opacity-70"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRecipientType === "individual" ? (
+                    selectedMemberIds.map(id => {
+                      const member = members.find(m => m.memberId === id)
+                      const displayName = member ? `${member.name} (${id})` : `Member ${id}`
+                      return (
+                        <div key={id} className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                          <span className="text-sm font-medium">{displayName}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newIds = selectedMemberIds.filter(mId => mId !== id)
+                              setSelectedMemberIds(newIds)
+                              if (newIds.length === 0) setSelectedRecipientType("")
+                            }}
+                            className="hover:opacity-70"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="inline-flex items-center gap-2 bg-sidebar-accent px-3 py-2 rounded-lg">
+                      <span className="text-sm font-medium">{selectedMemberName}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberName("")
+                          setSelectedMemberIds([])
+                          setSelectedRecipientType("")
+                          setSearchQuery("")
+                        }}
+                        className="hover:opacity-70"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -571,7 +606,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                       </div>
                       <div>
                         <Label htmlFor="template-category" className="text-sm mb-2 block">Category</Label>
-                        <Select value={newTemplateCategory} onValueChange={(value: any) => setNewTemplateCategory(value)}>
+                        <Select value={newTemplateCategory} onValueChange={(value: "offers" | "member_alerts" | "announcements") => setNewTemplateCategory(value)}>
                           <SelectTrigger id="template-category" className="h-9">
                             <SelectValue />
                           </SelectTrigger>
@@ -710,7 +745,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     </div>
                     <p className="text-sm mb-2">{item.bulkMessage?.message}</p>
                     <p className="text-xs text-muted-foreground">
-                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: any) => r.member?.name).join(", ").slice(0, 50)}...
+                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: { member?: { name: string } }) => r.member?.name).join(", ").slice(0, 50)}...
                     </p>
                   </div>
                 ))
@@ -796,7 +831,7 @@ export function BulkSmsForm({ initialMemberId = "", initialMemberName = "" }: Bu
                     </div>
                     <p className="text-sm mb-2">{item.bulkMessage?.message}</p>
                     <p className="text-xs text-muted-foreground">
-                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: any) => r.member?.name).join(", ").slice(0, 50)}...
+                        Recipients ({item.recipients?.length || 0}): {item.recipients?.map((r: { member?: { name: string } }) => r.member?.name).join(", ").slice(0, 50)}...
                     </p>
                   </div>
                 ))

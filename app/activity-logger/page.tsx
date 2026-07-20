@@ -95,7 +95,7 @@ export default function ActivityLoggerPage() {
     const headers = ["User", "Action", "Type", "Target", "Date", "Time"]
     const rows = activities.map(log => [
       log.user?.name || "System",
-      log.action,
+      formatActionText(log.action, log.type),
       log.type.toUpperCase(),
       log.member?.name || log.assignedWorkout?.name || "-",
       new Date(log.timestamp).toLocaleDateString(),
@@ -134,6 +134,14 @@ export default function ActivityLoggerPage() {
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)
+  }
+
+  const formatActionText = (action: string, type: string) => {
+    // Replace $ with Rs. for transaction type activities
+    if (type === "transaction") {
+      return action.replace(/\$/g, "LKR ")
+    }
+    return action
   }
 
   return (
@@ -318,7 +326,7 @@ export default function ActivityLoggerPage() {
                           {date} at {time}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{log.action}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{formatActionText(log.action, log.type)}</p>
                       {log.member && (
                         <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                           <UserPlus className="h-3 w-3" />

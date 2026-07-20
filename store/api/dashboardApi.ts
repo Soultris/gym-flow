@@ -44,15 +44,63 @@ interface RevenueChartResponse {
   data: RevenueDataPoint[];
 }
 
+interface Transaction {
+  transactionId: number;
+  amount: number;
+  price: number;
+  type: string;
+  paymentMethod: string;
+  date: string;
+  paidAt: string;
+  member?: { name: string };
+  memberPackage?: {
+    package?: {
+      name: string;
+    };
+  };
+}
+
 interface DailyInvoiceResponse {
   summary: {
     date: string;
     totalTransactions: number;
     totalRevenue: number;
-    byType: Record<string, any[]>;
-    byPaymentMethod: Record<string, any[]>;
+    byType: Record<string, Transaction[]>;
+    byPaymentMethod: Record<string, Transaction[]>;
   };
-  transactions: any[];
+  transactions: Transaction[];
+}
+
+interface AttendanceReportResponse {
+  summary: {
+    totalCheckins: number;
+    uniqueMembers: number;
+    averageTime: string;
+  };
+  dailyData: Array<{
+    date: string;
+    checkIns: number;
+  }>;
+  attendance: Array<{
+    attendanceId: number;
+    checkInTime: string;
+    checkOutTime?: string;
+    member: { name: string; memberId: number };
+  }>;
+}
+
+interface MembershipReportResponse {
+  totalMembers: number;
+  activePackages: number;
+  expiredPackages: number;
+  pendingMembers: number;
+  packageBreakdown: Array<{
+    package?: {
+      name: string;
+      [key: string]: unknown;
+    };
+    count: number;
+  }>;
 }
 
 export const dashboardApi = baseApi.injectEndpoints({
@@ -74,14 +122,17 @@ export const dashboardApi = baseApi.injectEndpoints({
         params: params || {},
       }),
     }),
-    getAttendanceReport: builder.query<any, { from?: string; to?: string } | void>({
+    getAttendanceReport: builder.query<AttendanceReportResponse, { from?: string; to?: string } | void>({
       query: (params) => ({
         url: '/reports/attendance',
         params: params || {},
       }),
     }),
-    getMembershipReport: builder.query<any, void>({
-      query: () => '/reports/membership',
+    getMembershipReport: builder.query<MembershipReportResponse, { from?: string; to?: string } | void>({
+      query: (params) => ({
+        url: '/reports/membership',
+        params: params || {},
+      }),
     }),
     getRevenueChartData: builder.query<RevenueChartResponse, { view?: string; from?: string; to?: string } | void>({
       query: (params) => ({

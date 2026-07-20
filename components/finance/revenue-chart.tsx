@@ -150,23 +150,25 @@ export function RevenueChart() {
           </div>
 
           {/* Date range selector */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-[130px]">
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 type="date"
                 value={customFrom}
                 onChange={(e) => handleDateChange('from', e.target.value)}
-                className="h-8 w-36 bg-secondary border-border text-sm"
+                className="h-8 w-full sm:w-36 bg-secondary border-border text-sm"
               />
             </div>
-            <span className="text-muted-foreground">to</span>
-            <Input
-              type="date"
-              value={customTo}
-              onChange={(e) => handleDateChange('to', e.target.value)}
-              className="h-8 w-36 bg-secondary border-border text-sm"
-            />
+            <span className="text-muted-foreground shrink-0">to</span>
+            <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-[130px]">
+              <Input
+                type="date"
+                value={customTo}
+                onChange={(e) => handleDateChange('to', e.target.value)}
+                className="h-8 w-full sm:w-36 bg-secondary border-border text-sm"
+              />
+            </div>
           </div>
         </div>
       </div>

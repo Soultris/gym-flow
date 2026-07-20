@@ -6,9 +6,11 @@ import { Download, Loader2 } from "lucide-react"
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { useGetAttendanceReportQuery } from "@/store/api/dashboardApi"
 import { useMemo } from "react"
+import { useAppSelector } from "@/store/hooks"
 
 export function AttendanceReport() {
   const { data, isLoading, error } = useGetAttendanceReportQuery()
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   
   // Transform daily data to chart format with day names
   const chartData = useMemo(() => {
@@ -16,7 +18,7 @@ export function AttendanceReport() {
     
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     
-    return data.dailyData.map((item: { date: string; checkIns: number }) => {
+    return (data?.dailyData || []).map((item: { date: string; checkIns: number }) => {
       const date = new Date(item.date)
       return {
         day: dayNames[date.getDay()],
@@ -26,7 +28,7 @@ export function AttendanceReport() {
   }, [data])
   
   // Calculate stats
-  const totalCheckIns = data?.summary?.totalCheckIns || 0
+  const totalCheckIns = data?.summary?.totalCheckins || 0
   const dailyAverage = chartData.length > 0 
     ? Math.round(totalCheckIns / chartData.length) 
     : 0
@@ -67,7 +69,8 @@ export function AttendanceReport() {
         <head>
           <title>Weekly Attendance Report</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
+            .logo-header { display: flex; align-items: center; margin-bottom: 20px; }
+            .logo-header img { width: 60px; height: 60px; object-fit: contain; margin-right: 15px; }
             h1 { color: #333; margin-bottom: 5px; }
             .date { color: #666; margin-bottom: 20px; font-size: 14px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -82,10 +85,15 @@ export function AttendanceReport() {
           </style>
         </head>
         <body>
-          <h1>Weekly Attendance Report</h1>
-          <div class="date">
-            Range: Past 7 Days<br/>
-            Generated on: ${new Date().toLocaleString()}
+          <div class="logo-header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+            <div>
+              <h1>Weekly Attendance Report</h1>
+              <div class="date">
+                Range: Past 7 Days<br/>
+                Generated on: ${new Date().toLocaleString()}
+              </div>
+            </div>
           </div>
 
           <div class="stats">

@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label"
 import { Download, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useGetDailyInvoiceReportQuery } from "@/store/api/dashboardApi"
+import { useAppSelector } from "@/store/hooks"
 
 export function DailyInvoice() {
   const today = new Date().toISOString().split('T')[0]
   const [selectedDate, setSelectedDate] = useState(today)
   
   const { data, isLoading, error } = useGetDailyInvoiceReportQuery({ date: selectedDate })
+  const logoUrl = useAppSelector(state => state.auth.user?.gymLogoUrl)
   
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString("en-US", { 
@@ -34,7 +36,8 @@ export function DailyInvoice() {
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { color: #333; margin-bottom: 5px; }
-            .date { color: #666; margin-bottom: 20px; font-size: 14px; }
+            .logo-header { display: flex; align-items: center; margin-bottom: 20px; }
+            .logo-header img { width: 60px; height: 60px; object-fit: contain; margin-right: 15px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
             th { background-color: #f4f4f4; font-weight: bold; }
@@ -45,10 +48,15 @@ export function DailyInvoice() {
           </style>
         </head>
         <body>
-          <h1>Daily Invoice Report</h1>
-          <div class="date">
-            Date: ${selectedDate}<br/>
-            Generated on: ${new Date().toLocaleString()}
+          <div class="logo-header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="Gym Logo">` : ""}
+            <div>
+              <h1>Daily Invoice Report</h1>
+              <div class="date">
+                Date: ${selectedDate}<br/>
+                Generated on: ${new Date().toLocaleString()}
+              </div>
+            </div>
           </div>
           <table>
             <thead>
@@ -61,7 +69,7 @@ export function DailyInvoice() {
               </tr>
             </thead>
             <tbody>
-              ${transactions.map((invoice: any) => `
+              ${transactions.map((invoice) => `
                 <tr>
                   <td>INV-${String(invoice.transactionId).padStart(3, '0')}</td>
                   <td>${invoice.member?.name || "N/A"}</td>
@@ -96,22 +104,22 @@ export function DailyInvoice() {
           <h3 className="text-lg font-semibold">Daily Invoice Report</h3>
           <p className="text-sm text-muted-foreground">View and export daily transactions</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Label htmlFor="report-date" className="sr-only">
               Select Date
             </Label>
             <Input 
               id="report-date" 
               type="date" 
-              className="w-40" 
+              className="w-full sm:w-40 flex-1" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
           <Button 
             size="sm" 
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
             onClick={handleExportPDF}
           >
             <Download className="h-4 w-4 mr-2" />

@@ -5,9 +5,12 @@ import { MembersHeader } from "@/components/members/members-header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Eye, Loader2, Search } from "lucide-react"
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -15,12 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, Loader2 } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, Trainer } from "@/store/api/trainersApi"
+import { useGetTrainersQuery, useApproveTrainerMutation, useDeleteTrainerMutation, useUpdateTrainerMutation, Trainer } from "@/store/api/trainersApi"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/errorUtils"
+import { PhoneOtpVerify } from "@/components/phone-otp-verify"
+import { PaginationControls } from "@/components/ui/pagination-controls"
+
+const PAGE_SIZE = 20
 
 function getInitials(name: string): string {
   return name
@@ -34,65 +38,33 @@ function getInitials(name: string): string {
 export default function PendingTrainersPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [trainerToReview, setTrainerToReview] = useState<Trainer | null>(null)
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput)
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
   
-  // API hooks
-  const { data: trainersData, isLoading, isError } = useGetTrainersQuery()
-  const [approveTrainer, { isLoading: isApproving }] = useApproveTrainerMutation()
-  const [deleteTrainer, { isLoading: isDeleting }] = useDeleteTrainerMutation()
-  
-  // Filter for pending trainers only
-  const pendingTrainers = (trainersData || []).filter((trainer: Trainer) => trainer.isPending)
-  
-  // Form state for editable fields
-  const [formData, setFormData] = useState({
-    trainerNo: "",
-    name: "",
-    phone: "",
-    gender: "male",
-    specialization: "",
+  // API hooks — pending trainers only
+  const { data: trainersData, isLoading, isError, refetch } = useGetTrainersQuery({
+    pending: true,
+    page,
+    limit: PAGE_SIZE,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   })
+  
+  const pendingTrainers = trainersData?.trainers || []
+  const pagination = trainersData?.pagination
 
   const handleReview = (trainer: Trainer) => {
     setTrainerToReview(trainer)
-    // Initialize form with trainer data
-    setFormData({
-      trainerNo: `TR${String(trainer.trainerId).padStart(3, '0')}`,
-      name: trainer.name,
-      phone: trainer.phone,
-      gender: "male",
-      specialization: trainer.specialization,
-    })
     setReviewDialogOpen(true)
-  }
-
-  const updateFormField = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleAccept = async () => {
-    if (!trainerToReview) return
-    
-    try {
-      await approveTrainer(trainerToReview.trainerId).unwrap()
-      toast.success(`${trainerToReview.name} has been approved`)
-      setReviewDialogOpen(false)
-      setTrainerToReview(null)
-    } catch {
-      toast.error("Failed to approve trainer")
-    }
-  }
-
-  const handleReject = async () => {
-    if (!trainerToReview) return
-    
-    try {
-      await deleteTrainer(trainerToReview.trainerId).unwrap()
-      toast.success(`${trainerToReview.name} has been rejected`)
-      setReviewDialogOpen(false)
-      setTrainerToReview(null)
-    } catch {
-      toast.error("Failed to reject trainer")
-    }
   }
 
   if (isLoading) {
@@ -130,9 +102,22 @@ export default function PendingTrainersPage() {
       <div className="space-y-6">
         <MembersHeader />
 
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by name, phone or specialization..."
+            className="pl-9 bg-transparent border-[#2a2a2a] focus-visible:ring-primary"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+
         {pendingTrainers.length === 0 ? (
           <div className="border border-[#2a2a2a] rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">No pending trainers found</p>
+            <p className="text-muted-foreground">
+              {debouncedSearch ? `No pending trainers matching "${debouncedSearch}"` : 'No pending trainers found'}
+            </p>
           </div>
         ) : (
           <div className="border border-[#2a2a2a] rounded-lg overflow-hidden">
@@ -166,7 +151,7 @@ export default function PendingTrainersPage() {
                         className="flex items-center gap-3 transition-opacity"
                       >
                         <Avatar className="h-9 w-9">
-                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
                           <AvatarFallback className="bg-secondary text-foreground text-sm font-medium">
                             {getInitials(trainer.name)}
                           </AvatarFallback>
@@ -195,115 +180,223 @@ export default function PendingTrainersPage() {
               </tbody>
               </table>
             </div>
+
+            {pagination && (
+              <PaginationControls
+                page={page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={PAGE_SIZE}
+                onPageChange={setPage}
+                itemLabel="pending trainers"
+              />
+            )}
           </div>
         )}
 
         {/* Review Dialog */}
         <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Review Trainer Request</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border p-0 gap-0">
+             <div className="p-6 border-b border-border">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Review Trainer Request</DialogTitle>
+              </DialogHeader>
+            </div>
 
             {trainerToReview && (
-              <div className="space-y-8 py-4">
-                {/* Personal Information */}
-                <Card className="p-8">
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold">Personal Information</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Review and edit trainer&apos;s information
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="trainerNo">Trainer No.</Label>
-                      <Input
-                        id="trainerNo"
-                        value={formData.trainerNo}
-                        onChange={(e) => updateFormField("trainerNo", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                        disabled
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => updateFormField("name", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Mobile No.</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => updateFormField("phone", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select value={formData.gender} onValueChange={(value) => updateFormField("gender", value)}>
-                        <SelectTrigger className="bg-secondary border-[#3a3a3a]">
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="specialization">Specialization</Label>
-                      <Input
-                        id="specialization"
-                        value={formData.specialization}
-                        onChange={(e) => updateFormField("specialization", e.target.value)}
-                        className="bg-secondary border-[#3a3a3a]"
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => setReviewDialogOpen(false)}
-                    className="bg-transparent border-[#3a3a3a]"
-                    disabled={isApproving || isDeleting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleReject}
-                    className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white"
-                    disabled={isApproving || isDeleting}
-                  >
-                    {isDeleting ? "Rejecting..." : "Reject"}
-                  </Button>
-                  <Button
-                    onClick={handleAccept}
-                    className="bg-green-600 text-white hover:bg-green-700"
-                    disabled={isApproving || isDeleting}
-                  >
-                    {isApproving ? "Accepting..." : "Accept Trainer Request"}
-                  </Button>
-                </div>
-              </div>
+              <ReviewTrainerContent  
+                trainer={trainerToReview} 
+                onClose={() => setReviewDialogOpen(false)}
+                refetch={refetch}
+              />
             )}
           </DialogContent>
         </Dialog>
       </div>
     </DashboardLayout>
   )
+}
+
+function ReviewTrainerContent({ trainer, onClose, refetch }: { trainer: Trainer, onClose: () => void, refetch: () => void }) {
+    const [approveTrainer, { isLoading: isApproving }] = useApproveTrainerMutation()
+    const [deleteTrainer, { isLoading: isDeleting }] = useDeleteTrainerMutation()
+    const [updateTrainer, { isLoading: isUpdating }] = useUpdateTrainerMutation()
+
+    const [formData, setFormData] = useState({
+        name: trainer.name,
+        phone: trainer.phone,
+        specialization: trainer.specialization,
+        dob: trainer.dob ? new Date(trainer.dob).toISOString().split('T')[0] : "",
+        age: trainer.age?.toString() || "",
+        gender: trainer.gender || "",
+        nic: trainer.nic || "",
+        address: trainer.address || "",
+    })
+
+    const handleAccept = async () => {
+        try {
+            // First update the trainer details
+            await updateTrainer({
+                id: trainer.trainerId,
+                data: formData
+            }).unwrap()
+
+            // Then approve
+            await approveTrainer(trainer.trainerId).unwrap()
+            
+            toast.success(`${formData.name} has been approved`)
+            onClose()
+            refetch()
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to approve trainer"))
+        }
+    }
+
+    const handleReject = async () => {
+        try {
+            await deleteTrainer(trainer.trainerId).unwrap()
+            toast.success(`${trainer.name} has been rejected`)
+            onClose()
+            refetch()
+        } catch (error) {
+            toast.error(getErrorMessage(error, "Failed to reject trainer"))
+        }
+    }
+
+    const isProcessing = isApproving || isDeleting || isUpdating
+
+    return (
+        <div className="p-6 space-y-8">
+            {/* Avatar Section - Centered */}
+            <div className="flex justify-center mb-8">
+                <Avatar className="h-32 w-32 border-4 border-muted">
+                    <AvatarImage src={trainer.imageUrl || "/placeholder.svg"} className="object-cover" />
+                    <AvatarFallback className="text-4xl bg-secondary">{getInitials(trainer.name)}</AvatarFallback>
+                </Avatar>
+            </div>
+
+            {/* Info Grid - Matching Member Review Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <Label>Trainer No.</Label>
+                    <Input value={`TR${String(trainer.trainerId).padStart(3, '0')}`} disabled className="bg-muted" />
+                 </div>
+                 
+                 <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="phone">Mobile No.</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                            id="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        />
+                        <div className="shrink-0 pt-1">
+                             <PhoneOtpVerify 
+                                phone={formData.phone} 
+                                type="trainer" 
+                                id={trainer.trainerId} 
+                                phoneVerified={trainer.phoneVerified} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="specialization">Specialization</Label>
+                    <Input 
+                        id="specialization"
+                        value={formData.specialization}
+                        onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input 
+                        id="dob"
+                        type="date"
+                        value={formData.dob}
+                        onChange={(e) => {
+                            const newDob = e.target.value;
+                            let newAge = formData.age;
+                            if (newDob) {
+                                const birthDate = new Date(newDob);
+                                const today = new Date();
+                                let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                                const m = today.getMonth() - birthDate.getMonth();
+                                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                    calculatedAge--;
+                                }
+                                newAge = calculatedAge.toString();
+                            } else {
+                                newAge = "";
+                            }
+                            setFormData({...formData, dob: newDob, age: newAge});
+                        }}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input 
+                        id="age"
+                        value={formData.age}
+                        disabled
+                        className="bg-muted"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="nic">NIC</Label>
+                    <Input 
+                        id="nic"
+                        value={formData.nic}
+                        onChange={(e) => setFormData({...formData, nic: e.target.value})}
+                    />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    />
+                </div>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-6 border-t border-border mt-6">
+                <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
+                <Button variant="destructive" onClick={handleReject} disabled={isProcessing}>
+                    {isDeleting ? "Rejecting..." : "Reject"}
+                </Button>
+                <Button onClick={handleAccept} disabled={isProcessing} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    {isProcessing ? "Processing..." : "Approve Trainer Request"}
+                </Button>
+            </div>
+        </div>
+    )
 }

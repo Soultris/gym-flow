@@ -82,6 +82,12 @@ export function NewTransactionDialog({
   const [notes, setNotes] = useState("")
   const [selectedPackageId, setSelectedPackageId] = useState(defaultPackageId)
   const [selectedTrainerId, setSelectedTrainerId] = useState("")
+  const [paidAt, setPaidAt] = useState(() => {
+    const today = new Date()
+    const offset = today.getTimezoneOffset()
+    const localToday = new Date(today.getTime() - (offset * 60 * 1000))
+    return localToday.toISOString().split('T')[0]
+  })
   
   // Guest fields
   const [guestName, setGuestName] = useState("")
@@ -144,6 +150,10 @@ export function NewTransactionDialog({
       setSendReceipt(true)
       setSelectedPackageId("")
       setSelectedTrainerId("")
+      const today = new Date()
+      const offset = today.getTimezoneOffset()
+      const localToday = new Date(today.getTime() - (offset * 60 * 1000))
+      setPaidAt(localToday.toISOString().split('T')[0])
       setSuccessData(null)
     }
   }
@@ -183,6 +193,7 @@ export function NewTransactionDialog({
         price: parseFloat(amount),
         paymentMethod,
         sendReceipt,
+        paidAt: transactionType === "membership" && paidAt ? new Date(paidAt).toISOString() : undefined,
         products: transactionType === "merchandise" && cartItems.length > 0 
           ? cartItems.map(item => ({ 
               productId: parseInt(item.product.id, 10), 
@@ -376,6 +387,20 @@ export function NewTransactionDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {/* Payment Date selection for membership renewal */}
+              {transactionType === "membership" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="paidAt">Payment / Membership Start Date</Label>
+                  <Input
+                    id="paidAt"
+                    type="date"
+                    value={paidAt}
+                    onChange={(e) => setPaidAt(e.target.value)}
+                    className="bg-secondary border-[#3a3a3a]"
+                  />
                 </div>
               )}
 
